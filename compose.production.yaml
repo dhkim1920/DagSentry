@@ -1,0 +1,169 @@
+x-dagsentry-service: &dagsentry-service
+  image: ${DAGSENTRY_IMAGE:-dagsentry:production}
+  env_file:
+    - ${DAGSENTRY_ENV_FILE:-deployment/production.env}
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "5"
+  networks:
+    - backend
+
+x-dagsentry-database-secret: &dagsentry-database-secret
+  source: dagsentry_database_url
+  target: DAGSENTRY_DATABASE_URL
+
+x-dagsentry-migration-database-secret: &dagsentry-migration-database-secret
+  source: dagsentry_migration_database_url
+  target: DAGSENTRY_DATABASE_URL
+
+x-dagsentry-encryption-secret: &dagsentry-encryption-secret
+  source: dagsentry_connection_encryption_key
+  target: DAGSENTRY_CONNECTION_ENCRYPTION_KEY
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DAGSENTRY_POSTGRES_DB:-dagsentry}
+      POSTGRES_USER: ${DAGSENTRY_POSTGRES_USER:-dagsentry}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+    networks:
+      - backend
+
+  migrate:
+    <<: *dagsentry-service
+    command:
+      - alembic
+      - upgrade
+      - head
+    restart: "no"
+    secrets:
+      - *dagsentry-migration-database-secret
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *dagsentry-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - dagsentry-api
+    restart: unless-stopped
+    secrets:
+      - *dagsentry-database-secret
+      - source: dagsentry_ingest_api_token
+        target: DAGSENTRY_INGEST_API_TOKEN
+      - *dagsentry-encryption-secret
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - ${DAGSENTRY_BIND_ADDRESS:-127.0.0.1}:${DAGSENTRY_HTTP_PORT:-8000}:8000
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2).read()
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    stop_grace_period: 30s
+
+  worker:
+    <<: *dagsentry-service
+    command:
+      - dagsentry-worker
+    restart: unless-stopped
+    secrets:
+      - *dagsentry-database-secret
+      - *dagsentry-encryption-secret
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    stop_grace_period: 5m
+
+  recovery-checker:
+    <<: *dagsentry-service
+    profiles:
+      - jobs
+    command:
+      - dagsentry-recovery-checker
+    restart: "no"
+    secrets:
+      - *dagsentry-database-secret
+      - *dagsentry-encryption-secret
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  scheduler:
+    <<: *dagsentry-service
+    command:
+      - dagsentry-scheduler
+    restart: unless-stopped
+    secrets:
+      - *dagsentry-database-secret
+      - *dagsentry-encryption-secret
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "dagsentry-scheduler-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 15s
+    stop_grace_period: 5m
+
+volumes:
+  postgres-data:
+
+networks:
+  backend:
+
+secrets:
+  postgres_password:
+    file: ${DAGSENTRY_POSTGRES_PASSWORD_FILE:-deployment/secrets/postgres_password}
+  dagsentry_database_url:
+    file: ${DAGSENTRY_DATABASE_URL_FILE:-deployment/secrets/database_url}
+  dagsentry_migration_database_url:
+    file: ${DAGSENTRY_MIGRATION_DATABASE_URL_FILE:-deployment/secrets/migration_database_url}
+  dagsentry_ingest_api_token:
+    file: ${DAGSENTRY_INGEST_API_TOKEN_FILE:-deployment/secrets/ingest_api_token}
+  dagsentry_connection_encryption_key:
+    file: ${DAGSENTRY_CONNECTION_ENCRYPTION_KEY_FILE:-deployment/secrets/connection_encryption_key}

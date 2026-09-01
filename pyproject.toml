@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dagsentry"
+version = "0.3.0.dev0"
+description = "Airflow 3 failure intelligence and incident management"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "APScheduler>=3.11,<4",
+    "alembic>=1.16,<2",
+    "argon2-cffi>=23.1,<26",
+    "boto3>=1.43,<2",
+    "cryptography>=45,<51",
+    "fastapi>=0.116,<1",
+    "httpx>=0.28,<1",
+    "psycopg[binary]>=3.2,<4",
+    "pydantic-settings>=2.10,<3",
+    "sqlalchemy>=2.0,<3",
+    "uvicorn>=0.35,<1",
+]
+
+[project.optional-dependencies]
+airflow = ["apache-airflow>=3.3.1,<4"]
+
+[project.urls]
+Repository = "https://github.com/dhkim1920/DagSentry"
+Issues = "https://github.com/dhkim1920/DagSentry/issues"
+
+[project.scripts]
+dagsentry-api = "dagsentry.api:main"
+dagsentry-worker = "dagsentry.worker_app:main"
+dagsentry-worker-jobs = "dagsentry.worker_admin:main"
+dagsentry-recovery-checker = "dagsentry.recovery_app:main"
+dagsentry-daily-report = "dagsentry.report_app:main"
+dagsentry-scheduler = "dagsentry.scheduler_app:main"
+dagsentry-scheduler-health = "dagsentry.scheduler_health:main"
+dagsentry-admin = "dagsentry.admin_app:main"
+
+[project.entry-points.apache_airflow_provider]
+provider_info = "dagsentry.airflow.provider:get_provider_info"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17,<2",
+    "pytest>=8.4,<10",
+    "ruff>=0.12,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dagsentry"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["/.github", "/AGENTS.md", "/Todo.md", "/docs", "/tests", "/typings"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src", "tests"]
+mypy_path = ["typings"]
+
+[[tool.mypy.overrides]]
+module = [
+    "dagsentry.airflow.listener",
+    "dagsentry.airflow.plugin",
+    "dagsentry.airflow.reconciler",
+]
+ignore_missing_imports = true
+disallow_subclassing_any = false
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+markers = ["integration: requires a running PostgreSQL test database"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP"]

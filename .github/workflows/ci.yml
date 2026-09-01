@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: test_dagsentry
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test_user -d test_dagsentry"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 15
+
+    env:
+      DAGSENTRY_DATABASE_URL: postgresql+psycopg://test_user:test_password@localhost:5432/test_dagsentry
+      DAGSENTRY_TEST_DATABASE_URL: postgresql+psycopg://test_user:test_password@localhost:5432/test_dagsentry
+      UV_PYTHON: ${{ matrix.python-version }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Install project
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Type check
+        run: uv run mypy
+
+      - name: Apply migrations
+        run: uv run alembic upgrade head
+
+      - name: Test
+        run: uv run pytest
+
+  airflow-compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        airflow:
+          - name: minimum
+            specifier: apache-airflow==3.3.1
+          - name: maximum
+            specifier: apache-airflow>=3.3.1,<4
+    env:
+      UV_PYTHON: "3.11"
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+
+      - name: Install project with Airflow
+        run: uv sync --locked --extra airflow
+
+      - name: Select Airflow compatibility target
+        run: uv pip install --upgrade "${{ matrix.airflow.specifier }}"
+
+      - name: Test Airflow plugin compatibility
+        run: uv run pytest tests/airflow
+
+      - name: Verify Airflow provider discovery
+        env:
+          AIRFLOW__CORE__LAZY_DISCOVER_PROVIDERS: "False"
+          AIRFLOW__CORE__LAZY_LOAD_PLUGINS: "False"
+        run: uv run airflow plugins
+
+  production-compose:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Build and verify production Compose deployment
+        run: bash scripts/verify-production-compose.sh

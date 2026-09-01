@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DAGSENTRY_POSTGRES_DB:-}
+      POSTGRES_PASSWORD: ${DAGSENTRY_POSTGRES_PASSWORD:-}
+      POSTGRES_USER: ${DAGSENTRY_POSTGRES_USER:-}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    ports:
+      - "${DAGSENTRY_POSTGRES_BIND_ADDRESS:-127.0.0.1}:${DAGSENTRY_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - dagsentry-postgres:/var/lib/postgresql/data
+
+volumes:
+  dagsentry-postgres:

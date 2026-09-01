@@ -1,0 +1,7 @@
+# Local demonstration and verification database only. Do not use this file in production.
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: dagsentry_demo
+      POSTGRES_PASSWORD: dagsentry_demo
+      POSTGRES_USER: dagsentry_demo

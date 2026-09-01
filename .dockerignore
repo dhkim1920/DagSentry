@@ -1,0 +1,12 @@
+*
+!Dockerfile
+!README.md
+!alembic.ini
+!pyproject.toml
+!uv.lock
+!migrations/
+!migrations/**
+!src/
+!src/**
+!deployment/
+!deployment/container-entrypoint.sh
