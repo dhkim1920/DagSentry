@@ -200,6 +200,7 @@ def _diagnosis_message(payload: NotificationPayload) -> tuple[str, dict[str, obj
             _field("Environment", payload.environment),
             _field("DAG run", payload.dag_run_id),
             _field("Failed at", payload.failed_at.isoformat()),
+            _field("Failure state", payload.failure_state.value),
             _field(
                 "Incident",
                 f"{payload.incident_id} · {payload.incident_status.value} · "

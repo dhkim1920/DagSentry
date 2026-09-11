@@ -335,15 +335,15 @@ def request_manual_run(
     principal: Annotated[AuthenticatedPrincipal, Depends(require_admin)],
     session: Annotated[Session, Depends(get_session)],
 ) -> ScheduleRunResponse:
-    """Queue a historical UTC report date for the scheduler process."""
-    if body.report_date >= datetime.now(UTC).date():
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="report_date must be a completed UTC date",
-        )
+    """Queue a completed local report date for the scheduler process."""
     schedule = session.get(DailyReportScheduleRecord, schedule_id)
     if schedule is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="schedule not found")
+    if body.report_date >= datetime.now(ZoneInfo(schedule.timezone)).date():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="report_date must be a completed date in the schedule timezone",
+        )
     now = utc_now()
     run = DailyReportScheduleRunRecord(
         schedule_id=schedule.id,

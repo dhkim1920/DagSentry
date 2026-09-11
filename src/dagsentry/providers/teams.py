@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 import httpx
 
 from dagsentry.config import Settings
+from dagsentry.display import display_time, failure_list_lines, failure_state_label
 from dagsentry.domain.notification import (
     NotificationErrorCategory,
     NotificationPayload,
@@ -29,6 +30,7 @@ class TeamsProviderConfig:
     timeout_seconds: float = 5.0
     max_attempts: int = 2
     retry_backoff_seconds: float = 0.5
+    display_timezone: str = "Asia/Seoul"
 
     def __post_init__(self) -> None:
         parsed = urlparse(self.webhook_url)
@@ -78,12 +80,13 @@ class TeamsNotificationProvider:
                 timeout_seconds=settings.teams_timeout_seconds,
                 max_attempts=settings.teams_max_attempts,
                 retry_backoff_seconds=settings.teams_retry_backoff_seconds,
+                display_timezone=settings.display_timezone,
             )
         )
 
     def send(self, payload: TeamsPayload, *, delivery_key: str) -> int:
         """Post one Adaptive Card with bounded retries."""
-        body = _message_body(payload, delivery_key)
+        body = _message_body(payload, delivery_key, self.config.display_timezone)
         for attempt in range(self.config.max_attempts):
             response: httpx.Response | None = None
             error: NotificationProviderError | None = None
@@ -160,9 +163,11 @@ def _retry_delay(response: httpx.Response | None, config: TeamsProviderConfig) -
         return config.retry_backoff_seconds
 
 
-def _message_body(payload: TeamsPayload, delivery_key: str) -> dict[str, object]:
+def _message_body(
+    payload: TeamsPayload, delivery_key: str, timezone: str = "Asia/Seoul"
+) -> dict[str, object]:
     if isinstance(payload, NotificationPayload):
-        card_body = _diagnosis_card(payload)
+        card_body = _diagnosis_card(payload, timezone)
     elif isinstance(payload, RecoveryNotificationPayload):
         card_body = _recovery_card(payload)
     else:
@@ -185,30 +190,33 @@ def _message_body(payload: TeamsPayload, delivery_key: str) -> dict[str, object]
     }
 
 
-def _diagnosis_card(payload: NotificationPayload) -> list[dict[str, object]]:
-    root_cause = payload.root_cause or "No root cause available"
+def _diagnosis_card(
+    payload: NotificationPayload, timezone: str = "Asia/Seoul"
+) -> list[dict[str, object]]:
+    root_cause = payload.root_cause or "원인 설명 없음"
     evidence = "\n".join(f"L{item.line_id}: {item.text}" for item in payload.evidence)
     actions = "\n".join(f"• {item}" for item in payload.recommended_actions)
     facts = [
-        _fact("Classification", payload.classification.value),
-        _fact("Environment", payload.environment),
+        _fact("분류", payload.classification.value),
+        _fact("환경", payload.environment),
         _fact("DAG", payload.dag_id),
         _fact("Task", f"{payload.task_id} · map {payload.map_index} · try {payload.try_number}"),
         _fact("DAG run", payload.dag_run_id),
-        _fact("Failed at", payload.failed_at.isoformat()),
+        _fact("실패 시각", display_time(payload.failed_at, timezone)),
+        _fact("실패 상태", failure_state_label(payload.failure_state)),
         _fact(
-            "Incident",
+            "장애",
             f"{payload.incident_id} · {payload.incident_status.value} · "
-            f"{payload.incident_failure_count} failure(s)",
+            f"실패 {payload.incident_failure_count}회",
         ),
         _fact(
-            "Diagnosis",
-            f"{payload.diagnosis_source.value} · confidence {payload.confidence:.2f} · "
-            f"retry {payload.retry_decision.value}",
+            "진단",
+            f"{payload.diagnosis_source.value} · 신뢰도 {payload.confidence:.2f} · "
+            f"재시도 판단 {payload.retry_decision.value}",
         ),
-        _fact("Failure event", str(payload.failure_event_id)),
-        _fact("Diagnosis ID", str(payload.diagnosis_id)),
-        _fact("Error signature", payload.error_signature or "Not available"),
+        _fact("실패 이벤트", str(payload.failure_event_id)),
+        _fact("진단 ID", str(payload.diagnosis_id)),
+        _fact("오류 서명", payload.error_signature or "없음"),
     ]
     body: list[dict[str, object]] = [
         _text(
@@ -218,12 +226,12 @@ def _diagnosis_card(payload: NotificationPayload) -> list[dict[str, object]]:
             color="Attention",
         ),
         {"type": "FactSet", "facts": facts},
-        _section("Root cause", root_cause),
-        _section("Evidence", evidence or "No evidence"),
-        _section("Recommended actions", actions or "No recommended actions"),
+        _section("원인 설명", root_cause),
+        _section("근거", evidence or "근거 없음"),
+        _section("권장 조치", actions or "권장 조치 없음"),
     ]
     if payload.airflow_log_url is not None:
-        body.append(_section("Airflow log", payload.airflow_log_url))
+        body.append(_section("Airflow 로그", payload.airflow_log_url))
     return body
 
 
@@ -252,15 +260,18 @@ def _daily_report_card(payload: DailyReportNotificationPayload) -> list[dict[str
         {
             "type": "FactSet",
             "facts": [
-                _fact("Date", statistics.report_date.isoformat()),
-                _fact("Environment", statistics.environment),
-                _fact("Failure attempts", str(statistics.failure_attempts)),
-                _fact("Affected tasks", str(statistics.affected_task_instances)),
-                _fact("Affected DAG runs", str(statistics.affected_dag_runs)),
+                _fact("날짜", statistics.report_date.isoformat()),
+                _fact("시간대", statistics.timezone),
+                _fact("환경", statistics.environment),
+                _fact("실패 횟수", str(statistics.failure_attempts)),
+                _fact("영향받은 TaskInstance", str(statistics.affected_task_instances)),
+                _fact("영향받은 DAG 실행", str(statistics.affected_dag_runs)),
             ],
         },
-        _section("Highlights", "\n".join(f"• {item}" for item in report.highlights)),
-        _section("Priorities", "\n".join(f"• {item}" for item in report.priorities)),
+        _section("주요 현황", "\n".join(f"• {item}" for item in report.highlights)),
+        _section("우선 점검", "\n".join(f"• {item}" for item in report.priorities)),
+        _text("상위 실패 Task (최대 20개)", weight="Bolder"),
+        *(_text(line) for line in failure_list_lines(statistics)),
     ]
     if payload.ai_summary is not None:
         body.append(

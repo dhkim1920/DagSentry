@@ -469,7 +469,7 @@
           <div>
             <h1 id="report-dashboard-title" data-i18n-fixed>Daily Reports</h1>
             <p class="heading-copy">
-              Review immutable UTC Statistics, rule-based guidance, optional AI summaries, and delivery outcomes.
+              Review immutable daily Statistics, rule-based guidance, optional AI summaries, and delivery outcomes.
             </p>
           </div>
         </div>
@@ -555,7 +555,7 @@
 
           <form id="report-manual-run-form" class="report-manual-run-form uniform-control-height" hidden>
             <div class="field-group">
-              <label for="report-manual-date">완료된 UTC 리포트 날짜</label>
+              <label for="report-manual-date">스케줄 시간대의 완료된 리포트 날짜</label>
               <input id="report-manual-date" name="report_date" type="date" required>
             </div>
             <button id="report-manual-run" class="button button-secondary" type="submit">지금 실행</button>
@@ -672,6 +672,8 @@
               <section class="context-panel report-section">
                 <h2>Priorities</h2>
                 <ul id="report-detail-priorities" class="report-list"></ul>
+                <h3 id="report-top-failures-title">Top failures</h3>
+                <ul id="report-top-failures" class="report-list"></ul>
               </section>
               <section id="report-detail-ai" class="context-panel report-section" hidden>
                 <div class="section-heading">

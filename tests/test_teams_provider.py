@@ -50,6 +50,10 @@ class TestTeamsNotificationProviderContract(NotificationProviderContract):
         attachment = body["attachments"][0]
         card = attachment["content"]
         serialized = json.dumps(card)
+        korean = json.dumps(card, ensure_ascii=False)
+        assert "실패 상태" in korean
+        assert "권장 조치" in korean
+        assert "KST" in korean
 
         assert request.method == "POST"
         assert str(request.url) == "https://teams.test/workflows/trigger?sig=secret"

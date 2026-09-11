@@ -161,6 +161,8 @@ class IncidentFailureResponse(BaseModel):
     diagnoses: list[IncidentDiagnosisResponse]
     error_signature: IncidentErrorSignatureResponse | None
     airflow_log_url: str | None
+    is_initial_failure: bool
+    is_final_failure: bool
 
 
 class IncidentTransitionHistoryResponse(BaseModel):
@@ -452,6 +454,8 @@ def get_incident(
                 deliveries_by_diagnosis=deliveries_by_diagnosis,
                 signatures_by_id=signatures_by_id,
                 incident_error_signature_id=incident.error_signature_id,
+                initial_failure_event_id=incident.initial_failure_event_id,
+                final_failure_event_id=incident.final_failure_event_id,
             )
             for failure in failures
         ],
@@ -550,6 +554,8 @@ def _failure_response(
     deliveries_by_diagnosis: dict[UUID, NotificationDeliveryRecord],
     signatures_by_id: dict[UUID, ErrorSignatureRecord],
     incident_error_signature_id: UUID | None,
+    initial_failure_event_id: UUID,
+    final_failure_event_id: UUID | None,
 ) -> IncidentFailureResponse:
     effective = next(
         (diagnosis for diagnosis in reversed(diagnoses) if diagnosis.id in deliveries_by_diagnosis),
@@ -582,6 +588,8 @@ def _failure_response(
         map_index=failure.map_index,
         try_number=failure.try_number,
         state=failure.state,
+        is_initial_failure=failure.id == initial_failure_event_id,
+        is_final_failure=failure.id == final_failure_event_id,
         observed_at=_as_utc(failure.observed_at),
         diagnoses=[
             _diagnosis_response(

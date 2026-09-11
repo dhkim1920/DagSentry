@@ -2,8 +2,9 @@
 
 from functools import lru_cache
 from typing import Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,8 +39,9 @@ class Settings(BaseSettings):
     llm_config_source: Literal["environment", "database"] = "environment"
     llm_provider: Literal["openai", "azure_openai", "anthropic", "bedrock", "ollama"] | None = None
     llm_model: str | None = None
-    llm_prompt_version: str = "ai-diagnosis-v1"
-    daily_report_prompt_version: str = "daily-report-v1"
+    llm_prompt_version: str = "ai-diagnosis-ko-v1"
+    daily_report_prompt_version: str = "daily-report-ko-v1"
+    report_timezone: str = "Asia/Seoul"
     llm_timeout_seconds: float = Field(default=15.0, gt=0)
     llm_max_attempts: int = Field(default=2, ge=1)
     llm_retry_backoff_seconds: float = Field(default=0.5, ge=0)
@@ -57,6 +59,9 @@ class Settings(BaseSettings):
     ollama_max_output_tokens: int = Field(default=2_048, ge=1)
     notification_config_source: Literal["environment", "database"] = "environment"
     notification_provider: Literal["webhook", "slack", "teams", "discord", "smtp"] = "webhook"
+    notification_fallback_providers: list[
+        Literal["webhook", "slack", "teams", "discord", "smtp"]
+    ] = Field(default_factory=list)
     webhook_url: str | None = None
     webhook_bearer_token: SecretStr | None = None
     webhook_timeout_seconds: float = Field(default=5.0, gt=0)
@@ -88,6 +93,17 @@ class Settings(BaseSettings):
     smtp_max_attempts: int = Field(default=2, ge=1)
     smtp_retry_backoff_seconds: float = Field(default=0.5, ge=0)
     airflow_ui_base_url: str | None = None
+    display_timezone: str = "Asia/Seoul"
+
+    @field_validator("display_timezone", "report_timezone")
+    @classmethod
+    def validate_display_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except (ValueError, ZoneInfoNotFoundError) as error:
+            raise ValueError("display_timezone must be an IANA timezone") from error
+        return value
+
     diagnosis_reuse_max_age_days: int = Field(default=30, ge=1)
     worker_max_attempts: int = Field(default=5, ge=1)
     worker_backoff_base_seconds: float = Field(default=5.0, ge=0)

@@ -1,5 +1,14 @@
 # Notification Provider contract
 
+For Teams with SMTP fallback, set `DAGSENTRY_NOTIFICATION_PROVIDER=teams` and
+`DAGSENTRY_NOTIFICATION_FALLBACK_PROVIDERS=["smtp"]`, with both providers configured through
+environment settings. The default fallback list is empty for existing installations. Delivery is
+sequential, stops at the first success, and uses one delivery record (`teams>smtp`) and the same
+delivery key. If all providers fail, the primary error controls retry behavior. Failures log only
+provider names and error categories. Daily Report and Recovery retries accept an existing record
+when its provider is a member of the configured chain. Database connections retain their existing
+Slack-only notification scope.
+
 DagSentry's reusable contract suite verifies the behavior shared by HTTP Notification Providers
 without adding vendor branches to Diagnosis or Incident Core. The Webhook, Slack, Teams, and
 Discord adapters are conforming implementations.

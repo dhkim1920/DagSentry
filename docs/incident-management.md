@@ -34,11 +34,11 @@ Migration 0006 does not backfill Incidents for Failure Events processed before i
 
 ## Notification policy
 
-The Incident stores its stable initial Failure Event. That Failure produces the full Webhook, even
-when delivery is retried after a Provider error or Worker restart. Diagnoses for later Failures in
-the same active Incident are persisted but their Notifications are marked `SUPPRESSED`; no remote
-Provider call occurs. The payload snapshot includes the Incident ID, current state, and linked
-Failure count. v0.2 does not send periodic or count-based reminders.
+The Incident stores initial_failure_event_id and final_failure_event_id. The first failure and
+one final FAILED event receive notifications; an initial FAILED occupies both slots and sends
+once. Later failures are suppressed. The final reservation is atomic and survives Provider errors
+and Worker restarts. Incident detail exposes is_initial_failure and is_final_failure on each
+failure, displayed in Korean or English by the UI. No periodic or count-based reminders are added.
 
 ## Operator API
 

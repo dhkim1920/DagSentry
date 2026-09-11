@@ -1,5 +1,10 @@
 # Airflow 3 Failure Collection
 
+The package declares Airflow `>=3.1.8,<4` and registers both `apache_airflow_provider`
+and `airflow.plugins` entry points. Compatibility tests separately check provider discovery
+and listener registration with default lazy settings on 3.1.8 and 3.3.1. These package tests
+do not replace failure collection against a running Airflow server.
+
 DagSentry uses two Airflow public extension points because the listener observes both retryable and
 final failures:
 

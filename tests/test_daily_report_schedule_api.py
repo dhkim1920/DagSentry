@@ -179,7 +179,9 @@ def test_schedule_api_validates_admin_access_timezone_and_completed_date(
     assert unauthenticated.status_code == 401
     assert invalid_timezone.status_code == 422
     assert future.status_code == 422
-    assert future.json() == {"detail": "report_date must be a completed UTC date"}
+    assert future.json() == {
+        "detail": "report_date must be a completed date in the schedule timezone"
+    }
 
 
 def test_viewer_cannot_change_daily_report_schedule(

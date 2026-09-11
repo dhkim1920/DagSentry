@@ -1,5 +1,9 @@
 # LLM Provider and AI Diagnosis
 
+All five providers use the shared `ai-diagnosis-ko-v1` instructions: root cause and actions are
+in Korean, while evidence text preserves the exact original excerpt including whitespace.
+Evidence validation checks citation equality, not the correctness of the causal conclusion.
+
 DagSentry's Core depends only on the `LLMProvider` protocol. OpenAI, Azure OpenAI, Anthropic, AWS
 Bedrock, and Ollama adapters implement the contract; Provider-specific request fields and response
 parsing remain under `dagsentry.providers`.
@@ -35,7 +39,7 @@ Enable the OpenAI Provider explicitly:
 ```dotenv
 DAGSENTRY_LLM_PROVIDER=openai
 DAGSENTRY_LLM_MODEL=gpt-5.6-luna
-DAGSENTRY_LLM_PROMPT_VERSION=ai-diagnosis-v1
+DAGSENTRY_LLM_PROMPT_VERSION=ai-diagnosis-ko-v1
 DAGSENTRY_OPENAI_API_KEY=replace-with-an-openai-api-key
 ```
 

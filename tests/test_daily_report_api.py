@@ -151,7 +151,7 @@ def test_get_daily_report_returns_stored_rule_and_ai_content(
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["rule_based_report"]["overview"].startswith("3 failure attempt")
+    assert payload["rule_based_report"]["overview"].startswith("UTC 기준 실패 3회")
     assert payload["ai_summary"]["key_changes"] == ["Repeated network failures remain elevated."]
     assert payload["status"] == "DELIVERED"
 

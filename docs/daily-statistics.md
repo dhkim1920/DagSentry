@@ -1,4 +1,4 @@
-# Daily Statistics v1
+# Daily Statistics v2
 
 DagSentry builds daily report inputs with `aggregate_daily_statistics`. Every value is calculated
 from PostgreSQL through SQLAlchemy SQL expressions; neither an LLM nor report prose can alter the
@@ -6,10 +6,10 @@ numbers.
 
 ## Period and scope
 
-One report covers exactly one UTC calendar day using a half-open interval:
+One report covers one local calendar day, converted to UTC before querying (including SQLite):
 
 ```text
-[report_date 00:00:00Z, next day 00:00:00Z)
+[local report_date midnight, next local midnight), expressed in UTC
 ```
 
 The report is scoped to one normalized `environment`. A value exactly at the first midnight is
@@ -42,16 +42,20 @@ An empty period returns zero counts for every classification and `null` mean dur
 
 ## Versioned JSON contract
 
+`top_failures` ranks up to 20 DAG/Task groups by failed event count, then DAG and Task ID.
+Classification, Incident, and root cause come from the most recent diagnosed failure; last_failed_at
+includes newer failures still awaiting diagnosis. REUSED entries resolve original diagnosis content.
+
 `DailyStatistics` is a frozen Pydantic contract with unknown fields forbidden. Its JSON Schema is
-available through `DailyStatistics.model_json_schema()` and fixes both `schema_version` to `1` and
-`timezone` to `UTC`. Consumers must reject unsupported schema versions rather than silently
+available through `DailyStatistics.model_json_schema()` with `schema_version=2` and an IANA
+`timezone`. Consumers must reject unsupported schema versions rather than silently
 reinterpreting a field.
 
 Example shape:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "report_date": "2026-08-12",
   "timezone": "UTC",
   "period_start": "2026-08-12T00:00:00Z",

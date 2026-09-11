@@ -416,6 +416,9 @@ class IncidentRecord(Base):
     initial_failure_event_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("failure_events.id", ondelete="CASCADE")
     )
+    final_failure_event_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("failure_events.id", ondelete="SET NULL")
+    )
     status: Mapped[IncidentStatus] = mapped_column(
         Enum(IncidentStatus, native_enum=False, create_constraint=True, name="incident_status"),
         default=IncidentStatus.OPEN,

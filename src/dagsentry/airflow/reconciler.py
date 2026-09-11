@@ -254,19 +254,24 @@ class AirflowTaskHistoryClient:
         updated_at_gte: datetime,
         updated_at_lt: datetime,
     ) -> Iterator[TaskInstanceReference]:
-        """Iterate a fixed update window using Airflow cursor pagination."""
-        cursor = ""
+        """Iterate a fixed update window using offset or advertised cursor pagination."""
+        cursor: str | None = None
+        offset = 0
         seen_cursors: set[str] = set()
-        while True:
+        for _ in range(10_000):
+            params: dict[str, str | int | float | bool | None] = {
+                "updated_at_gte": _utc_datetime(updated_at_gte).isoformat(),
+                "updated_at_lt": _utc_datetime(updated_at_lt).isoformat(),
+                "limit": self.settings.page_size,
+                "order_by": "id",
+            }
+            if cursor is None:
+                params["offset"] = offset
+            else:
+                params["cursor"] = cursor
             body = self._get_json(
                 "/api/v2/dags/~/dagRuns/~/taskInstances",
-                params={
-                    "cursor": cursor,
-                    "updated_at_gte": _utc_datetime(updated_at_gte).isoformat(),
-                    "updated_at_lt": _utc_datetime(updated_at_lt).isoformat(),
-                    "limit": self.settings.page_size,
-                    "order_by": "id",
-                },
+                params=params,
             )
             raw_items = body.get("task_instances")
             if not isinstance(raw_items, list):
@@ -274,6 +279,16 @@ class AirflowTaskHistoryClient:
             for raw_item in raw_items:
                 yield TaskInstanceReference.model_validate(raw_item)
 
+            if not raw_items:
+                return
+            if "next_cursor" not in body:
+                if cursor is not None:
+                    raise ReconcilerResponseError("Airflow cursor response is missing next_cursor")
+                offset += len(raw_items)
+                total = body.get("total_entries")
+                if type(total) is int and total >= 0 and offset >= total:
+                    return
+                continue
             next_cursor = body.get("next_cursor")
             if next_cursor is None:
                 return
@@ -283,6 +298,7 @@ class AirflowTaskHistoryClient:
                 raise ReconcilerResponseError("Airflow cursor pagination repeated a cursor")
             seen_cursors.add(next_cursor)
             cursor = next_cursor
+        raise ReconcilerResponseError("Airflow pagination exceeded page limit of 10000")
 
     def task_tries(self, reference: TaskInstanceReference) -> list[TaskTryHistory]:
         """Return every historical Try for an exact mapped TaskInstance."""

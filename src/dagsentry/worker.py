@@ -115,8 +115,10 @@ class DiagnosisWorker:
         while not self.stop_event.is_set():
             try:
                 processed = self.process_one()
-            except SQLAlchemyError:
-                logger.exception("worker database operation failed")
+            except SQLAlchemyError as error:
+                logger.error(
+                    "worker database operation failed exception_type=%s", type(error).__name__
+                )
                 processed = False
             if not processed:
                 self.stop_event.wait(self.options.poll_interval_seconds)
@@ -163,6 +165,7 @@ class DiagnosisWorker:
             )
             expired_count = int(getattr(expired, "rowcount", 0))
             if expired_count > 0:
+                logger.error("worker stale jobs marked DEAD count=%d", expired_count)
                 increment_counter(
                     session,
                     "dagsentry_worker_jobs_total",
@@ -260,7 +263,7 @@ class DiagnosisWorker:
                 stage=stage,
                 category="attempts_exhausted" if exhausted and retryable else category,
                 exception_type=type(error).__name__,
-                message=str(error),
+                message="Diagnosis processing failed",
             )
             record.updated_at = now
             increment_counter(
@@ -268,6 +271,15 @@ class DiagnosisWorker:
                 "dagsentry_worker_jobs_total",
                 "retry" if retryable and not exhausted else "dead",
                 now=now,
+            )
+            logger.log(
+                logging.WARNING if retryable and not exhausted else logging.ERROR,
+                "worker job %s outbox_id=%s failure_event_id=%s attempt=%d exception_type=%s",
+                "retry scheduled" if retryable and not exhausted else "DEAD",
+                job.outbox_id,
+                job.failure_event_id,
+                job.attempt_count,
+                type(error).__name__,
             )
 
     def _locked_owned_job(self, session: Session, job: ClaimedJob) -> DiagnosisOutboxRecord | None:

@@ -285,6 +285,8 @@ def test_list_filters_and_detail_include_failures(
         str(failure_id) for failure_id in failure_ids
     }
     assert all(item["diagnoses"] == [] for item in detail.json()["failures"])
+    assert sum(item["is_initial_failure"] for item in detail.json()["failures"]) == 1
+    assert sum(item["is_final_failure"] for item in detail.json()["failures"]) == 1
     assert all(item["error_signature"] is not None for item in detail.json()["failures"])
     assert all(item["airflow_log_url"] is None for item in detail.json()["failures"])
     assert detail.json()["transitions"] == []

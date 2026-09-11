@@ -6,11 +6,12 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import select, text
+from sqlalchemy import select, text, update
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
+from dagsentry.domain.failure_event import FailureState
 from dagsentry.domain.incident import (
     ACTIVE_INCIDENT_STATUSES,
     TERMINAL_INCIDENT_STATUSES,
@@ -37,6 +38,7 @@ class IncidentCorrelationResult:
     incident_created: bool
     failure_link_created: bool
     is_initial_failure: bool
+    is_final_failure: bool = False
 
 
 @dataclass(frozen=True)
@@ -92,6 +94,7 @@ def correlate_failure(
                 incident_created=False,
                 failure_link_created=False,
                 is_initial_failure=incident.initial_failure_event_id == failure_event_id,
+                is_final_failure=_claim_final_failure(session, incident.id, failure),
             )
 
         incident_id, incident_created = _find_or_create_incident(
@@ -117,7 +120,28 @@ def correlate_failure(
             incident_created=incident_created,
             failure_link_created=True,
             is_initial_failure=incident_created,
+            is_final_failure=_claim_final_failure(session, incident_id, failure),
         )
+
+
+def _claim_final_failure(session: Session, incident_id: UUID, failure: FailureEventRecord) -> bool:
+    if failure.state != FailureState.FAILED:
+        return False
+    session.execute(
+        update(IncidentRecord)
+        .where(
+            IncidentRecord.id == incident_id,
+            IncidentRecord.final_failure_event_id.is_(None),
+            IncidentRecord.status.in_(ACTIVE_INCIDENT_STATUSES),
+        )
+        .values(final_failure_event_id=failure.id)
+    )
+    return (
+        session.scalar(
+            select(IncidentRecord.final_failure_event_id).where(IncidentRecord.id == incident_id)
+        )
+        == failure.id
+    )
 
 
 def transition_incident(

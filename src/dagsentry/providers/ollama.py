@@ -21,6 +21,7 @@ from dagsentry.llm import (
     LLMProviderError,
     LLMResult,
 )
+from dagsentry.prompts import AI_DIAGNOSIS_INSTRUCTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -125,11 +126,7 @@ class OllamaProvider:
             "messages": [
                 {
                     "role": "system",
-                    "content": (
-                        "Diagnose the Airflow Task failure using only the supplied JSON context. "
-                        "Every evidence item must copy one supplied excerpt line_id and text "
-                        "exactly."
-                    ),
+                    "content": AI_DIAGNOSIS_INSTRUCTIONS,
                 },
                 {
                     "role": "user",

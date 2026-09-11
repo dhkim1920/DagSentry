@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
@@ -103,7 +104,7 @@ def test_retryable_failure_uses_exponential_backoff(session_factory: SessionFact
     assert json.loads(record.last_error or "") == {
         "category": "retryable",
         "exception_type": "DiagnosisProcessingError",
-        "message": "Airflow API timed out",
+        "message": "Diagnosis processing failed",
         "stage": "log_collection",
     }
     with session_factory() as session:
@@ -379,6 +380,7 @@ def test_shutdown_finishes_current_job_without_claiming_another(
 
 def test_worker_loop_continues_after_temporary_database_error(
     session_factory: SessionFactory,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     class DatabaseRecoversWorker(DiagnosisWorker):
         calls = 0
@@ -386,7 +388,7 @@ def test_worker_loop_continues_after_temporary_database_error(
         def process_one(self) -> bool:
             self.calls += 1
             if self.calls == 1:
-                raise SQLAlchemyError("database unavailable")
+                raise SQLAlchemyError("database-password-disposable-secret")
             self.request_stop()
             return False
 
@@ -400,3 +402,36 @@ def test_worker_loop_continues_after_temporary_database_error(
     worker.run()
 
     assert worker.calls == 2
+    assert "database-password-disposable-secret" not in caplog.text
+    assert "SQLAlchemyError" in caplog.text
+
+
+def test_worker_retry_and_dead_logs_do_not_expose_exception_message(
+    session_factory: SessionFactory,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    failure_id = add_job(session_factory)
+
+    def fail(_: UUID) -> None:
+        raise RuntimeError("https://example.test?token=disposable-private-token")
+
+    worker = DiagnosisWorker(
+        session_factory,
+        fail,
+        "test-worker",
+        clock=lambda: NOW,
+        options=WorkerOptions(max_attempts=2, backoff_base_seconds=0, backoff_max_seconds=0),
+    )
+    with caplog.at_level(logging.WARNING, logger="dagsentry.worker"):
+        assert worker.process_one()
+        assert worker.process_one()
+    record = get_outbox(session_factory, failure_id)
+    assert record.status == OutboxStatus.DEAD
+    assert "disposable-private-token" not in caplog.text
+    assert "disposable-private-token" not in (record.last_error or "")
+    assert [item.levelno for item in caplog.records if item.name == "dagsentry.worker"] == [
+        logging.WARNING,
+        logging.ERROR,
+    ]
+    assert str(failure_id) in caplog.text
+    assert "RuntimeError" in caplog.text

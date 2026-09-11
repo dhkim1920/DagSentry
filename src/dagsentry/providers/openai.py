@@ -21,6 +21,7 @@ from dagsentry.llm import (
     LLMResult,
 )
 from dagsentry.outbound_urls import require_credential_endpoint_security
+from dagsentry.prompts import AI_DIAGNOSIS_INSTRUCTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -145,10 +146,7 @@ class OpenAIProvider:
         return {
             "model": self.config.model,
             "store": False,
-            "instructions": (
-                "Diagnose the Airflow Task failure using only the supplied JSON context. "
-                "Every evidence item must copy one supplied excerpt line_id and text exactly."
-            ),
+            "instructions": AI_DIAGNOSIS_INSTRUCTIONS,
             "input": json.dumps(
                 request.to_json_value(),
                 ensure_ascii=False,

@@ -1,5 +1,9 @@
 # Worker Recovery
 
+Retry scheduling logs WARNING and DEAD transitions log ERROR. Logs contain safe identifiers
+and exception types, never exception messages or database tracebacks. Outbox error metadata retains
+the stage/category/type and a fixed message instead of copying the original exception text.
+
 DagSentry automatically recovers Diagnosis Outbox work left in `PROCESSING` when a Worker exits
 without finalizing it. The default stale-lock timeout is 900 seconds and can be changed with
 `DAGSENTRY_WORKER_STALE_LOCK_TIMEOUT_SECONDS`.

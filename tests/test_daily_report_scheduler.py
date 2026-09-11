@@ -108,6 +108,7 @@ def test_claimed_run_executes_daily_report_once_and_records_result(
     )
     report_id = queued.id
     calls: list[tuple[date, str]] = []
+    expected_factory = session_factory
 
     def run_report(
         report_date: date,
@@ -117,7 +118,11 @@ def test_claimed_run_executes_daily_report_once_and_records_result(
         notification_connection_id: object,
         use_ai_summary: bool,
         report_title: str | None,
+        timezone: str,
+        session_factory: SessionFactory,
     ) -> DailyReportRunResult:
+        assert timezone == schedule.timezone
+        assert session_factory is expected_factory
         calls.append((report_date, environment))
         return DailyReportRunResult(
             report_id=report_id,

@@ -6,7 +6,10 @@ import pytest
 
 pytest.importorskip("airflow")
 
-from airflow.dag_processing.dagbag import DagBag  # noqa: E402
+try:
+    from airflow.dag_processing.dagbag import DagBag
+except ImportError:
+    from airflow.models.dagbag import DagBag  # type: ignore[no-redef]
 
 
 def test_v01_failure_scenario_dag_loads_with_retry_and_mapping() -> None:

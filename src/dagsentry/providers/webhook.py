@@ -106,7 +106,12 @@ class WebhookNotificationProvider:
                 response = self.http_client.post(
                     self.config.url,
                     headers=headers,
-                    json=payload.model_dump(mode="json"),
+                    json=payload.model_dump(
+                        mode="json",
+                        exclude={"failure_state"}
+                        if isinstance(payload, NotificationPayload)
+                        else None,
+                    ),
                     timeout=self.config.timeout_seconds,
                 )
             except httpx.TimeoutException:

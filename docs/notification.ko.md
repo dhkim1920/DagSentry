@@ -14,9 +14,14 @@ Airflow 로그 링크, Diagnosis 소스, 명시적 `is_rule_fallback` 플래그�
 상태, 시도 수와 정제된 실패 분류, 마지막 HTTP 상태 및 전송 시각, 정확한 JSON payload snapshot 한 행을
 저장합니다.
 
-Incident 인지 전송에서는 새 Incident의 최초 Failure만 전체 알림을 받습니다. 같은 활성 Incident에
-연관된 이후 Failure는 Provider를 호출하지 않으며 `REPEATED_ACTIVE_INCIDENT` 사유와 시도 수 0의
-`SUPPRESSED` 행으로 저장합니다. 최초 전송이나 억제 Diagnosis 재시도는 멱등적입니다.
+최초 실패를 발송하고 활성 Incident당 최종 FAILED 이벤트를 추가 1회 발송합니다. 최초부터 FAILED면
+두 대상이 같은 이벤트이므로 한 번만 발송합니다. 0019는 기존 Incident의 최초 FAILED도 선점 처리합니다.
+조건부 UPDATE로 최종 이벤트를 선점하며 재시도는 기존 전달 키와 완료 진단을 사용합니다.
+반복 retry는 REPEATED_ACTIVE_INCIDENT, 반복 FAILED는 REPEATED_FINAL_FAILURE로 억제합니다.
+
+Teams와 SMTP는 한국어 라벨과 기본 Asia/Seoul 시각을 사용하며 `DAGSENTRY_DISPLAY_TIMEZONE`으로
+변경할 수 있습니다. Slack·Discord도 실패 상태를 구분합니다. 저장 payload에는 `failure_state`가
+있지만 Webhook은 추가 필드를 거부하는 엄격한 수신자와 기존 기계 계약을 유지하도록 이 필드를 제외합니다.
 
 시간 또는 횟수 기반 reminder 정책은 없습니다. cadence와 reset 동작의 운영 요구사항이 정해진 뒤에만
 reminder를 추가합니다. Incident가 더 이상 활성 상태가 아니면 일치하는 이후 Failure는 새 Incident와

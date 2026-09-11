@@ -69,9 +69,11 @@ jobs:
       matrix:
         airflow:
           - name: minimum
+            specifier: apache-airflow==3.1.8
+            version: "3.1.8"
+          - name: reference
             specifier: apache-airflow==3.3.1
-          - name: maximum
-            specifier: apache-airflow>=3.3.1,<4
+            version: "3.3.1"
     env:
       UV_PYTHON: "3.11"
 
@@ -88,13 +90,15 @@ jobs:
         run: uv pip install --upgrade "${{ matrix.airflow.specifier }}"
 
       - name: Test Airflow plugin compatibility
-        run: uv run pytest tests/airflow
+        run: |
+          uv run --no-sync python -c 'import importlib.metadata as m; assert m.version("apache-airflow") == "${{ matrix.airflow.version }}"'
+          uv run --no-sync pytest tests/airflow
 
       - name: Verify Airflow provider discovery
         env:
-          AIRFLOW__CORE__LAZY_DISCOVER_PROVIDERS: "False"
-          AIRFLOW__CORE__LAZY_LOAD_PLUGINS: "False"
-        run: uv run airflow plugins
+          AIRFLOW__CORE__LAZY_DISCOVER_PROVIDERS: "True"
+          AIRFLOW__CORE__LAZY_LOAD_PLUGINS: "True"
+        run: uv run --no-sync airflow plugins
 
   production-compose:
     runs-on: ubuntu-latest

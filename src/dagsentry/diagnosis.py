@@ -18,7 +18,6 @@ from dagsentry.domain.diagnosis import (
     DiagnosisSource,
     DiagnosisValidationStatus,
     DiagnosisVersions,
-    RetryDecision,
 )
 from dagsentry.evidence_validation import AIEvidenceValidationResult
 from dagsentry.llm import LLMResult
@@ -196,8 +195,8 @@ def _rule_diagnosis_draft(
                 for value in result.extracted_values
             ),
             evidence=evidence,
-            recommended_actions=(),
-            retry_decision=RetryDecision.UNKNOWN,
+            recommended_actions=result.recommended_actions,
+            retry_decision=result.retry_decision,
         ),
     )
 

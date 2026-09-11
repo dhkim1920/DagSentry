@@ -382,7 +382,7 @@ def test_provider_can_be_enabled_from_settings() -> None:
     openai = OpenAIProvider.from_settings(settings)
 
     assert openai.config.model == "test-model"
-    assert openai.config.prompt_version == "ai-diagnosis-v1"
+    assert openai.config.prompt_version == "ai-diagnosis-ko-v1"
     assert "secret" not in repr(openai.config)
 
 

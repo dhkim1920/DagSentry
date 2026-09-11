@@ -637,7 +637,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "alembic", specifier = ">=1.16,<2" },
-    { name = "apache-airflow", marker = "extra == 'airflow'", specifier = ">=3.3.1,<4" },
+    { name = "apache-airflow", marker = "extra == 'airflow'", specifier = ">=3.1.8,<4" },
     { name = "apscheduler", specifier = ">=3.11,<4" },
     { name = "argon2-cffi", specifier = ">=23.1,<26" },
     { name = "boto3", specifier = ">=1.43,<2" },

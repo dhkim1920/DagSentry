@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-airflow = ["apache-airflow>=3.3.1,<4"]
+airflow = ["apache-airflow>=3.1.8,<4"]
 
 [project.urls]
 Repository = "https://github.com/dhkim1920/DagSentry"
@@ -42,6 +42,9 @@ dagsentry-admin = "dagsentry.admin_app:main"
 
 [project.entry-points.apache_airflow_provider]
 provider_info = "dagsentry.airflow.provider:get_provider_info"
+
+[project.entry-points."airflow.plugins"]
+dagsentry = "dagsentry.airflow.plugin:DagSentryPlugin"
 
 [dependency-groups]
 dev = [

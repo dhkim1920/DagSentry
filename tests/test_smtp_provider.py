@@ -80,7 +80,10 @@ def test_smtp_sends_complete_diagnosis_email() -> None:
 
     message, sender, recipients = client.messages[0]
     body = message.get_content()
-    assert message["Subject"] == "[DagSentry] DAG_CODE: orders.load failed"
+    assert message["Subject"] == "[DagSentry] 최종 실패 (FAILED): orders.load"
+    assert "KST" in body
+    assert "권장 조치:" in body
+    assert "근거:" in body
     assert message["X-DagSentry-Delivery-Key"] == "delivery-key"
     assert sender == "alerts@example.test"
     assert recipients == ["oncall@example.test"]

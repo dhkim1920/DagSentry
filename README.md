@@ -13,6 +13,7 @@ DagSentry is an Airflow 3 failure intelligence and incident management service.
 - [Version compatibility](docs/version-compatibility.md)
 - [Production security checklist](docs/security-checklist.md)
 - [한국어 문서](docs/README.ko.md)
+- [Implementation and verification status (T00–T16)](docs/implementation-status.ko.md)
 
 ### Core and Airflow
 
@@ -58,7 +59,7 @@ DagSentry is an Airflow 3 failure intelligence and incident management service.
 ## Requirements
 
 - Python 3.11 or 3.12
-- Airflow 3.3.1 or newer for the optional collector integration
+- Airflow >=3.1.8,<4 for the optional collector integration (3.1.8 and 3.3.1 checked)
 - [uv](https://docs.astral.sh/uv/)
 
 ## Development
@@ -130,7 +131,7 @@ DagSentry currently provides:
 - Incident correlation, audited lifecycle transitions, notification suppression, and automatic
   recovery checks;
 - missed Failure reconciliation through the Airflow Public REST API;
-- reproducible UTC daily Statistics, rule-based reports, optional AI narrative, and idempotent
+- reproducible timezone-aware daily Statistics, rule-based reports, optional AI narrative, and idempotent
   scheduled delivery;
 - Webhook, Slack, Microsoft Teams, Discord, and SMTP notification delivery;
 - OpenAI, Azure OpenAI, Anthropic, AWS Bedrock, and Ollama Diagnosis Providers through a shared LLM

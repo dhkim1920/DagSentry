@@ -1,14 +1,14 @@
-# 일일 통계 v1
+# 일일 통계 v2
 
 DagSentry는 `aggregate_daily_statistics`로 일일 리포트 입력을 만듭니다. 모든 값은 SQLAlchemy SQL 표현식으로
 PostgreSQL에서 계산하며 LLM이나 리포트 문장이 숫자를 바꿀 수 없습니다.
 
 ## 기간과 범위
 
-리포트 하나는 다음 반열린 구간의 UTC 달력 하루 정확히 하나를 다룹니다.
+리포트는 다음 로컬 달력 하루를 UTC로 변환해 조회합니다(SQLite도 UTC로 비교).
 
 ```text
-[report_date 00:00:00Z, next day 00:00:00Z)
+[로컬 report_date 자정, 다음 로컬 자정), UTC로 변환
 ```
 
 리포트는 정규화한 환경 하나에 한정됩니다. 첫 자정의 값은 포함하고 다음 자정의 값은 다음 리포트에 속합니다.
@@ -34,7 +34,10 @@ PostgreSQL에서 계산하며 LLM이나 리포트 문장이 숫자를 바꿀 수
 ## 버전 JSON 계약
 
 `DailyStatistics`는 알 수 없는 필드를 금지한 frozen Pydantic 계약입니다.
-`DailyStatistics.model_json_schema()`는 `schema_version=1`, `timezone=UTC`를 고정합니다. consumer는
+`DailyStatistics.model_json_schema()`는 `schema_version=2`, IANA `timezone`을 사용합니다. consumer는
 지원하지 않는 schema version을 필드 의미를 임의 재해석하지 말고 거부해야 합니다.
 
-영문 원문: [Daily Statistics v1](daily-statistics.md)
+top_failures는 DAG/Task별 실패 이벤트 수 내림차순 상위 20개입니다. 분류·Incident·원인 설명은
+가장 최근 진단된 실패에서, 마지막 실패 시각은 진단 유무와 관계없이 집계합니다.
+
+영문 원문: [Daily Statistics v2](daily-statistics.md)

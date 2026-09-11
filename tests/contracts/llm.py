@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 
+import httpx
 import pytest
 
 from dagsentry.domain.diagnosis import ErrorClassification, RetryDecision
@@ -23,6 +24,7 @@ from dagsentry.llm import (
     LLMProviderError,
     RuleDiagnosisContext,
 )
+from dagsentry.prompts import AI_DIAGNOSIS_INSTRUCTIONS
 
 
 class LLMContractOutcome(StrEnum):
@@ -151,6 +153,14 @@ class LLMProviderContract(ABC):
         expected_context = json.loads(json.dumps(request.to_json_value()))
         assert self.extract_request_context(captured) == expected_context
         self.assert_structured_output_requested(captured)
+        body = (
+            captured.content.decode()
+            if isinstance(captured, httpx.Request)
+            else json.dumps(captured)
+        )
+        assert AI_DIAGNOSIS_INSTRUCTIONS in body
+        assert "Korean" in AI_DIAGNOSIS_INSTRUCTIONS
+        assert "Do not translate, trim, or change whitespace" in AI_DIAGNOSIS_INSTRUCTIONS
 
     def test_contract_returns_non_secret_call_metadata(self) -> None:
         scenario = LLMContractScenario([LLMContractOutcome.SUCCESS])

@@ -277,6 +277,13 @@ def test_previous_minor_upgrade_preserves_v02_incident_data(
             ).one()
             assert incident.status == "ACKNOWLEDGED"
             assert incident.initial_failure_event_id == failure_event_id
+            assert (
+                connection.scalar(
+                    text("SELECT final_failure_event_id FROM incidents WHERE id = :id"),
+                    {"id": incident_id},
+                )
+                == failure_event_id
+            )
 
             delivery = connection.execute(
                 select(

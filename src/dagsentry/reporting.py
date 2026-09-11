@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy import ColumnElement, Select, exists, func, select
@@ -15,10 +15,13 @@ from dagsentry.domain.reporting import (
     ErrorSignatureStatistics,
     IncidentStatistics,
     MeanTimeStatistics,
+    TopFailure,
+    report_period,
 )
 from dagsentry.models import (
     DiagnosisRecord,
     FailureEventRecord,
+    IncidentFailureRecord,
     IncidentRecord,
     IncidentStateTransitionRecord,
 )
@@ -29,10 +32,10 @@ def aggregate_daily_statistics(
     *,
     report_date: date,
     environment: str,
+    timezone: str = "UTC",
 ) -> DailyStatistics:
     """Aggregate a stable UTC half-open day using SQL-derived values only."""
-    period_start = datetime.combine(report_date, time.min, tzinfo=UTC)
-    period_end = period_start + timedelta(days=1)
+    period_start, period_end = report_period(report_date, timezone)
     failure_filter = (
         FailureEventRecord.environment == environment,
         FailureEventRecord.observed_at >= period_start,
@@ -195,6 +198,7 @@ def aggregate_daily_statistics(
 
     return DailyStatistics(
         report_date=report_date,
+        timezone=timezone,
         period_start=period_start,
         period_end=period_end,
         environment=environment,
@@ -211,6 +215,7 @@ def aggregate_daily_statistics(
             repeated=repeated_signatures,
         ),
         classification_counts=classification_counts,
+        top_failures=_top_failures(session, failure_filter),
         mean_time=MeanTimeStatistics(
             recovery_seconds=_mean_transition_seconds(
                 session,
@@ -228,6 +233,65 @@ def aggregate_daily_statistics(
             ),
         ),
     )
+
+
+def _top_failures(
+    session: Session, failure_filter: tuple[ColumnElement[bool], ...]
+) -> tuple[TopFailure, ...]:
+    counts = session.execute(
+        select(
+            FailureEventRecord.dag_id,
+            FailureEventRecord.task_id,
+            func.count().label("failure_count"),
+            func.max(FailureEventRecord.observed_at),
+        )
+        .where(*failure_filter)
+        .group_by(FailureEventRecord.dag_id, FailureEventRecord.task_id)
+        .order_by(func.count().desc(), FailureEventRecord.dag_id, FailureEventRecord.task_id)
+        .limit(20)
+    ).all()
+    result: list[TopFailure] = []
+    for dag_id, task_id, count, last_failed in counts:
+        latest = session.execute(
+            select(DiagnosisRecord, IncidentRecord)
+            .join(FailureEventRecord, FailureEventRecord.id == DiagnosisRecord.failure_event_id)
+            .outerjoin(
+                IncidentFailureRecord,
+                IncidentFailureRecord.failure_event_id == FailureEventRecord.id,
+            )
+            .outerjoin(IncidentRecord, IncidentRecord.id == IncidentFailureRecord.incident_id)
+            .where(
+                *failure_filter,
+                FailureEventRecord.dag_id == dag_id,
+                FailureEventRecord.task_id == task_id,
+                DiagnosisRecord.validation_status == DiagnosisValidationStatus.PASSED,
+            )
+            .order_by(
+                FailureEventRecord.observed_at.desc(),
+                FailureEventRecord.id.desc(),
+                DiagnosisRecord.created_at.desc(),
+                DiagnosisRecord.id.desc(),
+            )
+            .limit(1)
+        ).first()
+        diagnosis, incident = latest if latest is not None else (None, None)
+        if diagnosis is not None and diagnosis.reused_from_diagnosis_id is not None:
+            diagnosis = session.get(DiagnosisRecord, diagnosis.reused_from_diagnosis_id)
+        result.append(
+            TopFailure(
+                dag_id=dag_id,
+                task_id=task_id,
+                failure_count=count,
+                last_failed_at=last_failed.replace(tzinfo=UTC)
+                if last_failed.tzinfo is None
+                else last_failed.astimezone(UTC),
+                classification=diagnosis.classification if diagnosis is not None else None,
+                root_cause=diagnosis.root_cause if diagnosis is not None else None,
+                incident_id=incident.id if incident is not None else None,
+                incident_status=incident.status if incident is not None else None,
+            )
+        )
+    return tuple(result)
 
 
 def _count(session: Session, statement: Select[tuple[int]]) -> int:

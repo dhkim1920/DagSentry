@@ -1,5 +1,12 @@
 # Notification Provider 계약
 
+Teams primary와 SMTP fallback은 환경 설정에서 `DAGSENTRY_NOTIFICATION_PROVIDER=teams`,
+`DAGSENTRY_NOTIFICATION_FALLBACK_PROVIDERS=["smtp"]` 및 두 Provider의 연결 값을 지정합니다.
+기존 설치의 기본 fallback 목록은 빈 배열입니다. 순서대로 시도해 첫 성공에서 종료하고
+`teams>smtp` 전달 기록 한 행과 동일 전달 키를 사용합니다. 모두 실패하면 primary 오류로 재시도를
+판단합니다. 로그에는 Provider 이름과 오류 분류만 남깁니다. Daily Report와 Recovery의 재시도는
+기존 Provider가 현재 체인의 구성원이면 재개합니다. DB 연결의 알림 범위는 기존 Slack만 유지합니다.
+
 DagSentry의 재사용 가능한 계약 테스트는 Diagnosis 또는 Incident Core에 벤더 분기를 추가하지 않고 HTTP
 Notification Provider가 공유하는 동작을 검증합니다. Webhook, Slack, Teams, Discord 어댑터가 이 계약을
 구현합니다.

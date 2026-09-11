@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -100,7 +103,9 @@ def test_airflow_openapi_exposes_reconciler_task_history_contract() -> None:
     assert "updated_at_lt" in collection_contract
     assert "- name: task_id" in collection_contract
     assert "- name: map_index" in collection_contract
-    assert "next_cursor" in collection_contract
+    assert "- name: limit" in collection_contract
+    assert "- name: offset" in collection_contract
+    assert "- name: order_by" in collection_contract
     assert "$ref: '#/components/schemas/TaskInstanceCollectionResponse'" in collection_contract
 
     tries_path = "/api/v2/dags/{dag_id}/dagRuns/{dag_run_id}/taskInstances/{task_id}/tries:"
@@ -109,3 +114,36 @@ def test_airflow_openapi_exposes_reconciler_task_history_contract() -> None:
     tries_contract = contract[tries_start:tries_end]
     assert "map_index" in tries_contract
     assert "$ref: '#/components/schemas/TaskInstanceHistoryCollectionResponse'" in tries_contract
+
+
+def test_default_lazy_settings_discover_plugin_and_listener(tmp_path: Path) -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            """
+from importlib.metadata import entry_points
+from airflow.configuration import conf
+from airflow.listeners.listener import get_listener_manager
+from airflow.providers_manager import ProvidersManager
+assert conf.getboolean('core', 'lazy_discover_providers')
+assert conf.getboolean('core', 'lazy_load_plugins')
+assert any(ep.name == 'dagsentry' for ep in entry_points(group='airflow.plugins'))
+assert 'dagsentry' in ProvidersManager().providers
+manager = get_listener_manager()
+from dagsentry.airflow.listener import listener
+assert manager.pm.is_registered(listener)
+assert any(h.plugin is listener for h in manager.hook.on_task_instance_failed.get_hookimpls())
+""",
+        ],
+        env={
+            **os.environ,
+            "AIRFLOW_HOME": str(tmp_path),
+            "AIRFLOW__CORE__LAZY_DISCOVER_PROVIDERS": "True",
+            "AIRFLOW__CORE__LAZY_LOAD_PLUGINS": "True",
+        },
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr

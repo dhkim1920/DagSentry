@@ -8,9 +8,15 @@ It never reads the Airflow Metadata DB.
 ## Scan and watermark contract
 
 Each run fixes its upper boundary to the UTC task start time. It lists current TaskInstances whose
-`updated_at` falls within the scan window, follows Airflow cursor pagination, and retrieves the
+`updated_at` falls within the scan window, follows Airflow pagination, and retrieves the
 complete Try history for each exact `dag_id`, `dag_run_id`, `task_id`, and `map_index`. Historical
 states `failed` and `up_for_retry` become `RECONCILER` Failure Events; other states are ignored.
+
+The first request uses `limit`, `offset=0`, and `order_by=id`. When the response includes
+`next_cursor`, subsequent requests use that cursor; an explicit null ends the scan. Without
+that field, offset advances by the number of rows actually received. A short page does not
+end the scan: an empty page or a valid nonnegative integer `total_entries` does. Each scan
+allows at most 10,000 pages; exceeding the limit fails without advancing the watermark.
 
 The last completely processed upper boundary is stored as an ISO 8601 value in an Airflow Variable.
 The default key is `dagsentry_reconciler_watermark_{environment}`. A completed watermark is read
@@ -43,7 +49,7 @@ API and DagSentry Ingest API.
 ## Bounds and failure behavior
 
 - Airflow API calls use a 10-second timeout and at most three attempts by default.
-- Cursor pages contain at most 100 TaskInstances by default.
+- Requests ask for 100 TaskInstances by default; the server may return fewer.
 - HTTP 429, 5xx, network errors, and timeouts receive bounded retries.
 - Authentication and other permanent HTTP errors fail the DAG task without advancing the watermark.
 - All historical Tries of an updated TaskInstance are replayable; deduplication prevents duplicate

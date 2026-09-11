@@ -2436,6 +2436,12 @@ function renderFailure(failure, index) {
     textElement("p", `Occurrence ${index + 1}`, "table-kicker"),
     textElement("h3", `Try ${failure.try_number} · ${failure.state}`),
   );
+  if (failure.is_initial_failure) {
+    title.append(textElement("span", currentLanguage === "ko" ? "최초 실패" : "Initial failure", "status-pill"));
+  }
+  if (failure.is_final_failure) {
+    title.append(textElement("span", currentLanguage === "ko" ? "최종 실패 알림 대상" : "Final failure notification", "status-pill"));
+  }
   const metadata = document.createElement("div");
   metadata.className = "failure-metadata";
   metadata.append(
@@ -3106,12 +3112,13 @@ function populateReportScheduleForm(schedule) {
   elements.reportScheduleTitle.value = schedule?.report_title || "DagSentry 일일 장애 리포트";
   elements.reportScheduleEnvironment.value = schedule?.environment || "production";
   elements.reportScheduleNotificationConnection.value = schedule?.notification_connection_id || "";
-  elements.reportScheduleTime.value = schedule?.run_at_local_time?.slice(0, 5) || "00:10";
-  elements.reportScheduleTimezone.value = schedule?.timezone || "UTC";
+  elements.reportScheduleTime.value = schedule?.run_at_local_time?.slice(0, 5) || "09:00";
+  elements.reportScheduleTimezone.value = schedule?.timezone || "Asia/Seoul";
   elements.reportScheduleAiSummary.checked = schedule?.use_ai_summary ?? false;
   elements.reportScheduleEnabled.checked = schedule?.enabled ?? true;
   elements.reportManualRunForm.hidden = !schedule;
-  const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+  const localToday = new Intl.DateTimeFormat("en-CA", { timeZone: schedule?.timezone || "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const yesterday = new Date(Date.parse(`${localToday}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
   elements.reportManualDate.max = yesterday;
   if (!elements.reportManualDate.value) {
     elements.reportManualDate.value = yesterday;
@@ -3120,8 +3127,8 @@ function populateReportScheduleForm(schedule) {
 }
 
 function renderReportSchedulePreview() {
-  const time = elements.reportScheduleTime.value || "00:10";
-  const timezone = elements.reportScheduleTimezone.value || "UTC";
+  const time = elements.reportScheduleTime.value || "09:00";
+  const timezone = elements.reportScheduleTimezone.value || "Asia/Seoul";
   elements.reportSchedulePreview.replaceChildren(
     textElement("p", elements.reportScheduleEnabled.checked
       ? `매일 ${time} ${timezone}에 실행됩니다.`
@@ -3444,7 +3451,7 @@ function renderReportDetail(report) {
     textElement("span", report.ai_summary_used ? "AI-assisted" : "Rule-based", "source-badge"),
   );
   elements.reportDetailTitle.textContent = ruleReport.title;
-  elements.reportDetailSubtitle.textContent = `${report.report_date} · UTC · schema v${report.report_schema_version}`;
+  elements.reportDetailSubtitle.textContent = `${report.report_date} · ${statistics.timezone} · schema v${report.report_schema_version}`;
   elements.reportDetailFailures.textContent = String(statistics.failure_attempts);
   elements.reportDetailTasks.textContent = String(statistics.affected_task_instances);
   elements.reportDetailDagRuns.textContent = String(statistics.affected_dag_runs);
@@ -3452,6 +3459,14 @@ function renderReportDetail(report) {
   elements.reportDetailOverview.textContent = ruleReport.overview;
   renderReportList(elements.reportDetailHighlights, ruleReport.highlights);
   renderReportList(elements.reportDetailPriorities, ruleReport.priorities);
+  document.querySelector("#report-top-failures-title").textContent = currentLanguage === "ko" ? "상위 실패 Task" : "Top failures";
+  const topFailures = (statistics.top_failures || []).map((item) =>
+    `${item.dag_id}.${item.task_id} · ${item.failure_count} · ${item.classification || "—"} · ${item.incident_id || "—"} ${item.incident_status || ""} · ${item.last_failed_at} · ${item.root_cause || "—"}`
+  );
+  if (!topFailures.length) {
+    topFailures.push(statistics.failure_attempts ? (currentLanguage === "ko" ? "상위 실패 목록 미수집" : "Top failures not collected") : (currentLanguage === "ko" ? "실패 없음" : "No failures"));
+  }
+  renderReportList(document.querySelector("#report-top-failures"), topFailures);
 
   elements.reportDetailAi.hidden = report.ai_summary === null;
   if (report.ai_summary) {

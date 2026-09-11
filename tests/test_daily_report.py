@@ -92,7 +92,7 @@ def test_rule_based_report_is_deterministic_and_complete() -> None:
     second = build_rule_based_report(statistics())
 
     assert first == second
-    assert "3 failure attempt" in first.overview
+    assert "실패 3회" in first.overview
     assert "NETWORK=3" in first.highlights[2]
     assert first.priorities
 

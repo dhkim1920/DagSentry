@@ -28,8 +28,10 @@ from dagsentry.domain.reporting import (
     DailyReportSummaryProviderError,
     DailyStatistics,
     RuleBasedDailyReport,
+    validate_timezone,
 )
 from dagsentry.models import DailyReportRecord
+from dagsentry.providers.notification_adapter import provider_names_overlap
 from dagsentry.reporting import aggregate_daily_statistics
 
 logger = logging.getLogger(__name__)
@@ -58,35 +60,35 @@ def build_rule_based_report(
         for classification in ErrorClassification
         if statistics.classification_counts[classification] > 0
     ]
-    classification_summary = ", ".join(classifications) if classifications else "none"
+    classification_summary = ", ".join(classifications) if classifications else "없음"
 
     priorities: list[str] = []
     if incident.unresolved:
-        priorities.append(f"Investigate {incident.unresolved} unresolved incident(s).")
+        priorities.append(f"미해결 장애 {incident.unresolved}건을 우선 점검하세요.")
     if signatures.repeated:
-        priorities.append(f"Review {signatures.repeated} repeated error signature(s).")
+        priorities.append(f"반복 오류 서명 {signatures.repeated}건의 재발 원인을 확인하세요.")
     if statistics.failure_attempts:
-        priorities.append("Review the highest-volume failure classifications and affected runs.")
+        priorities.append("실패가 많은 Task와 영향을 받은 실행을 점검하세요.")
     if not priorities:
-        priorities.append("No failure-driven action is required for this period.")
+        priorities.append("해당 기간에 실패로 인한 조치가 필요하지 않습니다.")
 
     return RuleBasedDailyReport(
         title=(
-            f"{report_title or 'DagSentry Daily Report'} — "
+            f"{report_title or 'DagSentry 일일 장애 리포트'} — "
             f"{statistics.environment} — {statistics.report_date}"
         ),
         overview=(
-            f"{statistics.failure_attempts} failure attempt(s) affected "
-            f"{statistics.affected_task_instances} task instance(s) across "
-            f"{statistics.affected_dag_runs} DAG run(s)."
+            f"{statistics.timezone} 기준 실패 {statistics.failure_attempts}회, "
+            f"영향받은 TaskInstance {statistics.affected_task_instances}개, "
+            f"DAG 실행 {statistics.affected_dag_runs}개입니다."
         ),
         highlights=(
-            f"Incidents: {incident.new} new, {incident.unresolved} unresolved, "
-            f"{incident.recovered} recovered.",
-            f"Error signatures: {signatures.new} new, {signatures.repeated} repeated.",
-            f"Classifications: {classification_summary}.",
-            "Mean times: recovery="
-            f"{_format_duration(statistics.mean_time.recovery_seconds)}, resolution="
+            f"장애: 신규 {incident.new}건, 미해결 {incident.unresolved}건, "
+            f"복구 {incident.recovered}건.",
+            f"오류 서명: 신규 {signatures.new}건, 반복 {signatures.repeated}건.",
+            f"분류: {classification_summary}.",
+            "평균 소요 시간: 복구="
+            f"{_format_duration(statistics.mean_time.recovery_seconds)}, 해결="
             f"{_format_duration(statistics.mean_time.resolution_seconds)}.",
         ),
         priorities=tuple(priorities),
@@ -103,11 +105,13 @@ class DailyReportService:
         notification_provider: DailyReportNotificationProvider,
         summary_provider: DailyReportSummaryProvider | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+        timezone: str = "Asia/Seoul",
     ) -> None:
         self.session_factory = session_factory
         self.notification_provider = notification_provider
         self.summary_provider = summary_provider
         self.clock = clock
+        self.timezone = validate_timezone(timezone)
 
     def run(
         self, report_date: date, environment: str, *, report_title: str | None = None
@@ -146,6 +150,7 @@ class DailyReportService:
                 session,
                 report_date=report_date,
                 environment=environment,
+                timezone=self.timezone,
             )
             rule_report = build_rule_based_report(statistics, report_title=report_title)
             ai_summary = self._optional_ai_summary(statistics, rule_report)
@@ -196,7 +201,7 @@ class DailyReportService:
         try:
             return self.summary_provider.summarize(statistics, rule_report)
         except DailyReportSummaryProviderError:
-            logger.warning("daily report AI summary failed; using rule-based report", exc_info=True)
+            logger.warning("daily report AI summary failed; using rule-based report")
             return None
 
     def _deliver(self, report_id: UUID) -> bool:
@@ -211,7 +216,7 @@ class DailyReportService:
                 raise RuntimeError("Daily report disappeared")
             if record.status == NotificationDeliveryStatus.DELIVERED:
                 return False
-            if record.provider != self.notification_provider.name:
+            if not provider_names_overlap(record.provider, self.notification_provider.name):
                 raise RuntimeError("Daily report notification Provider changed")
 
             payload = DailyReportNotificationPayload(
@@ -262,7 +267,7 @@ def make_report_delivery_key(report_date: date, environment: str) -> str:
 
 
 def _format_duration(value: float | None) -> str:
-    return "not available" if value is None else f"{value:.1f}s"
+    return "집계 없음" if value is None else f"{value:.1f}초"
 
 
 def _utc_datetime(value: datetime) -> datetime:

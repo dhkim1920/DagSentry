@@ -1,6 +1,6 @@
-# Daily Report v1
+# Daily Report v2
 
-DagSentry creates one report for each UTC date and environment. The report always contains the
+DagSentry creates one report for each local date and environment. The report always contains the
 versioned `DailyStatistics` snapshot and a complete deterministic rule-based section. AI is
 optional and may add narrative only.
 
@@ -29,7 +29,7 @@ payload without recalculating Statistics or calling AI again. Receivers also get
 
 ## Configuration and manual execution
 
-Apply migration `0017` and configure at least:
+Apply migration `0020` and configure at least:
 
 ```text
 DAGSENTRY_DATABASE_URL=postgresql+psycopg://...
@@ -37,7 +37,7 @@ DAGSENTRY_ENVIRONMENT=production
 DAGSENTRY_WEBHOOK_URL=https://...
 ```
 
-Generate yesterday's UTC report, or select a date explicitly:
+Generate yesterday's Asia/Seoul report, or select a date and `--timezone UTC` explicitly:
 
 ```shell
 uv run dagsentry-daily-report
@@ -48,11 +48,21 @@ Leave `DAGSENTRY_LLM_PROVIDER` unset for rule-only operation. To add OpenAI pros
 `DAGSENTRY_LLM_PROVIDER=openai`, `DAGSENTRY_LLM_MODEL`, `DAGSENTRY_OPENAI_API_KEY`, and optionally
 `DAGSENTRY_DAILY_REPORT_PROMPT_VERSION`.
 
+Anthropic and Bedrock report summaries use the selected diagnosis Provider's connection/model
+settings as well. All three report adapters share `daily-report-ko-v1`, serialize only Statistics
+and the rule report, and validate narrative output. HTTP retry handling is shared; Bedrock keeps
+its SDK error policy and disables SDK retries to avoid multiplying attempts. No automatic LLM
+fallback chain is configured. Provider failures preserve the rule report.
+
 ## APScheduler automation
 
 Run `dagsentry-scheduler` as a separate long-running process. Daily execution settings are stored in
 DagSentry and managed from the Daily Reports UI; the scheduler polls those settings and registers
-one daily job per enabled environment. The default schedule is `00:10 UTC`.
+one daily job per enabled environment. New UI schedules default to `09:00 Asia/Seoul`.
 
-The execution timezone controls when the job fires, while every report still covers the preceding
-completed UTC date. Scheduler runs and manual requests use the same idempotent report service.
+The execution timezone defines both the firing time and the completed local day being reported.
+CLI uses DAGSENTRY_REPORT_TIMEZONE (default Asia/Seoul). Scheduler reuses its session factory.
+Stored reports are not recalculated when diagnoses finish later or schedule timezones change.
+
+Migration 0020 preserves v1 UTC periods and adds empty top_failures. An empty migrated list does
+not mean no failures. Non-UTC reports prevent downgrade to v1: restore a backup and matching image.

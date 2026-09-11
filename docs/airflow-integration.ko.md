@@ -1,5 +1,9 @@
 # Airflow 3 Failure 수집
 
+지원 선언 범위는 Airflow `>=3.1.8,<4`이며 `apache_airflow_provider`와 `airflow.plugins`
+엔트리포인트를 모두 등록합니다. 3.1.8과 3.3.1에서 Provider 발견과 기본 lazy 설정의 Listener
+등록을 각각 검사합니다. 패키지 호환 검사는 실행 중인 Airflow 서버의 실패 수집 실연동을 대신하지 않습니다.
+
 DagSentry는 Listener가 재시도 가능 실패와 최종 실패를 모두 관찰하므로 Airflow public extension point 두 개를
 사용합니다.
 

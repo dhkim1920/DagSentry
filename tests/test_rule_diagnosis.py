@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
+from dagsentry.domain.diagnosis import RetryDecision
 from dagsentry.log_processing import LogProcessor
 from dagsentry.rule_diagnosis import (
     RULESET_VERSION,
@@ -10,6 +13,7 @@ from dagsentry.rule_diagnosis import (
     RuleDiagnosisInput,
     RuleDiagnosisResult,
     RuleEngine,
+    default_rules,
 )
 from dagsentry.task_logs import (
     LogCollectionStatus,
@@ -67,6 +71,10 @@ def test_explicit_rules_return_structured_results(
     assert result.confidence >= 0.98
     assert result.confidence_reason
     assert result.evidence_line_ids == (1,)
+    assert result.recommended_actions
+    assert all(
+        any("가" <= char <= "힣" for char in action) for action in result.recommended_actions
+    )
 
 
 def test_python_exception_requires_application_stack_frame() -> None:
@@ -88,6 +96,8 @@ ValueError: invalid order
         ),
     )
     assert result.evidence_line_ids == (4,)
+    assert result.recommended_actions
+    assert result.retry_decision == RetryDecision.NOT_RETRYABLE
 
 
 @pytest.mark.parametrize(
@@ -116,6 +126,8 @@ ValueError: invalid response
     assert result.matched_rule == "unknown.v1"
     assert result.confidence == 0.0
     assert result.evidence_line_ids == ()
+    assert result.recommended_actions
+    assert result.retry_decision == RetryDecision.UNKNOWN
 
 
 @pytest.mark.parametrize(
@@ -201,3 +213,13 @@ def test_duplicate_rule_ids_are_rejected() -> None:
 
     with pytest.raises(ValueError, match="Rule IDs must be unique"):
         RuleEngine((rules[0], rules[0]))
+
+
+def test_rule_id_breaks_identical_priority_and_line_ties() -> None:
+    from dagsentry.rule_diagnosis import PatternRule
+
+    rule = default_rules()[0]
+    assert isinstance(rule, PatternRule)
+    engine = RuleEngine((replace(rule, rule_id="z"), replace(rule, rule_id="a")))
+    result = engine.diagnose(RuleDiagnosisInput(None, LogProcessor().process("HTTP 401")))
+    assert result.matched_rule == "a"

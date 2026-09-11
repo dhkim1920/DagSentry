@@ -1,5 +1,9 @@
 # Rule Diagnosis
 
+Ruleset v2는 기존 패턴과 우선순위를 유지하고 한국어 권장 조치와 재시도 안내를 추가합니다.
+인증·권한·메모리·애플리케이션 코드 오류는 조건 수정 후 재실행을 권장하며 ORA-12541과 UNKNOWN은
+재시도 판단 UNKNOWN을 유지합니다. 조치와 재시도 판단은 저장 및 알림에 연결되며 원인 설명을 생성하지 않습니다.
+
 DagSentry는 AI diagnosis보다 먼저 결정적인 rule을 실행합니다. rule은 마스킹된 로그 evidence를 구조화
 정보로 축소하며 자연어 Root Cause를 만들지 않습니다.
 

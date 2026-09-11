@@ -4,13 +4,45 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Literal, Protocol, Self
+from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from dagsentry.domain.diagnosis import ErrorClassification
+from dagsentry.domain.incident import IncidentStatus
 
-STATISTICS_SCHEMA_VERSION: Literal[1] = 1
-REPORT_SCHEMA_VERSION: Literal[1] = 1
+STATISTICS_SCHEMA_VERSION: Literal[2] = 2
+REPORT_SCHEMA_VERSION: Literal[2] = 2
+
+
+def validate_timezone(value: str) -> str:
+    try:
+        ZoneInfo(value)
+    except (ValueError, ZoneInfoNotFoundError) as error:
+        raise ValueError("timezone must be an IANA timezone") from error
+    return value
+
+
+def report_period(report_date: date, timezone: str) -> tuple[datetime, datetime]:
+    zone = ZoneInfo(validate_timezone(timezone))
+    start = datetime.combine(report_date, time.min, tzinfo=zone)
+    end = datetime.combine(report_date + timedelta(days=1), time.min, tzinfo=zone)
+    return start.astimezone(UTC), end.astimezone(UTC)
+
+
+class TopFailure(BaseModel):
+    """One DAG/Task ranked by failed attempt count in the selected period."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    dag_id: str
+    task_id: str
+    failure_count: int = Field(ge=1)
+    last_failed_at: datetime
+    classification: ErrorClassification | None = None
+    incident_id: UUID | None = None
+    incident_status: IncidentStatus | None = None
+    root_cause: str | None = None
 
 
 class IncidentStatistics(BaseModel):
@@ -46,9 +78,9 @@ class DailyStatistics(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[1] = STATISTICS_SCHEMA_VERSION
+    schema_version: Literal[2] = STATISTICS_SCHEMA_VERSION
     report_date: date
-    timezone: Literal["UTC"] = "UTC"
+    timezone: str = "UTC"
     period_start: datetime
     period_end: datetime
     environment: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
@@ -59,6 +91,9 @@ class DailyStatistics(BaseModel):
     error_signatures: ErrorSignatureStatistics
     classification_counts: dict[ErrorClassification, int]
     mean_time: MeanTimeStatistics
+    top_failures: tuple[TopFailure, ...] = Field(default=(), max_length=20)
+
+    _timezone = field_validator("timezone")(validate_timezone)
 
     @model_validator(mode="after")
     def validate_complete_period_and_classifications(self) -> Self:
@@ -66,12 +101,11 @@ class DailyStatistics(BaseModel):
             raise ValueError("period_start must include a timezone")
         if self.period_end.tzinfo is None or self.period_end.utcoffset() is None:
             raise ValueError("period_end must include a timezone")
-        expected_start = datetime.combine(self.report_date, time.min, tzinfo=UTC)
-        expected_end = expected_start + timedelta(days=1)
+        expected_start, expected_end = report_period(self.report_date, self.timezone)
         if self.period_start != expected_start or self.period_start.utcoffset() != timedelta(0):
-            raise ValueError("period_start must be report_date midnight UTC")
+            raise ValueError("period_start must be local report_date midnight converted to UTC")
         if self.period_end != expected_end or self.period_end.utcoffset() != timedelta(0):
-            raise ValueError("period_end must be the next UTC midnight")
+            raise ValueError("period_end must be next local midnight converted to UTC")
         if set(self.classification_counts) != set(ErrorClassification):
             raise ValueError("classification_counts must contain every classification")
         if any(count < 0 for count in self.classification_counts.values()):
@@ -105,7 +139,7 @@ class DailyReportNotificationPayload(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     report_type: Literal["DAGSENTRY_DAILY_REPORT"] = "DAGSENTRY_DAILY_REPORT"
-    report_schema_version: Literal[1] = REPORT_SCHEMA_VERSION
+    report_schema_version: Literal[2] = REPORT_SCHEMA_VERSION
     statistics: DailyStatistics
     rule_based_report: RuleBasedDailyReport
     ai_summary: DailyReportAISummary | None = None

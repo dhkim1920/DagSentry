@@ -1,5 +1,9 @@
 # Worker 복구
 
+재시도 예약은 WARNING, DEAD 전환은 ERROR로 기록합니다. 로그에는 안전한 식별자와 예외 타입만
+남기며 예외 원문이나 DB traceback을 출력하지 않습니다. Outbox 오류 정보도 단계·분류·타입과
+고정 안내 문구를 저장하고 예외 원문을 복사하지 않습니다.
+
 DagSentry는 Worker가 완료 처리 없이 종료해 `PROCESSING`에 남은 Diagnosis Outbox 작업을 자동 복구합니다.
 기본 stale-lock timeout은 900초이며 `DAGSENTRY_WORKER_STALE_LOCK_TIMEOUT_SECONDS`로 변경합니다.
 

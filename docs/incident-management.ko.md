@@ -11,9 +11,10 @@ DagSentry는 Diagnosis 저장 뒤 Notification 전송 전에 성공적으로 진
 acknowledge/resolve/ignore는 operator만 수행하고 system은 활성 Incident만 recovered로 표시할 수 있습니다. AI는
 Incident state를 바꾸지 않으며 같은 상태 반복은 idempotent no-op입니다.
 
-새 활성 Incident의 첫 Failure만 전체 Notification을 받습니다. 이후 Failure의 Diagnosis는 저장하지만 Notification은
-`SUPPRESSED`가 되어 remote Provider를 호출하지 않습니다. payload snapshot에는 Incident ID, 현재 상태, 연결 Failure
-수를 넣으며 periodic/count reminder는 없습니다.
+최초 실패와 활성 Incident당 최종 FAILED 하나에 알림을 보냅니다. 처음부터 FAILED면 최초·최종 대상이
+동일하므로 한 번만 보냅니다. `final_failure_event_id`를 조건부 UPDATE로 선점하고 재시도 시 유지합니다.
+나머지는 억제하며 periodic/count reminder는 없습니다. 상세 API의 각 failure에
+`is_initial_failure`, `is_final_failure`를 제공하고 화면에 한국어·영어로 표시합니다.
 
 ## 운영자 API
 

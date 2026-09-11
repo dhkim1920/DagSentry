@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 
 import httpx
@@ -11,6 +11,7 @@ from dagsentry.airflow.collector import CollectorSettings
 from dagsentry.airflow.reconciler import (
     AirflowTaskHistoryClient,
     FailureReconciler,
+    ReconcilerResponseError,
     ReconcilerSettings,
     TaskInstanceReference,
     TaskTryHistory,
@@ -130,7 +131,7 @@ def test_airflow_client_retries_and_follows_cursor_pages() -> None:
         if attempts == 1:
             raise httpx.ConnectError("temporary", request=request)
         cursor = request.url.params.get("cursor")
-        if cursor == "":
+        if cursor is None:
             return httpx.Response(
                 200,
                 json={"task_instances": [reference().model_dump()], "next_cursor": "page-2"},
@@ -162,6 +163,71 @@ def test_airflow_client_retries_and_follows_cursor_pages() -> None:
     assert requests[-1].url.params["limit"] == "2"
     assert requests[-1].headers["Authorization"] == "Bearer airflow-secret"
     assert requests[-1].url.params["updated_at_lt"] == NOW.isoformat()
+    assert requests[0].url.params["offset"] == "0"
+    assert requests[0].url.params["order_by"] == "id"
+    assert "cursor" not in requests[0].url.params
+    assert "offset" not in requests[-1].url.params
+
+
+@pytest.mark.parametrize("total", [250, None, "250", -1, True])
+def test_offset_pages_continue_after_server_caps_page_size(total: object) -> None:
+    offsets: list[int] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        assert "cursor" not in request.url.params
+        assert request.url.params["limit"] == "500"
+        offset = int(request.url.params["offset"])
+        offsets.append(offset)
+        return httpx.Response(
+            200,
+            json={
+                "task_instances": [
+                    reference(str(index)).model_dump()
+                    for index in range(offset, min(offset + 100, 250))
+                ],
+                "total_entries": total,
+            },
+        )
+
+    client = AirflowTaskHistoryClient(
+        replace(settings(), page_size=500),
+        http_client=httpx.Client(transport=httpx.MockTransport(handle)),
+    )
+    items = list(client.iter_task_instances(updated_at_gte=NOW, updated_at_lt=NOW))
+    assert [item.task_id for item in items] == [str(index) for index in range(250)]
+    assert offsets == ([0, 100, 200] if type(total) is int and total == 250 else [0, 100, 200, 250])
+
+
+@pytest.mark.parametrize("cursor_mode", [False, True])
+def test_page_limit_failure_preserves_watermark(cursor_mode: bool) -> None:
+    calls = 0
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        if request.url.path.endswith("/tries"):
+            return httpx.Response(200, json={"task_instances": []})
+        calls += 1
+        body: dict[str, object] = {"task_instances": [reference().model_dump()]}
+        if cursor_mode:
+            body["next_cursor"] = str(calls)
+        return httpx.Response(200, json=body)
+
+    client = AirflowTaskHistoryClient(
+        settings(), http_client=httpx.Client(transport=httpx.MockTransport(handle))
+    )
+    watermark = MemoryWatermark(NOW - timedelta(minutes=10))
+    reconciler = FailureReconciler(
+        settings(),
+        airflow_client=client,
+        event_sender=RecordingSender(),
+        watermark_store=watermark,
+        clock=lambda: NOW,
+    )
+    with pytest.raises(ReconcilerResponseError, match="page limit"):
+        reconciler.run()
+    assert calls == 10_000
+    assert watermark.value == NOW - timedelta(minutes=10)
+    assert watermark.saves == []
 
 
 def test_reconciler_maps_failed_history_and_advances_overlap_watermark() -> None:

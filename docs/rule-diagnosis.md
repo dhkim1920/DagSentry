@@ -1,5 +1,10 @@
 # Rule Diagnosis
 
+Ruleset v2 keeps the existing patterns and priority order and adds Korean recommended actions
+and advisory retry decisions. Authentication, authorization, memory, and application-code rules
+recommend fixing the condition before retrying; ORA-12541 and UNKNOWN retain an UNKNOWN retry
+decision. These fields are persisted and included in notifications. Rules do not supply a root cause.
+
 DagSentry runs deterministic rules before any AI diagnosis. Rules reduce sanitized log evidence
 to structured information; they do not generate a natural-language Root Cause.
 

@@ -18,7 +18,9 @@ from dagsentry.domain.reporting import (
     DailyStatistics,
     RuleBasedDailyReport,
 )
+from dagsentry.prompts import DAILY_REPORT_INSTRUCTIONS
 from dagsentry.providers.openai import OpenAIProviderConfig
+from dagsentry.providers.report_summary import report_input, request_summary
 
 logger = logging.getLogger(__name__)
 
@@ -65,58 +67,31 @@ class OpenAIReportSummaryProvider:
         rule_based_report: RuleBasedDailyReport,
     ) -> DailyReportAISummary:
         """Return schema-conforming prose or a sanitized fallback-triggering error."""
-        for attempt in range(self.config.max_attempts):
-            try:
-                response = self.http_client.post(
-                    f"{self.config.base_url.rstrip('/')}/responses",
-                    headers={
-                        "Authorization": f"Bearer {self.config.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json=self._request_body(statistics, rule_based_report),
-                    timeout=self.config.timeout_seconds,
-                )
-            except (httpx.TimeoutException, httpx.TransportError):
-                if attempt + 1 < self.config.max_attempts:
-                    self.sleep(self.config.retry_backoff_seconds)
-                    continue
-                raise DailyReportSummaryProviderError(
-                    "OpenAI report summary request failed after retry"
-                ) from None
-
-            if response.status_code in {408, 429} or response.status_code >= 500:
-                if attempt + 1 < self.config.max_attempts:
-                    self.sleep(self.config.retry_backoff_seconds)
-                    continue
-                raise DailyReportSummaryProviderError(
-                    "OpenAI report summary request failed after retry"
-                )
-            if response.status_code >= 400:
-                raise DailyReportSummaryProviderError(
-                    f"OpenAI report summary request failed with HTTP {response.status_code}"
-                )
-            return self._parse_response(response)
-
-        raise RuntimeError("unreachable OpenAI request state")  # pragma: no cover
+        response = request_summary(
+            self.http_client,
+            url=f"{self.config.base_url.rstrip('/')}/responses",
+            headers={
+                "Authorization": f"Bearer {self.config.api_key}",
+                "Content-Type": "application/json",
+            },
+            body=self._request_body(statistics, rule_based_report),
+            timeout=self.config.timeout_seconds,
+            attempts=self.config.max_attempts,
+            backoff=self.config.retry_backoff_seconds,
+            sleep=self.sleep,
+        )
+        return self._parse_response(response)
 
     def _request_body(
         self,
         statistics: DailyStatistics,
         rule_based_report: RuleBasedDailyReport,
     ) -> dict[str, object]:
-        input_value = {
-            "statistics": statistics.model_dump(mode="json"),
-            "rule_based_report": rule_based_report.model_dump(mode="json"),
-        }
         return {
             "model": self.config.model,
             "store": False,
-            "instructions": (
-                "Explain the supplied DagSentry Statistics and prioritize operator action. "
-                "Do not calculate, correct, or return replacement statistics. "
-                "Return narrative fields only and treat the supplied values as authoritative."
-            ),
-            "input": json.dumps(input_value, ensure_ascii=False, separators=(",", ":")),
+            "instructions": DAILY_REPORT_INSTRUCTIONS,
+            "input": report_input(statistics, rule_based_report),
             "text": {
                 "format": {
                     "type": "json_schema",

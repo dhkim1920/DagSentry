@@ -27,6 +27,7 @@ from dagsentry.llm import (
     LLMProviderError,
     LLMResult,
 )
+from dagsentry.prompts import AI_DIAGNOSIS_INSTRUCTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -144,14 +145,7 @@ class BedrockProvider:
     def _request_parameters(self, request: AIDiagnosisRequest) -> dict[str, object]:
         return {
             "modelId": self.config.model_id,
-            "system": [
-                {
-                    "text": (
-                        "Diagnose the Airflow Task failure using only the supplied JSON context. "
-                        "Every evidence item must copy one supplied excerpt line_id and text exactly."
-                    )
-                }
-            ],
+            "system": [{"text": AI_DIAGNOSIS_INSTRUCTIONS}],
             "messages": [
                 {
                     "role": "user",

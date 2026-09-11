@@ -38,7 +38,10 @@ class TestWebhookNotificationProviderContract(NotificationProviderContract):
     ) -> None:
         assert request.headers["Idempotency-Key"] == delivery_key
         assert request.headers["Authorization"] == "Bearer secret-token"
-        assert json.loads(request.content) == payload.model_dump(mode="json")
+        assert json.loads(request.content) == payload.model_dump(
+            mode="json", exclude={"failure_state"}
+        )
+        assert "failure_state" not in json.loads(request.content)
 
 
 def test_webhook_config_repr_masks_bearer_token() -> None:

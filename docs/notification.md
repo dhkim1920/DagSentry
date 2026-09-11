@@ -21,10 +21,16 @@ recommended actions, retry decision, Airflow log link, Diagnosis source, and an 
 - the exact JSON payload snapshot.
 
 For Incident-aware delivery, the initial Failure of a new Incident receives the full Webhook.
-Further Failures correlated to the same active Incident do not call the Provider. DagSentry stores
-their delivery rows as `SUPPRESSED` with reason `REPEATED_ACTIVE_INCIDENT`, attempt count zero, and
-the complete payload snapshot. Retrying either the initial delivery or a suppressed Diagnosis is
-idempotent.
+One final FAILED event per active Incident receives an additional notification. If the initial
+event is already FAILED, it occupies both slots and sends only once. Migration 0019 backfills that
+reservation for existing Incidents. A conditional update reserves the final event under concurrent
+Workers. Retries keep its delivery key and skip completed diagnosis stages. Later retries are
+SUPPRESSED with REPEATED_ACTIVE_INCIDENT; later FAILED events use REPEATED_FINAL_FAILURE.
+
+Teams and SMTP display Korean labels and Asia/Seoul timestamps by default; override with
+`DAGSENTRY_DISPLAY_TIMEZONE`. Slack and Discord also distinguish FAILED from UP_FOR_RETRY.
+The stored payload includes `failure_state`, but the Webhook adapter excludes this new field to
+preserve the existing machine contract, including strict receivers that reject unknown fields.
 
 DagSentry has no time- or count-based reminder policy. Add reminders only after an operational
 requirement defines their cadence and reset behavior. Once an Incident is no longer active, a

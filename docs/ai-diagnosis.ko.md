@@ -1,5 +1,9 @@
 # LLM Provider와 AI 진단
 
+다섯 Provider는 공통 `ai-diagnosis-ko-v1` 프롬프트를 사용합니다. 원인 설명과 조치는 한국어로,
+근거는 공백을 포함한 발췌 원문 그대로 요청합니다. 근거 검증은 인용 일치 검사이며 원인 판단 전체의
+정확성을 보증하지 않습니다.
+
 DagSentry Core는 `LLMProvider` 프로토콜에만 의존합니다. OpenAI, Azure OpenAI, Anthropic, AWS
 Bedrock, Ollama 어댑터가 이 계약을 구현하며, Provider별 요청 필드와 응답 파싱은
 `dagsentry.providers`에 남아 있습니다.
@@ -33,7 +37,7 @@ OpenAI Provider를 명시적으로 활성화합니다.
 ```dotenv
 DAGSENTRY_LLM_PROVIDER=openai
 DAGSENTRY_LLM_MODEL=gpt-5.6-luna
-DAGSENTRY_LLM_PROMPT_VERSION=ai-diagnosis-v1
+DAGSENTRY_LLM_PROMPT_VERSION=ai-diagnosis-ko-v1
 DAGSENTRY_OPENAI_API_KEY=replace-with-an-openai-api-key
 ```
 

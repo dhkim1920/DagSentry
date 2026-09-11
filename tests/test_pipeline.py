@@ -636,6 +636,54 @@ def test_second_equivalent_failure_reuses_first_ai_diagnosis(
         assert suppressed.payload["diagnosis_source"] == DiagnosisSource.REUSED
 
 
+@pytest.mark.parametrize("tries", [(1, 2, 3, 4), (3, 4)])
+def test_final_failure_is_delivered_once_per_active_incident(
+    session_factory: SessionFactory,
+    tries: tuple[int, ...],
+) -> None:
+    logs = StubLogFetcher(available_log())
+    notifications = StubNotificationProvider()
+    service = pipeline(
+        session_factory, log_fetcher=logs, notification=notifications, llm=StubLLMProvider()
+    )
+    ids = [ingest(session_factory, try_number=number) for number in tries]
+    results = [service.process(failure_id) for failure_id in ids]
+    expected = [ids[0], ids[2]] if tries[0] == 1 else [ids[0]]
+    assert [payload.failure_event_id for payload in notifications.payloads] == expected
+    assert notifications.payloads[-1].failure_state == FailureState.FAILED
+    assert results[-1].notification.suppressed
+    with session_factory() as session:
+        incident = session.get(IncidentRecord, results[0].incident_id)
+        assert incident is not None
+        assert incident.final_failure_event_id == expected[-1]
+        record = session.get(NotificationDeliveryRecord, results[-1].notification.delivery_id)
+        assert record is not None
+        assert record.suppression_reason == "REPEATED_FINAL_FAILURE"
+
+
+def test_final_failure_retry_keeps_claim_and_delivery_key(session_factory: SessionFactory) -> None:
+    logs = StubLogFetcher(available_log())
+    notifications = StubNotificationProvider()
+    llm = StubLLMProvider()
+    service = pipeline(session_factory, log_fetcher=logs, notification=notifications, llm=llm)
+    first = ingest(session_factory, try_number=1)
+    final = ingest(session_factory, try_number=3)
+    service.process(first)
+    notifications.fail = True
+    with pytest.raises(DiagnosisProcessingError):
+        service.process(final)
+    log_calls = len(logs.calls)
+    ai_calls = len(llm.calls)
+    notifications.fail = False
+    result = service.process(final)
+    assert result.notification.delivered
+    assert notifications.keys[-1] == notifications.keys[-2]
+    assert len(logs.calls) == log_calls
+    assert len(llm.calls) == ai_calls
+    service.process(final)
+    assert len(notifications.keys) == 3
+
+
 def test_failure_after_resolved_incident_sends_a_new_full_notification(
     session_factory: SessionFactory,
 ) -> None:

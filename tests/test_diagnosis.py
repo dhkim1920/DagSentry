@@ -173,7 +173,11 @@ def test_persists_rule_result_with_evidence_and_extracted_values(session: Sessio
     assert record.extracted_values == [{"name": "http_status", "value": "401"}]
     assert record.evidence == [{"line_id": 1, "text": "HTTP 401 Unauthorized"}]
     assert record.prompt_version is None
-    assert record.rule_version == 1
+    assert record.rule_version == 2
+    assert record.recommended_actions == list(result.recommended_actions)
+    assert record.recommended_actions
+    assert record.retry_decision == RetryDecision.NOT_RETRYABLE
+    assert record.root_cause is None
 
 
 def test_validated_compatible_diagnosis_is_reused_without_ai_call(session: Session) -> None:

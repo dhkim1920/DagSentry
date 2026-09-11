@@ -10,6 +10,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from dagsentry.domain.diagnosis import DiagnosisSource, ErrorClassification, RetryDecision
+from dagsentry.domain.failure_event import FailureState
 from dagsentry.domain.incident import IncidentStatus
 
 
@@ -26,6 +27,7 @@ class NotificationSuppressionReason(StrEnum):
     """Stable reason a valid Diagnosis intentionally produced no remote call."""
 
     REPEATED_ACTIVE_INCIDENT = "REPEATED_ACTIVE_INCIDENT"
+    REPEATED_FINAL_FAILURE = "REPEATED_FINAL_FAILURE"
 
 
 class NotificationErrorCategory(StrEnum):
@@ -75,6 +77,7 @@ class NotificationPayload(BaseModel):
     airflow_log_url: str | None
     diagnosis_source: DiagnosisSource
     is_rule_fallback: bool
+    failure_state: FailureState = FailureState.FAILED
 
 
 class NotificationProviderError(RuntimeError):

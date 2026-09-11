@@ -38,7 +38,8 @@ from dagsentry.recovery import RecoveryChecker, TaskInstanceReference
 pytestmark = pytest.mark.integration
 
 
-def test_concurrent_failures_create_one_active_incident() -> None:
+@pytest.mark.parametrize("initial_retry", [False, True])
+def test_concurrent_failures_create_one_active_incident(initial_retry: bool) -> None:
     database_url = os.environ.get("DAGSENTRY_TEST_DATABASE_URL")
     if database_url is None:
         pytest.skip("DAGSENTRY_TEST_DATABASE_URL is not configured")
@@ -79,6 +80,24 @@ def test_concurrent_failures_create_one_active_incident() -> None:
         )
         assert signature.signature_id is not None
         signature_id = signature.signature_id
+        if initial_retry:
+            initial = ingest_failure_event(
+                session,
+                FailureEventCreate(
+                    environment="integration",
+                    dag_id="incident_concurrency",
+                    dag_run_id=marker,
+                    task_id="load",
+                    map_index=-1,
+                    try_number=9,
+                    source=CollectionSource.RETRY_CALLBACK,
+                    state=FailureState.UP_FOR_RETRY,
+                    observed_at=datetime.now(UTC),
+                ),
+            )
+            correlate_failure(
+                session, failure_event_id=initial.failure_event_id, error_signature_id=signature_id
+            )
     barrier = Barrier(8)
 
     def correlate(failure_id: UUID) -> IncidentCorrelationResult:
@@ -95,8 +114,21 @@ def test_concurrent_failures_create_one_active_incident() -> None:
             results = list(executor.map(correlate, failure_ids))
 
         assert len({result.incident_id for result in results}) == 1
-        assert sum(result.incident_created for result in results) == 1
-        assert sum(result.is_initial_failure for result in results) == 1
+        assert sum(result.incident_created for result in results) == (0 if initial_retry else 1)
+        assert sum(result.is_initial_failure for result in results) == (0 if initial_retry else 1)
+        assert sum(result.is_final_failure for result in results) == 1
+        if not initial_retry:
+            assert next(result for result in results if result.is_initial_failure).is_final_failure
+        winner = next(
+            failure_id
+            for failure_id, result in zip(failure_ids, results, strict=True)
+            if result.is_final_failure
+        )
+        with session_factory() as session:
+            repeated = correlate_failure(
+                session, failure_event_id=winner, error_signature_id=signature_id
+            )
+            assert repeated.is_final_failure
         with session_factory() as session:
             assert (
                 session.scalar(

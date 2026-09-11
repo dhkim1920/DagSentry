@@ -319,7 +319,7 @@ def test_daily_statistics_use_utc_boundaries_and_reconstruct_period_end_state(
 ) -> None:
     statistics = populated_statistics(session_factory)
 
-    assert statistics.schema_version == 1
+    assert statistics.schema_version == 2
     assert statistics.timezone == "UTC"
     assert statistics.period_start == START
     assert statistics.period_end == END
@@ -360,7 +360,82 @@ def test_empty_period_has_complete_zero_statistics(session_factory: SessionFacto
 def test_statistics_json_schema_is_versioned_and_forbids_unknown_fields() -> None:
     schema = DailyStatistics.model_json_schema()
 
-    assert STATISTICS_SCHEMA_VERSION == 1
-    assert schema["properties"]["schema_version"]["const"] == 1
-    assert schema["properties"]["timezone"]["const"] == "UTC"
+    assert STATISTICS_SCHEMA_VERSION == 2
+    assert schema["properties"]["schema_version"]["const"] == 2
+    assert schema["properties"]["timezone"]["type"] == "string"
     assert schema["additionalProperties"] is False
+
+
+def test_kst_boundaries_include_exact_tasks_and_keep_latest_diagnosed_failure(
+    session_factory: SessionFactory,
+) -> None:
+    start = START - timedelta(hours=9)
+    end = END - timedelta(hours=9)
+    ids = {}
+    for task, when in [
+        ("before", start - timedelta(microseconds=1)),
+        ("start", start),
+        ("inside", end - timedelta(microseconds=1)),
+        ("end", end),
+    ]:
+        ids[task] = add_failure(
+            session_factory, observed_at=when, dag_run_id="boundary", task_id=task, try_number=1
+        )
+    signature = add_signature(session_factory, "kst", created_at=start)
+    add_diagnosis(
+        session_factory,
+        failure_event_id=ids["start"],
+        signature_id=signature,
+        classification=ErrorClassification.NETWORK,
+    )
+    incident_id = add_incident(
+        session_factory, failure_event_id=ids["start"], signature_id=signature, created_at=start
+    )
+    add_failure(
+        session_factory,
+        observed_at=end - timedelta(seconds=1),
+        dag_run_id="pending",
+        task_id="start",
+        try_number=2,
+    )
+    with session_factory() as session:
+        statistics = aggregate_daily_statistics(
+            session, report_date=REPORT_DATE, environment="production", timezone="Asia/Seoul"
+        )
+    assert statistics.period_start == start
+    assert statistics.period_end == end
+    assert statistics.failure_attempts == 3
+    assert [item.task_id for item in statistics.top_failures] == ["start", "inside"]
+    first = statistics.top_failures[0]
+    assert first.failure_count == 2
+    assert first.last_failed_at == end - timedelta(seconds=1)
+    assert first.classification == ErrorClassification.NETWORK
+    assert first.incident_id == incident_id
+
+
+def test_local_day_across_dst_and_invalid_timezone() -> None:
+    from dagsentry.domain.reporting import report_period
+
+    start, end = report_period(date(2026, 3, 8), "America/New_York")
+    assert end - start == timedelta(hours=23)
+    with pytest.raises(ValueError, match="IANA"):
+        report_period(REPORT_DATE, "Not/A_Timezone")
+
+
+def test_top_failures_limit_and_stable_ties(session_factory: SessionFactory) -> None:
+    for index in range(22):
+        add_failure(
+            session_factory,
+            observed_at=START,
+            dag_run_id="top",
+            task_id=f"task_{index:02}",
+            try_number=1,
+        )
+    with session_factory() as session:
+        statistics = aggregate_daily_statistics(
+            session, report_date=REPORT_DATE, environment="production"
+        )
+    assert statistics.failure_attempts == 22
+    assert [item.task_id for item in statistics.top_failures] == [
+        f"task_{index:02}" for index in range(20)
+    ]

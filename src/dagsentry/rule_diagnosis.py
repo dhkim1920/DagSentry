@@ -8,9 +8,10 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from dagsentry.domain.diagnosis import ErrorClassification as ErrorClassification
+from dagsentry.domain.diagnosis import RetryDecision
 from dagsentry.log_processing import RelevantLogExcerpt
 
-RULESET_VERSION = 1
+RULESET_VERSION = 2
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,8 @@ class RuleDiagnosisResult:
     confidence_reason: str
     extracted_values: tuple[ExtractedValue, ...]
     evidence_line_ids: tuple[int, ...]
+    recommended_actions: tuple[str, ...] = ()
+    retry_decision: RetryDecision = RetryDecision.UNKNOWN
 
     def __post_init__(self) -> None:
         if not 0 <= self.confidence <= 1:
@@ -58,6 +61,8 @@ class RuleMatch:
     confidence_reason: str
     extracted_values: tuple[ExtractedValue, ...]
     evidence_line_ids: tuple[int, ...]
+    recommended_actions: tuple[str, ...] = ()
+    retry_decision: RetryDecision = RetryDecision.UNKNOWN
 
 
 class DiagnosisRule(Protocol):
@@ -87,6 +92,8 @@ class PatternRule:
     extracted_value: str
     confidence: float
     confidence_reason: str
+    recommended_actions: tuple[str, ...] = ()
+    retry_decision: RetryDecision = RetryDecision.UNKNOWN
 
     def evaluate(self, diagnosis_input: RuleDiagnosisInput) -> RuleMatch | None:
         excerpt = diagnosis_input.excerpt
@@ -108,6 +115,8 @@ class PatternRule:
             confidence_reason=self.confidence_reason,
             extracted_values=(ExtractedValue(self.extracted_name, self.extracted_value),),
             evidence_line_ids=(latest_line_id,),
+            recommended_actions=self.recommended_actions,
+            retry_decision=self.retry_decision,
         )
 
 
@@ -139,6 +148,10 @@ class PythonDagExceptionRule:
                 ExtractedValue("application_stack_frame", application_frame),
             ),
             evidence_line_ids=(evidence_line_id,),
+            recommended_actions=(
+                "트레이스백의 DAG 코드 위치와 입력값을 확인하고 예외 원인을 수정하세요.",
+            ),
+            retry_decision=RetryDecision.NOT_RETRYABLE,
         )
 
 
@@ -168,6 +181,9 @@ class RuleEngine:
                 confidence_reason="No supported deterministic rule matched",
                 extracted_values=(),
                 evidence_line_ids=(),
+                recommended_actions=(
+                    "Airflow Task 로그와 실행 환경을 확인하여 실패 원인을 점검하세요.",
+                ),
             )
 
         _, selected = min(
@@ -186,11 +202,13 @@ class RuleEngine:
             confidence_reason=selected.confidence_reason,
             extracted_values=selected.extracted_values,
             evidence_line_ids=selected.evidence_line_ids,
+            recommended_actions=selected.recommended_actions,
+            retry_decision=selected.retry_decision,
         )
 
 
 def default_rules() -> tuple[DiagnosisRule, ...]:
-    """Return the versioned v0.1 ruleset."""
+    """Return the v2 ruleset with Korean advisory actions."""
     rules: tuple[DiagnosisRule, ...] = (
         PatternRule(
             rule_id="http.authentication_401.v1",
@@ -204,6 +222,10 @@ def default_rules() -> tuple[DiagnosisRule, ...]:
             extracted_value="401",
             confidence=0.99,
             confidence_reason="Explicit HTTP 401 status was found in sanitized log evidence",
+            recommended_actions=(
+                "인증 정보의 만료와 요청 대상의 인증 설정을 확인하고 갱신하세요.",
+            ),
+            retry_decision=RetryDecision.NOT_RETRYABLE,
         ),
         PatternRule(
             rule_id="http.authorization_403.v1",
@@ -217,6 +239,8 @@ def default_rules() -> tuple[DiagnosisRule, ...]:
             extracted_value="403",
             confidence=0.99,
             confidence_reason="Explicit HTTP 403 status was found in sanitized log evidence",
+            recommended_actions=("실행 계정의 대상 리소스 접근 권한과 권한 설정을 확인하세요.",),
+            retry_decision=RetryDecision.NOT_RETRYABLE,
         ),
         PatternRule(
             rule_id="resource.out_of_memory.v1",
@@ -227,6 +251,10 @@ def default_rules() -> tuple[DiagnosisRule, ...]:
             extracted_value="OUT_OF_MEMORY",
             confidence=0.98,
             confidence_reason="Explicit out-of-memory signal was found in sanitized log evidence",
+            recommended_actions=(
+                "메모리 사용량과 제한을 확인하고 처리 데이터 크기나 메모리 할당을 조정하세요.",
+            ),
+            retry_decision=RetryDecision.NOT_RETRYABLE,
         ),
         PatternRule(
             rule_id="oracle.no_listener.v1",
@@ -237,6 +265,10 @@ def default_rules() -> tuple[DiagnosisRule, ...]:
             extracted_value="ORA-12541",
             confidence=0.99,
             confidence_reason="Oracle ORA-12541 was found in sanitized log evidence",
+            recommended_actions=(
+                "Oracle Listener 상태와 접속 호스트·포트 및 네트워크 연결을 확인하세요.",
+            ),
+            retry_decision=RetryDecision.UNKNOWN,
         ),
         PythonDagExceptionRule(),
     )

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -19,11 +20,11 @@ from dagsentry.models import (
 from dagsentry.report_app import run_daily_report
 
 
-def report_date_for_scheduled_time(scheduled_for: datetime) -> date:
+def report_date_for_scheduled_time(scheduled_for: datetime, timezone: str = "Asia/Seoul") -> date:
     """Map one aware trigger time to the last completed UTC calendar date."""
     if scheduled_for.tzinfo is None or scheduled_for.utcoffset() is None:
         raise ValueError("scheduled_for must include a timezone")
-    return scheduled_for.astimezone(UTC).date() - timedelta(days=1)
+    return scheduled_for.astimezone(ZoneInfo(timezone)).date() - timedelta(days=1)
 
 
 def queue_scheduled_run(
@@ -34,7 +35,11 @@ def queue_scheduled_run(
     scheduled_for: datetime,
 ) -> DailyReportScheduleRunRecord:
     """Create at most one durable scheduled execution for a schedule/date."""
-    report_date = report_date_for_scheduled_time(scheduled_for)
+    with session_factory() as session:
+        schedule = session.get(DailyReportScheduleRecord, schedule_id)
+        if schedule is None:
+            raise ValueError("Daily Report schedule was not found")
+        report_date = report_date_for_scheduled_time(scheduled_for, schedule.timezone)
     try:
         with session_factory.begin() as session:
             existing = session.scalar(
@@ -138,6 +143,8 @@ def execute_claimed_run(
             ),
             use_ai_summary=schedule.use_ai_summary if schedule is not None else True,
             report_title=schedule.report_title if schedule is not None else None,
+            timezone=schedule.timezone if schedule is not None else settings.report_timezone,
+            session_factory=session_factory,
         )
     except Exception as error:
         _finish_run(

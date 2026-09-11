@@ -232,6 +232,7 @@ def _diagnosis_message(
             f"*Task:* {_inline_code(payload.task_id)}  •  "
             f"*Map:* `{payload.map_index}`  •  *Try:* `{payload.try_number}`",
             f"*Failed at:* {_inline_code(payload.failed_at.isoformat())}",
+            f"*Failure state:* `{payload.failure_state.value}`",
             f"*Incident:* {_inline_code(str(payload.incident_id))}  •  "
             f"*Status:* *{payload.incident_status.value}*  •  "
             f"*Failures:* `{payload.incident_failure_count}`",

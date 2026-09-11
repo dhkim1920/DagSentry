@@ -185,7 +185,7 @@ class DiagnosisPipeline:
             airflow_ui_base_url,
         )
         try:
-            if incident.is_initial_failure:
+            if incident.is_initial_failure or incident.is_final_failure:
                 notification = deliver_notification(
                     self.session_factory,
                     provider=notification_provider,
@@ -196,7 +196,11 @@ class DiagnosisPipeline:
                     self.session_factory,
                     provider_name=notification_provider.name,
                     payload=payload,
-                    reason=NotificationSuppressionReason.REPEATED_ACTIVE_INCIDENT,
+                    reason=(
+                        NotificationSuppressionReason.REPEATED_FINAL_FAILURE
+                        if event.state.value == "FAILED"
+                        else NotificationSuppressionReason.REPEATED_ACTIVE_INCIDENT
+                    ),
                 )
         except NotificationProviderError as error:
             error_type = DiagnosisProcessingError if error.retryable else PermanentDiagnosisError
@@ -397,6 +401,7 @@ class DiagnosisPipeline:
                 airflow_log_url=self._airflow_log_url(event, airflow_ui_base_url),
                 diagnosis_source=effective.source,
                 is_rule_fallback=content.source == DiagnosisSource.RULE,
+                failure_state=event.state,
             )
 
     def _airflow_log_url(

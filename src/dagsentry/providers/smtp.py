@@ -12,6 +12,7 @@ from types import TracebackType
 from typing import Protocol, Self
 
 from dagsentry.config import Settings
+from dagsentry.display import display_time, failure_list_lines, failure_state_label
 from dagsentry.domain.notification import (
     NotificationErrorCategory,
     NotificationPayload,
@@ -66,6 +67,7 @@ class SMTPProviderConfig:
     timeout_seconds: float = 5.0
     max_attempts: int = 2
     retry_backoff_seconds: float = 0.5
+    display_timezone: str = "Asia/Seoul"
 
     def __post_init__(self) -> None:
         if not self.host or not self.sender or not self.recipients:
@@ -132,6 +134,7 @@ class SMTPNotificationProvider:
                 timeout_seconds=settings.smtp_timeout_seconds,
                 max_attempts=settings.smtp_max_attempts,
                 retry_backoff_seconds=settings.smtp_retry_backoff_seconds,
+                display_timezone=settings.display_timezone,
             )
         )
 
@@ -198,7 +201,7 @@ def _provider_error(error: Exception) -> NotificationProviderError:
 
 def _message(payload: SMTPPayload, config: SMTPProviderConfig, delivery_key: str) -> EmailMessage:
     message = EmailMessage()
-    subject, body = _content(payload, delivery_key)
+    subject, body = _content(payload, delivery_key, config.display_timezone)
     message["Subject"] = subject.replace("\r", " ").replace("\n", " ")
     message["From"] = config.sender
     message["To"] = ", ".join(config.recipients)
@@ -207,32 +210,35 @@ def _message(payload: SMTPPayload, config: SMTPProviderConfig, delivery_key: str
     return message
 
 
-def _content(payload: SMTPPayload, delivery_key: str) -> tuple[str, str]:
+def _content(
+    payload: SMTPPayload, delivery_key: str, timezone: str = "Asia/Seoul"
+) -> tuple[str, str]:
     if isinstance(payload, NotificationPayload):
         evidence = (
             "\n".join(f"- L{item.line_id}: {item.text}" for item in payload.evidence) or "- None"
         )
         actions = "\n".join(f"- {item}" for item in payload.recommended_actions) or "- None"
         return (
-            f"[DagSentry] {payload.classification.value}: {payload.dag_id}.{payload.task_id} failed",
-            f"""DagSentry failure notification
+            f"[DagSentry] {failure_state_label(payload.failure_state)}: {payload.dag_id}.{payload.task_id}",
+            f"""DagSentry 장애 알림
 
-Environment: {payload.environment}
+환경: {payload.environment}
 DAG: {payload.dag_id}
 DAG run: {payload.dag_run_id}
 Task: {payload.task_id} (map {payload.map_index}, try {payload.try_number})
-Failed at: {payload.failed_at.isoformat()}
-Classification: {payload.classification.value}
-Incident: {payload.incident_id} ({payload.incident_status.value}, {payload.incident_failure_count} failure(s))
-Diagnosis: {payload.diagnosis_source.value}, confidence {payload.confidence:.0%}, retry {payload.retry_decision.value}
-Root cause: {payload.root_cause or "No root cause available"}
-Error signature: {payload.error_signature or "Not available"}
-Airflow log: {payload.airflow_log_url or "Not available"}
+실패 시각: {display_time(payload.failed_at, timezone)}
+실패 상태: {failure_state_label(payload.failure_state)}
+분류: {payload.classification.value}
+장애: {payload.incident_id} ({payload.incident_status.value}, 실패 {payload.incident_failure_count}회)
+진단: {payload.diagnosis_source.value}, 신뢰도 {payload.confidence:.0%}, 재시도 판단 {payload.retry_decision.value}
+원인 설명: {payload.root_cause or "원인 설명 없음"}
+오류 서명: {payload.error_signature or "없음"}
+Airflow 로그: {payload.airflow_log_url or "없음"}
 
-Evidence:
+근거:
 {evidence}
 
-Recommended actions:
+권장 조치:
 {actions}
 
 Delivery key: {delivery_key}
@@ -263,14 +269,16 @@ Delivery key: {delivery_key}
 
 {report.overview}
 
-Highlights:
+주요 현황:
 """
         + "\n".join(f"- {item}" for item in report.highlights)
         + """
 
-Priorities:
+우선 점검:
 """
         + "\n".join(f"- {item}" for item in report.priorities)
+        + "\n\n상위 실패 Task (최대 20개):\n"
+        + "\n".join(failure_list_lines(payload.statistics))
         + f"""
 
 AI summary:

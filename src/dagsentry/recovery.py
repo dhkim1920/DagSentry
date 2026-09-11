@@ -41,6 +41,7 @@ from dagsentry.models import (
     IncidentRecoveryNotificationRecord,
     IncidentStateTransitionRecord,
 )
+from dagsentry.providers.notification_adapter import provider_names_overlap
 
 logger = logging.getLogger(__name__)
 RECOVERY_DELIVERY_KEY_VERSION = 1
@@ -414,7 +415,7 @@ class RecoveryChecker:
                 raise RecoveryCheckerError("Recovery notification disappeared")
             if record.status == NotificationDeliveryStatus.DELIVERED:
                 return False
-            if record.provider != self.notification_provider.name:
+            if not provider_names_overlap(record.provider, self.notification_provider.name):
                 raise RecoveryCheckerError("Recovery notification Provider changed")
             payload = RecoveryNotificationPayload.model_validate(record.payload)
             record.attempt_count += 1
