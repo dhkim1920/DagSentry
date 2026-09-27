@@ -766,7 +766,6 @@ const elements = {
   languageSelect: document.querySelector("#language-select"),
   timezoneSelect: document.querySelector("#timezone-select"),
   sidebarToggle: document.querySelector("#sidebar-toggle"),
-  sidebarToggleIcon: document.querySelector("#sidebar-toggle-icon"),
   siteSidebar: document.querySelector("#site-sidebar"),
   primaryNavigation: document.querySelector("#primary-navigation"),
   incidentsNav: document.querySelector("#incidents-nav"),
@@ -1060,22 +1059,31 @@ let currentUser = null;
 let passwordResetUser = null;
 let editingConnection = null;
 let adminLoadSequence = 0;
-let sidebarCollapsed = window.matchMedia("(max-width: 680px)").matches;
+const sidebarMedia = window.matchMedia("(max-width: 991.98px)");
+let desktopSidebarCollapsed = false;
+let mobileSidebarCollapsed = true;
+let sidebarCollapsed = sidebarMedia.matches;
 
 function applySidebarState() {
+  sidebarCollapsed = sidebarMedia.matches ? mobileSidebarCollapsed : desktopSidebarCollapsed;
   const navigationVisible = !elements.sidebarToggle.hidden;
   const toggleLabel = sidebarCollapsed ? "Expand navigation" : "Collapse navigation";
   document.body.classList.toggle("sidebar-hidden", !navigationVisible);
   document.body.classList.toggle("sidebar-collapsed", navigationVisible && sidebarCollapsed);
+  if (navigationVisible && sidebarCollapsed && !sidebarMedia.matches) {
+    document.documentElement.setAttribute("data-bs-sidebar", "folded-hover");
+  } else {
+    document.documentElement.removeAttribute("data-bs-sidebar");
+  }
   elements.siteSidebar.hidden = !navigationVisible;
   elements.sidebarToggle.setAttribute("aria-expanded", String(!sidebarCollapsed));
   elements.sidebarToggle.setAttribute("aria-label", translatedText(toggleLabel));
   elements.sidebarToggle.title = translatedText(toggleLabel);
-  elements.sidebarToggleIcon.textContent = sidebarCollapsed ? ">" : "<";
 }
 
 function setSidebarCollapsed(collapsed) {
-  sidebarCollapsed = collapsed;
+  if (sidebarMedia.matches) mobileSidebarCollapsed = collapsed;
+  else desktopSidebarCollapsed = collapsed;
   applySidebarState();
 }
 
@@ -1219,16 +1227,19 @@ function showConnectedView(view) {
     link.parentElement.hidden = session.role !== "admin" && link.dataset.settingsLink !== "reports";
     const active = adminView && link.dataset.settingsLink === adminPageFromUrl();
     link.classList.toggle("active", active);
+    link.parentElement.classList.toggle("active", active);
     if (active) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
   }
   if (adminView) elements.adminNavigation.open = true;
+  elements.adminNavigation.classList.toggle("active", adminView);
   for (const [nav, active] of [
     [elements.incidentsNav, incidentView],
     [elements.signaturesNav, signatureView],
     [elements.diagnosesNav, diagnosisView],
     [elements.reportsNav, reportView],
   ]) {
+    nav.parentElement.classList.toggle("active", active);
     if (active) {
       nav.setAttribute("aria-current", "page");
     } else {
@@ -4562,6 +4573,15 @@ elements.sidebarToggle.addEventListener("click", () => {
   setSidebarCollapsed(!sidebarCollapsed);
 });
 
+sidebarMedia.addEventListener("change", applySidebarState);
+
+elements.primaryNavigation.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && sidebarMedia.matches && !sidebarCollapsed) {
+    setSidebarCollapsed(true);
+    elements.sidebarToggle.focus();
+  }
+});
+
 elements.primaryNavigation.addEventListener("click", async (event) => {
   const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
   if (
@@ -4576,6 +4596,10 @@ elements.primaryNavigation.addEventListener("click", async (event) => {
   }
   event.preventDefault();
   history.pushState({}, "", link.href);
+  if (sidebarMedia.matches) {
+    setSidebarCollapsed(true);
+    elements.sidebarToggle.focus();
+  }
   setFiltersFromUrl();
   setSignatureFiltersFromUrl();
   setDiagnosisFiltersFromUrl();

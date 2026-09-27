@@ -7,15 +7,26 @@
     <meta name="description" content="DagSentry incident operations dashboard">
     <title>DagSentry — Incident operations</title>
     <link rel="stylesheet" href="/ui/vendor/tabler-1.6.0/tabler.min.css">
-    <link rel="stylesheet" href="/ui/app.css?v=20260927-report-settings1">
+    <link rel="stylesheet" href="/ui/app.css?v=20260927-login1">
     <script src="/ui/vendor/tabler-1.6.0/tabler-sparkline.min.js" defer></script>
-    <script src="/ui/app.js?v=20260927-report-settings1" defer></script>
+    <script src="/ui/app.js?v=20260927-login1" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
 
     <header class="site-header navbar">
       <div class="header-brand-group">
+        <button
+          id="sidebar-toggle"
+          class="sidebar-toggle navbar-toggler btn btn-ghost-secondary"
+          type="button"
+          aria-controls="primary-navigation"
+          aria-expanded="true"
+          aria-label="Collapse navigation"
+          title="Collapse navigation"
+          data-i18n-fixed
+          hidden
+        ><span id="sidebar-toggle-icon" class="navbar-toggler-icon" aria-hidden="true"></span></button>
         <a class="brand navbar-brand" href="/ui/" aria-label="DagSentry home">
           <span class="brand-mark" aria-hidden="true"><span></span></span>
           <span class="brand-name">DagSentry</span>
@@ -41,44 +52,49 @@
     </header>
 
     <div class="app-shell">
-      <aside id="site-sidebar" class="site-sidebar navbar navbar-vertical" hidden>
-        <nav id="primary-navigation" class="primary-nav nav nav-pills" aria-label="Primary navigation">
-          <a id="incidents-nav" class="nav-link active" href="/ui/" aria-current="page">
-            <span class="nav-label">Incident response</span>
-          </a>
-          <a id="signatures-nav" class="nav-link" href="/ui/?view=signatures">
-            <span class="nav-label">Error patterns</span>
-          </a>
-          <a id="diagnoses-nav" class="nav-link" href="/ui/?view=diagnoses">
-            <span class="nav-label">Diagnosis History</span>
-          </a>
-          <a id="reports-nav" class="nav-link" href="/ui/?view=reports">
-            <span class="nav-label">Daily Reports</span>
-          </a>
-          <details id="admin-navigation" class="settings-navigation" hidden>
-            <summary id="admin-nav" class="nav-link">
-              <span class="nav-label">Settings</span>
-              <svg class="icon ms-auto" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
-            </summary>
-            <ul class="nav nav-pills flex-column ms-3 ps-2 border-start">
-              <li class="nav-item"><a class="nav-link" data-settings-link="users" href="/ui/?view=admin&amp;section=users">User management</a></li>
-              <li class="nav-item"><a class="nav-link" data-settings-link="connections" href="/ui/?view=admin&amp;section=connections">External connections</a></li>
-              <li class="nav-item"><a class="nav-link" data-settings-link="reports" href="/ui/?view=admin&amp;section=reports">Report settings</a></li>
-              <li class="nav-item"><a class="nav-link" data-settings-link="audit" href="/ui/?view=admin&amp;section=audit">Administrator audit history</a></li>
-            </ul>
-          </details>
+      <aside id="site-sidebar" class="site-sidebar navbar navbar-vertical navbar-expand-lg" hidden>
+        <nav id="primary-navigation" class="primary-nav navbar-collapse" aria-label="Primary navigation">
+          <ul class="navbar-nav">
+            <li class="nav-item active">
+              <a id="incidents-nav" class="nav-link active" href="/ui/" aria-current="page">
+                <span class="nav-link-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg></span>
+                <span class="nav-label nav-link-title">Incident response</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a id="signatures-nav" class="nav-link" href="/ui/?view=signatures">
+                <span class="nav-link-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"></rect><rect x="15" y="15" width="6" height="6" rx="1"></rect><path d="M9 6h9v9M6 9v9h9"></path></svg></span>
+                <span class="nav-label nav-link-title">Error patterns</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a id="diagnoses-nav" class="nav-link" href="/ui/?view=diagnoses">
+                <span class="nav-link-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 3h6v4H9zM8 12h8m-8 4h5"></path></svg></span>
+                <span class="nav-label nav-link-title">Diagnosis History</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a id="reports-nav" class="nav-link" href="/ui/?view=reports">
+                <span class="nav-link-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M7 3v4m10-4v4M3 11h18M7 15h3m4 0h3"></path></svg></span>
+                <span class="nav-label nav-link-title">Daily Reports</span>
+              </a>
+            </li>
+            <li>
+              <details id="admin-navigation" class="settings-navigation nav-item" hidden>
+                <summary id="admin-nav" class="nav-link dropdown-toggle">
+                  <span class="nav-link-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9m4 0h3M4 17h3m4 0h9"></path><circle cx="15" cy="7" r="2"></circle><circle cx="9" cy="17" r="2"></circle></svg></span>
+                  <span class="nav-label nav-link-title">Settings</span>
+                </summary>
+                <ul class="nav nav-pills flex-column ms-3 ps-2 border-start">
+                  <li class="nav-item"><a class="nav-link" data-settings-link="users" href="/ui/?view=admin&amp;section=users">User management</a></li>
+                  <li class="nav-item"><a class="nav-link" data-settings-link="connections" href="/ui/?view=admin&amp;section=connections">External connections</a></li>
+                  <li class="nav-item"><a class="nav-link" data-settings-link="reports" href="/ui/?view=admin&amp;section=reports">Report settings</a></li>
+                  <li class="nav-item"><a class="nav-link" data-settings-link="audit" href="/ui/?view=admin&amp;section=audit">Administrator audit history</a></li>
+                </ul>
+              </details>
+            </li>
+          </ul>
         </nav>
-        <button
-          id="sidebar-toggle"
-          class="sidebar-toggle btn btn-outline-secondary"
-          type="button"
-          aria-controls="primary-navigation"
-          aria-expanded="true"
-          aria-label="Collapse navigation"
-          title="Collapse navigation"
-          data-i18n-fixed
-          hidden
-        ><span id="sidebar-toggle-icon" aria-hidden="true">&lt;</span></button>
       </aside>
 
       <main id="main-content">
@@ -90,43 +106,49 @@
           </h1>
         </div>
         <form id="auth-form" class="auth-card card card-body">
+          <h2 class="card-title mb-0">Sign in to DagSentry</h2>
           <div>
-            <h2 class="card-title">Sign in to DagSentry</h2>
+            <label for="access-email" class="form-label">Email</label>
+            <input
+              id="access-email"
+              name="email"
+              type="email"
+              autocomplete="username"
+              maxlength="320"
+              required
+              class="form-control"
+            >
           </div>
-          <label for="access-email" class="form-label">Email</label>
-          <input
-            id="access-email"
-            name="email"
-            type="email"
-            autocomplete="username"
-            maxlength="320"
-            required
-            class="form-control"
-          >
-          <label for="access-password" class="form-label">Password</label>
-          <input
-            id="access-password"
-            name="password"
-            type="password"
-            autocomplete="current-password"
-            spellcheck="false"
-            required
-            class="form-control"
-          >
-          <p id="auth-error" class="form-error text-danger" role="alert" hidden></p>
+          <div>
+            <label for="access-password" class="form-label">Password</label>
+            <input
+              id="access-password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              spellcheck="false"
+              required
+              class="form-control"
+            >
+          </div>
+          <p id="auth-error" class="form-error text-danger mb-0" role="alert" hidden></p>
           <button id="auth-submit" class="btn btn-primary" type="submit">Sign in</button>
         </form>
         <form id="change-password-form" class="auth-card card card-body" hidden>
+          <h2 class="card-title mb-0">Change temporary password</h2>
           <div>
-            <h2 class="card-title">Change temporary password</h2>
+            <label for="current-password" class="form-label">Current temporary password</label>
+            <input id="current-password" type="password" autocomplete="current-password" required class="form-control">
           </div>
-          <label for="current-password" class="form-label">Current temporary password</label>
-          <input id="current-password" type="password" autocomplete="current-password" required class="form-control">
-          <label for="new-password" class="form-label">New password</label>
-          <input id="new-password" type="password" autocomplete="new-password" minlength="12" required class="form-control">
-          <label for="confirm-new-password" class="form-label">Confirm new password</label>
-          <input id="confirm-new-password" type="password" autocomplete="new-password" minlength="12" required class="form-control">
-          <p id="change-password-error" class="form-error text-danger" role="alert" hidden></p>
+          <div>
+            <label for="new-password" class="form-label">New password</label>
+            <input id="new-password" type="password" autocomplete="new-password" minlength="12" required class="form-control">
+          </div>
+          <div>
+            <label for="confirm-new-password" class="form-label">Confirm new password</label>
+            <input id="confirm-new-password" type="password" autocomplete="new-password" minlength="12" required class="form-control">
+          </div>
+          <p id="change-password-error" class="form-error text-danger mb-0" role="alert" hidden></p>
           <button class="btn btn-primary" type="submit">Change password</button>
         </form>
       </section>

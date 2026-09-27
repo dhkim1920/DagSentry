@@ -32,11 +32,6 @@ dialog.modal .modal-dialog {
   margin: 0;
 }
 
-.site-sidebar.navbar {
-  width: 100%;
-  align-items: stretch;
-}
-
 .primary-nav .nav-link {
   white-space: normal;
 }
@@ -52,12 +47,14 @@ dialog.modal .modal-dialog {
   display: none;
 }
 
-.settings-navigation[open] > summary .icon {
-  transform: rotate(180deg);
+.settings-navigation[open] > summary::after {
+  transform: rotate(135deg);
 }
 
 .auth-copy h1 {
+  margin: 0;
   font-size: clamp(1.5rem, 3.5vw, 3rem);
+  line-height: 1.25;
 }
 
 .task-identity,
@@ -166,14 +163,9 @@ textarea {
 }
 
 .sidebar-toggle {
-  display: grid;
-  width: 100%;
-  min-height: 32px;
-  margin-top: auto;
-  padding: 5px 9px;
-  place-items: center;
-  cursor: pointer;
-  line-height: 1;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
 }
 
 .brand {
@@ -202,7 +194,7 @@ textarea {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 176px minmax(0, 1fr);
+  grid-template-columns: var(--tblr-sidebar-width) minmax(0, 1fr);
   min-height: calc(100vh - 58px);
 }
 
@@ -210,34 +202,38 @@ body.sidebar-hidden .app-shell {
   grid-template-columns: minmax(0, 1fr);
 }
 
-body.sidebar-collapsed .app-shell {
-  grid-template-columns: 48px minmax(0, 1fr);
-}
-
-.site-sidebar {
-  position: sticky;
+.site-sidebar.navbar.navbar-vertical {
   top: 58px;
-  display: flex;
-  flex-direction: column;
-  align-self: start;
-  height: calc(100vh - 58px);
-  padding: 16px 12px;
-  border-right: 1px solid var(--tblr-border-color);
+  z-index: 9;
+  padding-block: 12px;
 }
 
-body.sidebar-collapsed .site-sidebar {
-  width: 48px;
-  padding: 16px 7px;
+.site-sidebar .primary-nav {
+  align-items: stretch;
+  width: 100%;
 }
 
-body.sidebar-collapsed .primary-nav {
-  display: none;
+.site-sidebar .navbar-nav {
+  width: 100%;
 }
 
-.primary-nav {
-  display: grid;
-  align-content: start;
-  gap: 6px;
+@media (min-width: 992px) {
+  .site-sidebar {
+    grid-column: 1;
+  }
+
+  .app-shell > main {
+    grid-column: 2;
+  }
+
+  body.sidebar-hidden .app-shell > main {
+    grid-column: 1;
+  }
+
+  /* Native settings disclosure follows Tabler's folded-hover state. */
+  html[data-bs-sidebar='folded-hover'] .site-sidebar:not(:hover):not(:has(:focus-visible)) .settings-navigation > ul {
+    display: none;
+  }
 }
 
 .nav-label {
@@ -283,11 +279,13 @@ main {
 
 .auth-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 1fr);
   align-items: center;
-  gap: clamp(48px, 8vw, 120px);
+  gap: clamp(32px, 6vw, 80px);
+  max-width: 1080px;
+  margin-inline: auto;
   min-height: 62vh;
-  padding: 36px max(0px, 4vw);
+  padding: 36px 0;
 }
 
 .eyebrow,
@@ -304,7 +302,7 @@ main {
 
 .auth-card {
   display: grid;
-  gap: 14px;
+  gap: 20px;
 }
 
 .auth-loading-overlay {
@@ -2088,11 +2086,15 @@ main {
   }
 
   .auth-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 440px;
+    min-height: auto;
+    gap: 32px;
+    margin-block: clamp(16px, 4vh, 40px);
   }
 
-  .auth-card {
-    width: min(560px, 100%);
+  .auth-copy {
+    text-align: center;
   }
 
   .filter-grid {
@@ -2359,34 +2361,29 @@ main {
 }
 
 /* Narrow screens keep navigation in document flow, clear of operational content. */
-@media (max-width: 680px) {
-  .app-shell,
-  body.sidebar-collapsed .app-shell {
+@media (max-width: 991.98px) {
+  .app-shell {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .site-sidebar.navbar,
-  body.sidebar-collapsed .site-sidebar.navbar {
+  .site-sidebar.navbar.navbar-vertical {
     position: static;
     width: 100%;
     height: auto;
-    flex-direction: row;
-    gap: 8px;
-    padding: 8px 12px;
+    padding: 8px 0;
   }
 
-  .primary-nav {
-    display: flex;
-    flex-wrap: wrap;
+  body.sidebar-collapsed .site-sidebar {
+    display: none;
   }
 
-  .sidebar-toggle {
-    width: 36px;
-    flex-shrink: 0;
-    align-self: start;
-    margin: 0 0 0 auto;
+  .site-sidebar .primary-nav {
+    max-height: 60vh;
+    overflow-y: auto;
   }
+}
 
+@media (max-width: 680px) {
   .auth-copy h1 {
     font-size: clamp(1.5rem, 6vw, 2.5rem);
   }

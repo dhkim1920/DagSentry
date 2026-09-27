@@ -199,6 +199,52 @@ Schedule updates and manual-run submissions were intercepted with failure
 responses to check payloads, revision and CSRF headers without changing data or
 scheduling a report. Screenshots are in `/private/tmp/dagsentry-report-settings/browser/`.
 
+## Folded sidebar follow-up
+
+The sidebar uses the shipped Tabler Core 1.6.0 vertical navbar and folded-hover
+styles: `navbar-expand-lg`, `navbar-nav`, `nav-link-icon`, `nav-link-title` and
+`data-bs-sidebar="folded-hover"`. The official behavior is described at
+https://tabler.io/blog/tabler-1.5 and implemented in the pinned artifact's
+`scss/layout/_navbar.scss`. The stylesheet is unchanged; application JavaScript
+controls the attribute and the existing native settings disclosure. The full
+Tabler sidebar/Dropdown JavaScript and Popper were not added.
+
+On desktop the expanded 16rem sidebar folds to Tabler's 4rem icon rail. Hover or
+visible keyboard focus temporarily expands labels without moving page content.
+The toggle remains available in the header. Below Tabler's lg breakpoint (992px),
+the same button opens a vertical menu in document flow; choosing a link closes it,
+and Escape closes it and returns focus to the button. Desktop and mobile retain
+separate in-memory states during viewport changes. Link labels stay in the
+accessibility tree, and roles, active links and settings URLs are preserved.
+
+Five decorative navigation symbols use project-authored SVG geometry. The toggle
+and dropdown indicators come from the existing Tabler CSS. No additional external
+assets, licenses, dependencies, inline scripts or CSP changes are needed.
+`scripts/verify-ui-sidebar.cjs` covers folding, content geometry, hover, keyboard,
+responsive changes and mobile selection/Escape. Screenshots are stored locally
+under `/private/tmp/dagsentry-sidebar/`.
+The 36 web UI tests and the complete Chromium runner passed. Layouts were checked
+at 1440/1024/768/390/320px, with before/after captures for the existing views and
+dedicated folded/hover/mobile captures. Browser screenshot checks use reduced
+motion and wait for rendered focus styles; Firefox and Safari were not exercised.
+
+## Login layout correction
+
+The login headline increased its font size while inheriting Tabler's fixed h1
+line height, causing the two desktop lines to overlap. Its line height now scales
+with the font size. The two-column desktop layout has a bounded width; below
+1050px the headline and 440px form are centered with an explicit 32px gap instead
+of spreading across a minimum-height grid. Labels and inputs are grouped within
+the login and temporary-password forms, retaining all IDs, autocomplete and
+validation attributes. Authentication and CSRF behavior are unchanged.
+
+Browser regressions inspect text-range geometry to catch overlapping glyphs,
+check form alignment and overflow in Korean/English at 1440/1050/768/390/320px,
+and exercise a fixture login rejection before the real demo login. Screenshots
+are under `/private/tmp/dagsentry-login/browser/`; the previous screenshots are
+under `/private/tmp/dagsentry-sidebar/browser/`. The web UI and authentication
+test suites passed (44 tests).
+
 ## Signature trend chart follow-up
 
 The 7/30-day signature detail graph now uses Tabler Core 1.6.0's actual Sparkline

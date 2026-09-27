@@ -57,7 +57,7 @@ async function login(page) {
   await fs.mkdir(output, { recursive: true });
   const browser = await chromium.launch({ headless: true, chromiumSandbox: true });
   try {
-    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: "ko-KR", timezoneId: "Asia/Seoul" });
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: "ko-KR", timezoneId: "Asia/Seoul", reducedMotion: "reduce" });
     const page = await context.newPage();
     const errors = [];
     const violations = [];
@@ -74,10 +74,39 @@ async function login(page) {
     await page.keyboard.press("Tab");
     assert.equal(await page.locator(":focus").getAttribute("href"), "#main-content");
     assert.notEqual(await page.locator(":focus").evaluate(el => getComputedStyle(el).outlineStyle), "none");
-    for (const width of [1440, 768, 390, 320]) {
-      await page.setViewportSize({ width, height: 1000 });
-      await layout(page, `login-${width}`);
+    for (const language of ["ko", "en"]) {
+      await page.locator("#language-select").selectOption(language);
+      for (const width of [1440, 1050, 768, 390, 320]) {
+        await page.setViewportSize({ width, height: width >= 1050 ? 1000 : 844 });
+        const title = await page.locator("#auth-title").evaluate(el => {
+          const lines = [...el.querySelectorAll(".auth-title-line")].map(line => {
+            const range = document.createRange();
+            range.selectNodeContents(line);
+            const rect = range.getBoundingClientRect();
+            return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right };
+          });
+          return { lines, size: parseFloat(getComputedStyle(el).fontSize), height: parseFloat(getComputedStyle(el).lineHeight) };
+        });
+        assert.ok(title.height >= title.size * 1.2, "Login title needs room for each line");
+        assert.ok(title.lines[0].bottom <= title.lines[1].top, "Login title glyphs must not overlap");
+        assert.ok(title.lines.every(line => line.left >= 0 && line.right <= width), "Login title must fit the viewport");
+        if (width <= 1050) {
+          const form = await page.locator("#auth-form").boundingBox();
+          assert.ok(Math.abs(form.x + form.width / 2 - width / 2) <= 1, "Stacked login form must be centered");
+        }
+        assert.equal(await page.locator("#sidebar-toggle").isVisible(), false);
+        await layout(page, `login-${language}-${width}`);
+      }
     }
+    await page.locator("#language-select").selectOption("ko");
+    await page.route("**/api/v1/auth/login", route => route.fulfill({ status: 401, json: { detail: "Browser fixture: invalid credentials" } }));
+    await page.locator("#access-email").fill(email);
+    await page.locator("#access-password").fill("Browser fixture");
+    await page.locator("#auth-submit").click(); await visible(page, "#auth-error");
+    assert.equal(await page.locator("#auth-submit").isEnabled(), true);
+    assert.equal(await page.locator("#auth-loading").isVisible(), false);
+    await layout(page, "login-rejected-320");
+    await page.unroute("**/api/v1/auth/login");
     await page.setViewportSize({ width: 1440, height: 1000 });
     await login(page);
     assert.equal(await page.locator("html").getAttribute("data-bs-theme"), "dark");
@@ -152,6 +181,7 @@ async function login(page) {
       await page.unroute("**/ui/**");
     }
     await fs.writeFile(path.join(output, "content-positions.json"), JSON.stringify(positions, null, 2));
+    await require("./verify-ui-sidebar.cjs")(page, base, layout);
     // Relocated advanced filters remain keyboard accessible and survive URL reloads.
     for (const [view, prefix, field, value] of [
       ["signatures", "signature", "environment", incident.environment],
@@ -292,9 +322,10 @@ async function login(page) {
       await page.setViewportSize({ width, height: 844 }); await layout(page, `settings-navigation-${width}`);
     }
     await page.goto(`${base}/ui/?view=admin&section=connections`); await visible(page, "#admin-connections-page");
-    await page.locator("#connection-secret-help-trigger").focus();
+    await page.locator("#connection-secret").focus();
     await page.keyboard.press("Shift+Tab");
-    await page.keyboard.press("Tab");
+    assert.equal(await page.locator(":focus").getAttribute("id"), "connection-secret-help-trigger");
+    await page.waitForFunction(() => getComputedStyle(document.querySelector(".field-help-tooltip")).visibility === "visible");
     assert.equal(await page.locator(".field-help-tooltip").evaluate(el => getComputedStyle(el).visibility), "visible");
     // Report browsing no longer loads configuration; settings has its own page.
     await page.setViewportSize({ width: 1440, height: 1000 });

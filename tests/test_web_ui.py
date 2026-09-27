@@ -40,7 +40,7 @@ def test_web_ui_serves_dashboard_with_browser_security_headers(
 
     script = request(create_app(settings, session_factory), "GET", "/ui/app.js")
     assert script.headers["cache-control"] == "no-store"
-    assert 'src="/ui/app.js?v=20260927-report-settings1"' in response.text
+    assert 'src="/ui/app.js?v=20260927-login1"' in response.text
 
 
 def test_auth_title_remains_exactly_two_lines_in_both_languages(
@@ -373,28 +373,27 @@ def test_primary_navigation_uses_a_collapsible_left_sidebar(
     sidebar = shell.text[
         shell.text.index('<aside id="site-sidebar"') : shell.text.index("</aside>")
     ]
-    assert 'id="sidebar-toggle"' not in header
-    assert 'id="sidebar-toggle"' in sidebar
-    assert sidebar.index('id="sidebar-toggle"') > sidebar.index("</nav>")
-    assert 'aria-controls="primary-navigation"' in sidebar
-    assert 'aria-expanded="true"' in sidebar
-    assert 'id="sidebar-toggle-icon"' in sidebar
-    assert 'id="site-sidebar" class="site-sidebar navbar navbar-vertical" hidden' in shell.text
-    assert '<span class="nav-label">Error patterns</span>' in shell.text
-    assert '<span class="nav-label">Diagnosis History</span>' in shell.text
+    assert 'id="sidebar-toggle"' in header
+    assert 'id="sidebar-toggle"' not in sidebar
+    assert 'aria-controls="primary-navigation"' in header
+    assert 'aria-expanded="true"' in header
+    assert 'class="navbar-toggler-icon"' in header
+    assert 'id="site-sidebar" class="site-sidebar navbar navbar-vertical navbar-expand-lg" hidden' in shell.text
+    assert '<span class="nav-label nav-link-title">Error patterns</span>' in shell.text
+    assert '<span class="nav-label nav-link-title">Diagnosis History</span>' in shell.text
     assert ".app-shell" in stylesheet.text
     assert ".site-sidebar" in stylesheet.text
-    assert "body.sidebar-collapsed .app-shell" in stylesheet.text
     assert "body.sidebar-hidden .app-shell" in stylesheet.text
-    assert "grid-template-columns: 48px minmax(0, 1fr)" in stylesheet.text
-    assert "body.sidebar-collapsed .primary-nav" in stylesheet.text
+    assert "grid-template-columns: var(--tblr-sidebar-width) minmax(0, 1fr)" in stylesheet.text
+    assert "body.sidebar-collapsed .site-sidebar" in stylesheet.text
     assert "function setSidebarCollapsed(collapsed)" in script.text
     assert "function setSidebarVisibility(visible)" in script.text
     assert "setSidebarVisibility(false)" in script.text
     assert "setSidebarVisibility(true)" in script.text
     assert 'document.body.classList.toggle("sidebar-hidden", !navigationVisible)' in script.text
     assert "elements.siteSidebar.hidden = !navigationVisible" in script.text
-    assert 'elements.sidebarToggleIcon.textContent = sidebarCollapsed ? ">" : "<"' in script.text
+    assert 'setAttribute("data-bs-sidebar", "folded-hover")' in script.text
+    assert 'sidebarMedia.addEventListener("change"' in script.text
     assert 'elements.sidebarToggle.addEventListener("click"' in script.text
 
 
@@ -649,8 +648,8 @@ def test_admin_user_management_ui_is_role_gated_and_uses_write_only_password_fie
     stylesheet = request(app, "GET", "/ui/app.css")
     script = request(app, "GET", "/ui/app.js")
 
-    assert 'id="admin-navigation" class="settings-navigation" hidden' in shell.text
-    assert '<summary id="admin-nav" class="nav-link">' in shell.text
+    assert 'id="admin-navigation" class="settings-navigation nav-item" hidden' in shell.text
+    assert '<summary id="admin-nav" class="nav-link dropdown-toggle">' in shell.text
     for section in ("users", "connections", "reports", "audit"):
         assert f'data-settings-link="{section}"' in shell.text
         assert f'href="/ui/?view=admin&amp;section={section}"' in shell.text
