@@ -52,6 +52,7 @@ function control(name, defaultValue = "", select = false) {
 
 function filters(signature = false) {
   const advanced = [
+    ...(!signature ? [control("environment")] : []),
     control("task_id"),
     control("sort", signature ? "last_seen_at" : "last_failure_at", true),
     control("order", "desc", true),
@@ -59,7 +60,7 @@ function filters(signature = false) {
   ];
   const details = { open: false, querySelectorAll: () => advanced };
   const form = {
-    elements: [control("status", "OPEN", true), control("environment"), control("dag_id"), ...advanced],
+    elements: [control("status", "OPEN", true), ...(signature ? [control("environment")] : []), control("dag_id"), ...advanced],
     querySelector: () => details,
   };
   const context = runtime(["revealAdvancedFilters", "setFiltersFromUrl", "setSignatureFiltersFromUrl"], {
@@ -79,7 +80,8 @@ test("URL task filters and non-default ordering remain visible and preserve pagi
   assert.equal(context.currentOffset, 20);
   context.window.location.search = "?environment=production";
   context[restore]();
-  assert.equal(details.open, false);
+  assert.equal(details.open, true);
+  assert.equal(form.elements.find((item) => item.name === "environment").value, "production");
   assert.equal(form.elements.find((item) => item.name === "task_id").value, "");
   assert.equal(context.currentOffset, 0);
 });
@@ -164,6 +166,10 @@ class TestNode {
     this.children = [];
     this.dataset = {};
     this.attributes = {};
+    this.classList = {
+      add: (...values) => { this.className = [...new Set([...(this.className || "").split(" ").filter(Boolean), ...values])].join(" "); },
+      remove: (...values) => { this.className = (this.className || "").split(" ").filter(value => !values.includes(value)).join(" "); },
+    };
   }
   set textContent(value) { this.children = [String(value)]; }
   get textContent() { return this.children.map((child) => typeof child === "string" ? child : child.textContent).join(""); }
@@ -174,7 +180,7 @@ class TestNode {
 
 test("incident rows show only the error description and preserve filtered detail navigation", () => {
   const elements = { rows: new TestNode("tbody") };
-  const context = runtime(["textElement", "appendCell", "renderRows"], {
+  const context = runtime(["textElement", "appendCell", "applyStatusColor", "renderRows"], {
     Node: TestNode,
     document: { createElement: (tag) => new TestNode(tag) },
     elements,
@@ -211,5 +217,32 @@ test("incident rows show only the error description and preserve filtered detail
     const error = elements.rows.children[0].children[1].children[0];
     assert.equal(error.children.length, 1);
     assert.equal(error.textContent, expected);
+  }
+});
+
+test("Tabler badges retain source, validation and status meanings when reused", () => {
+  const context = runtime(["textElement", "applyStatusColor", "sourceBadge", "validationBadge"], {
+    document: { createElement: tag => new TestNode(tag) },
+  });
+  const badge = new TestNode("span");
+  badge.className = "status-badge badge";
+  context.applyStatusColor(badge, "OPEN");
+  assert.ok(badge.className.includes("bg-red-lt"));
+  context.applyStatusColor(badge, "RESOLVED");
+  assert.ok(badge.className.includes("bg-green-lt"));
+  assert.ok(!badge.className.includes("bg-red-lt"));
+  context.applyStatusColor(badge, "IGNORED");
+  assert.ok(badge.className.includes("bg-secondary-lt"));
+  for (const source of ["AI", "RULE", "REUSED", "OPERATOR"]) {
+    const result = context.sourceBadge(source);
+    assert.equal(result.textContent, source);
+    assert.equal(result.dataset.source, source);
+    assert.ok(result.className.includes("badge"));
+  }
+  for (const status of ["PASSED", "REJECTED", "CONFIRMED", "WITHDRAWN"]) {
+    const result = context.validationBadge(status);
+    assert.equal(result.textContent, status);
+    assert.equal(result.dataset.validation, status);
+    assert.ok(result.className.includes(["REJECTED", "WITHDRAWN"].includes(status) ? "bg-red-lt" : "bg-green-lt"));
   }
 });

@@ -32,6 +32,10 @@ const KOREAN_TRANSLATIONS = Object.freeze({
   "Error summary unavailable": "오류 요약 없음",
   "Status totals use the same environment, DAG and task filters, regardless of the selected status.": "대응 대기·조사 중 건수는 선택한 상태와 무관하게 같은 환경·DAG·태스크 조건으로 집계합니다.",
   "More filters and sorting": "상세 필터 및 정렬",
+  "About these counts": "집계 기준",
+  Refresh: "새로고침",
+  RETRYABLE: "재시도 가능",
+  NOT_RETRYABLE: "재시도 불가",
   "Report delivery settings": "리포트 발송 설정",
   "Automatic diagnosis for the latest failure": "최신 실패의 자동 진단",
   "No validated diagnosis is available for the latest failure. Review its task log or earlier attempts in the history.": "최신 실패의 유효한 진단이 아직 없습니다. 태스크 로그 또는 이전 실패 이력을 확인하세요.",
@@ -785,6 +789,8 @@ const elements = {
   detailStatus: document.querySelector("#detail-status"),
   detailStateHelp: document.querySelector("#detail-state-help"),
   currentDiagnosisPanel: document.querySelector("#current-diagnosis-panel"),
+  incidentDiagnoses: document.querySelector("#incident-diagnoses"),
+  humanDiagnosisPanel: document.querySelector("#human-diagnosis-panel"),
   currentDiagnosisContent: document.querySelector("#current-diagnosis-content"),
   detailEnvironment: document.querySelector("#detail-environment"),
   detailTitle: document.querySelector("#detail-title"),
@@ -1180,11 +1186,11 @@ function showConnectedView(view) {
   elements.reportDetail.hidden = view !== "report-detail";
   elements.adminDashboard.hidden = !adminView;
   elements.adminNav.hidden = session.role !== "admin";
-  elements.incidentsNav.classList.toggle("is-active", incidentView);
-  elements.signaturesNav.classList.toggle("is-active", signatureView);
-  elements.diagnosesNav.classList.toggle("is-active", diagnosisView);
-  elements.reportsNav.classList.toggle("is-active", reportView);
-  elements.adminNav.classList.toggle("is-active", adminView);
+  elements.incidentsNav.classList.toggle("active", incidentView);
+  elements.signaturesNav.classList.toggle("active", signatureView);
+  elements.diagnosesNav.classList.toggle("active", diagnosisView);
+  elements.reportsNav.classList.toggle("active", reportView);
+  elements.adminNav.classList.toggle("active", adminView);
   for (const [nav, active] of [
     [elements.incidentsNav, incidentView],
     [elements.signaturesNav, signatureView],
@@ -1501,8 +1507,9 @@ function renderRows(items) {
     row.dataset.incidentId = incident.id;
 
     const status = document.createElement("span");
-    status.className = "status-badge";
+    status.className = "status-badge badge";
     status.dataset.status = incident.status;
+    applyStatusColor(status, incident.status);
     status.textContent = incident.status.replaceAll("_", " ");
     appendCell(row, status);
 
@@ -1534,11 +1541,16 @@ function renderRows(items) {
     const inspect = document.createElement("a");
     const detailParams = new URLSearchParams(window.location.search);
     detailParams.set("incident", incident.id);
-    inspect.className = "inspect-link";
+    inspect.className = "inspect-link btn btn-outline-secondary btn-sm";
     inspect.href = `/ui/?${detailParams.toString()}`;
     inspect.textContent = "Inspect";
     inspect.setAttribute("aria-label", `Inspect ${incident.dag_id} ${incident.task_id} Incident`);
     appendCell(row, inspect, "action-cell");
+    for (const [index, title] of [[2, "Environment"], [3, "DAG / Task"], [4, "Failures"], [5, "Last activity"]]) {
+      const label = textElement("span", title, "incident-cell-label");
+      label.setAttribute("aria-hidden", "true");
+      row.children[index].append(label);
+    }
     elements.rows.append(row);
   }
 }
@@ -1626,7 +1638,7 @@ function renderSignatureRows(items) {
     params.set("view", "signatures");
     params.set("signature", signature.id);
     params.delete("occurrence_offset");
-    inspect.className = "inspect-link";
+    inspect.className = "inspect-link btn btn-outline-secondary btn-sm";
     inspect.href = `/ui/?${params.toString()}`;
     inspect.textContent = "Explore";
     inspect.setAttribute("aria-label", `Explore ${signatureLabel(signature)}`);
@@ -1668,7 +1680,7 @@ function renderLatestSignatureDiagnosis(diagnosis) {
   labels.className = "diagnosis-labels signature-diagnosis-labels";
   labels.append(
     sourceBadge(diagnosis.source),
-    textElement("span", diagnosis.classification, "classification-badge"),
+    textElement("span", diagnosis.classification, "classification-badge badge bg-blue-lt"),
   );
   const rootCause = textElement(
     "p",
@@ -1716,7 +1728,7 @@ function renderSignatureIdentity(signature) {
   }
   for (const diagnosis of operatorDiagnoses) {
     const item = document.createElement("article");
-    item.className = "diagnosis-card operator-diagnosis-card";
+    item.className = "diagnosis-card card card-body operator-diagnosis-card";
     const meta = document.createElement("div");
     meta.className = "diagnosis-card-meta";
     const metaIncident = document.createElement("div");
@@ -1758,7 +1770,7 @@ function renderSignatureIdentity(signature) {
       "인시던트 보기",
       `/ui/?incident=${encodeURIComponent(diagnosis.incident_id)}`,
     );
-    incidentButton.className = "button button-secondary operator-diagnosis-button";
+    incidentButton.className = "btn btn-outline-secondary operator-diagnosis-button";
     footer.append(incidentButton);
     item.append(meta, body, footer);
     elements.signatureOperatorDiagnoses.append(item);
@@ -1779,7 +1791,9 @@ function trendQueryForSignature(signature, days = currentSignatureTrendDays) {
 
 function updateSignatureTrendControls() {
   elements.signatureTrend7.setAttribute("aria-pressed", String(currentSignatureTrendDays === 7));
+  elements.signatureTrend7.classList.toggle("active", currentSignatureTrendDays === 7);
   elements.signatureTrend30.setAttribute("aria-pressed", String(currentSignatureTrendDays === 30));
+  elements.signatureTrend30.classList.toggle("active", currentSignatureTrendDays === 30);
 }
 
 function renderSignatureTrend(payload) {
@@ -1820,8 +1834,9 @@ function renderSignatureOccurrences(payload) {
     const incident = document.createElement("div");
     incident.className = "task-identity";
     const status = textElement("strong", occurrence.incident_status);
-    status.className = "status-badge";
+    status.className = "status-badge badge";
     status.dataset.status = occurrence.incident_status;
+    applyStatusColor(status, occurrence.incident_status);
     incident.append(status, textElement("span", `INC-${shortId(occurrence.incident_id)}`));
     appendCell(row, incident);
 
@@ -1841,7 +1856,7 @@ function renderSignatureOccurrences(payload) {
     appendCell(row, timestampBlock(occurrence.observed_at));
 
     const inspect = document.createElement("a");
-    inspect.className = "inspect-link";
+    inspect.className = "inspect-link btn btn-outline-secondary btn-sm";
     inspect.href = `/ui/?incident=${encodeURIComponent(occurrence.incident_id)}`;
     inspect.textContent = "Inspect";
     inspect.setAttribute("aria-label", `Inspect Incident ${occurrence.incident_id}`);
@@ -1867,15 +1882,34 @@ function setDiagnosisLoading(isLoading) {
     || currentDiagnosisOffset + DIAGNOSIS_PAGE_SIZE >= currentDiagnosisTotal;
 }
 
+function applyStatusColor(element, status) {
+  const colors = {
+    OPEN: "red", FAILED: "red", OFFLINE: "red", DISABLED: "secondary",
+    ACKNOWLEDGED: "yellow", PENDING: "yellow", RUNNING: "yellow", CLAIMED: "yellow",
+    RECOVERED: "green", RESOLVED: "green", DELIVERED: "green", ONLINE: "green",
+    SUCCEEDED: "green", ACTIVE: "green",
+  };
+  for (const color of ["red", "yellow", "green", "secondary"]) {
+    element.classList.remove(`bg-${color}-lt`);
+  }
+  element.classList.add(`bg-${colors[status] || "secondary"}-lt`);
+}
+
 function sourceBadge(source) {
-  const badge = textElement("span", source, "source-badge");
+  const badge = textElement("span", source, "source-badge badge");
   badge.dataset.source = source;
+  const color = source === "RULE" ? "yellow" : source === "REUSED" ? "cyan" : "blue";
+  badge.classList.add(`bg-${color}-lt`);
   return badge;
 }
 
 function validationBadge(validationStatus) {
-  const badge = textElement("span", validationStatus, "validation-badge");
+  const badge = textElement("span", validationStatus, "validation-badge badge");
   badge.dataset.validation = validationStatus;
+  const color = ["REJECTED", "WITHDRAWN"].includes(validationStatus)
+    ? "red"
+    : ["PASSED", "CONFIRMED", "UPDATED"].includes(validationStatus) ? "green" : "secondary";
+  badge.classList.add(`bg-${color}-lt`);
   if (validationStatus === "REJECTED") {
     badge.classList.add("is-rejected");
   }
@@ -1935,7 +1969,7 @@ function renderDiagnosisRows(items) {
     if (diagnosis.error_signature_id) {
       appendCell(row, contextLink(`SIG-${shortId(diagnosis.error_signature_id)}`, `/ui/?view=signatures&signature=${encodeURIComponent(diagnosis.error_signature_id)}`));
     } else {
-      appendCell(row, textElement("span", "UNSIGNABLE", "muted-badge"));
+      appendCell(row, textElement("span", "UNSIGNABLE", "muted-badge badge bg-secondary-lt"));
     }
     appendCell(row, diagnosisHistorySourceBadge(diagnosis.source_type));
     appendCell(row, textElement("span", diagnosis.root_cause || "—"));
@@ -1995,7 +2029,7 @@ async function loadDiagnosisSummary() {
 
 function contextLink(label, href, external = false) {
   const link = document.createElement("a");
-  link.className = "inspect-link";
+  link.className = "inspect-link btn btn-outline-secondary btn-sm";
   link.href = href;
   link.textContent = label;
   if (external) {
@@ -2012,7 +2046,7 @@ function renderDiagnosisDetail(diagnosis) {
     validationBadge(diagnosis.validation_status),
   );
   if (diagnosis.effective) {
-    elements.diagnosisDetailLabels.append(textElement("span", "Effective", "effective-badge"));
+    elements.diagnosisDetailLabels.append(textElement("span", "Effective", "effective-badge badge bg-green-lt"));
   }
   elements.diagnosisDetailTitle.textContent = diagnosis.classification || "UNKNOWN";
   elements.diagnosisDetailRootCause.textContent = diagnosis.root_cause
@@ -2028,7 +2062,7 @@ function renderDiagnosisDetail(diagnosis) {
   elements.diagnosisDetailCreated.textContent = formatTimestamp(diagnosis.created_at).primary;
 
   const rootCause = document.createElement("section");
-  rootCause.className = "context-panel diagnosis-primary-section";
+  rootCause.className = "context-panel card card-body diagnosis-primary-section";
   rootCause.append(
     textElement("h2", "Root Cause"),
     textElement(
@@ -2041,26 +2075,26 @@ function renderDiagnosisDetail(diagnosis) {
     rootCause.append(textElement(
       "p",
       "Rejected AI attempt — retained for provenance and never used as the effective Diagnosis.",
-      "rejection-note",
+      "rejection-note alert alert-danger",
     ));
   }
   if (diagnosis.source === "REUSED") {
     rootCause.append(textElement(
       "p",
       `Content resolved from original Diagnosis ${diagnosis.content_diagnosis_id}.`,
-      "reuse-note",
+      "reuse-note alert alert-info",
     ));
   }
 
   const evidence = renderEvidence(diagnosis.evidence, "h2");
-  evidence.classList.add("context-panel", "diagnosis-primary-section");
+  evidence.classList.add("context-panel", "card", "card-body", "diagnosis-primary-section");
   const actions = renderActions(diagnosis.recommended_actions, "h2");
   if (actions) {
-    actions.classList.add("context-panel", "diagnosis-primary-section");
+    actions.classList.add("context-panel", "card", "card-body", "diagnosis-primary-section");
   }
 
   const reasoning = document.createElement("section");
-  reasoning.className = "diagnosis-supplement context-panel";
+  reasoning.className = "diagnosis-supplement context-panel card card-body";
   reasoning.append(textElement("h3", "Reasoning metadata"));
   const reasoningFields = document.createElement("dl");
   reasoningFields.className = "context-fields";
@@ -2069,8 +2103,8 @@ function renderDiagnosisDetail(diagnosis) {
     definitionItem("Matched rule", diagnosis.matched_rule || "Unavailable"),
   );
   reasoning.append(reasoningFields);
-  reasoning.append(textElement("p", "Confidence is the diagnosis score, not a measured accuracy rate.", "heading-copy"));
-  reasoning.append(textElement("p", "Validation describes automated checks, not operator confirmation of the cause. AI checks include matching cited evidence to the log.", "heading-copy"));
+  reasoning.append(textElement("p", "Confidence is the diagnosis score, not a measured accuracy rate.", "heading-copy text-secondary"));
+  reasoning.append(textElement("p", "Validation describes automated checks, not operator confirmation of the cause. AI checks include matching cited evidence to the log.", "heading-copy text-secondary"));
   if (diagnosis.extracted_values.length) {
     const extracted = document.createElement("ul");
     extracted.className = "extracted-values";
@@ -2085,7 +2119,7 @@ function renderDiagnosisDetail(diagnosis) {
   }
   if (diagnosis.validation_errors.length) {
     const validation = document.createElement("section");
-    validation.className = "context-panel diagnosis-primary-section validation-errors";
+    validation.className = "context-panel card card-body diagnosis-primary-section validation-errors";
     validation.append(textElement("h2", "Validation errors"));
     const list = document.createElement("ul");
     for (const error of diagnosis.validation_errors) {
@@ -2274,7 +2308,7 @@ function copyDefinitionItem(term, description) {
   wrapper.className = "copy-definition";
   const value = document.createElement("dd");
   value.append(textElement("code", description));
-  const button = textElement("button", "Copy", "copy-button");
+  const button = textElement("button", "Copy", "copy-button btn btn-outline-secondary btn-sm");
   button.type = "button";
   button.setAttribute("aria-label", `Copy ${term}`);
   button.addEventListener("click", async () => {
@@ -2334,7 +2368,7 @@ function renderActions(actions, headingTag = "h4") {
 
 function renderDiagnosis(diagnosis, includeDetailLink = true) {
   const card = document.createElement("article");
-  card.className = "diagnosis-card";
+  card.className = "diagnosis-card card card-body";
   if (diagnosis.effective) {
     card.classList.add("is-effective");
   }
@@ -2349,7 +2383,7 @@ function renderDiagnosis(diagnosis, includeDetailLink = true) {
   labels.append(sourceBadge(diagnosis.source));
   labels.append(validationBadge(diagnosis.validation_status));
   if (diagnosis.effective) {
-    labels.append(textElement("span", "Effective", "effective-badge"));
+    labels.append(textElement("span", "Effective", "effective-badge badge bg-green-lt"));
   }
   const rootCause = textElement(
     "h3",
@@ -2363,14 +2397,14 @@ function renderDiagnosis(diagnosis, includeDetailLink = true) {
     card.append(textElement(
       "p",
       "Rejected AI attempt — retained for provenance and never used as the effective Diagnosis.",
-      "rejection-note",
+      "rejection-note alert alert-danger",
     ));
   }
   if (diagnosis.source === "REUSED") {
     card.append(textElement(
       "p",
       `Content resolved from original Diagnosis ${diagnosis.content_diagnosis_id}.`,
-      "reuse-note",
+      "reuse-note alert alert-info",
     ));
   }
 
@@ -2391,8 +2425,8 @@ function renderDiagnosis(diagnosis, includeDetailLink = true) {
     ),
   );
   card.append(facts);
-  card.append(textElement("p", "Confidence is the diagnosis score, not a measured accuracy rate.", "heading-copy"));
-  card.append(textElement("p", "Validation describes automated checks, not operator confirmation of the cause. AI checks include matching cited evidence to the log.", "heading-copy"));
+  card.append(textElement("p", "Confidence is the diagnosis score, not a measured accuracy rate.", "heading-copy text-secondary"));
+  card.append(textElement("p", "Validation describes automated checks, not operator confirmation of the cause. AI checks include matching cited evidence to the log.", "heading-copy text-secondary"));
   card.append(renderEvidence(diagnosis.evidence));
 
   const actions = renderActions(diagnosis.recommended_actions);
@@ -2439,7 +2473,7 @@ function renderDiagnosis(diagnosis, includeDetailLink = true) {
 
 function renderSignature(signature) {
   const panel = document.createElement("details");
-  panel.className = "signature-panel";
+  panel.className = "signature-panel card";
   const summary = document.createElement("summary");
   summary.textContent = "Error Signature";
   const content = document.createElement("dl");
@@ -2462,9 +2496,9 @@ function renderSignature(signature) {
 
 function renderFailure(failure, index) {
   const card = document.createElement("article");
-  card.className = "failure-card";
+  card.className = "failure-card card";
   const heading = document.createElement("header");
-  heading.className = "failure-heading";
+  heading.className = "failure-heading card-header";
   const title = document.createElement("div");
   title.append(
     textElement("p", `Occurrence ${index + 1}`, "table-kicker"),
@@ -2514,7 +2548,7 @@ function renderFailure(failure, index) {
     card.append(textElement(
       "p",
       "Unsignable Failure — no stable Error Signature was available for correlation.",
-      "unsignable-note",
+      "unsignable-note alert alert-warning",
     ));
   }
   return card;
@@ -2601,10 +2635,10 @@ function renderOperatorControls(status, transitions) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = action.status === "IGNORED"
-      ? "button button-danger"
+      ? "btn btn-outline-danger"
       : action.status === "RESOLVED"
-        ? "button button-primary"
-        : "button button-secondary";
+        ? "btn btn-primary"
+        : "btn btn-outline-secondary";
     button.textContent = action.label;
     button.addEventListener("click", () => openTransitionDialog(action));
     elements.operatorActions.append(button);
@@ -2660,14 +2694,14 @@ function renderHumanDiagnosis(diagnosis) {
   }
   const publish = document.createElement("button");
   publish.type = "button";
-  publish.className = "button button-secondary";
+  publish.className = "btn btn-outline-secondary";
   publish.textContent = translatedText(diagnosis ? "Edit" : "Add diagnosis");
   publish.addEventListener("click", openHumanDiagnosisDialog);
   elements.humanDiagnosisActions.append(publish);
   if (diagnosis) {
     const withdraw = document.createElement("button");
     withdraw.type = "button";
-    withdraw.className = "button button-danger";
+    withdraw.className = "btn btn-outline-danger";
     withdraw.textContent = translatedText("Withdraw");
     withdraw.addEventListener("click", submitHumanDiagnosisWithdrawal);
     elements.humanDiagnosisActions.append(withdraw);
@@ -2864,19 +2898,23 @@ function renderCurrentDiagnosis(payload) {
   const content = elements.currentDiagnosisContent;
   content.replaceChildren();
   elements.currentDiagnosisPanel.open = !payload.current_human_diagnosis;
+  elements.humanDiagnosisPanel.open = Boolean(payload.current_human_diagnosis);
+  elements.incidentDiagnoses.prepend(payload.current_human_diagnosis
+    ? elements.humanDiagnosisPanel : elements.currentDiagnosisPanel);
   const diagnosis = latestFailureDiagnosis(payload.failures);
   const latestFailure = payload.failures.at(-1);
-  if (latestFailure) {
-    content.append(textElement("p", formatTimestamp(latestFailure.observed_at).primary, "heading-copy"));
-  }
   if (!diagnosis) {
-    content.append(textElement("p", "No validated diagnosis is available for the latest failure. Review its task log or earlier attempts in the history.", "heading-copy"));
+    content.append(textElement("p", "No validated diagnosis is available for the latest failure. Review its task log or earlier attempts in the history.", "heading-copy text-secondary"));
   } else {
+    const labels = document.createElement("div");
+    labels.className = "diagnosis-labels";
+    labels.append(sourceBadge(diagnosis.source), validationBadge(diagnosis.validation_status));
+    content.append(labels);
     content.append(textElement("h3", diagnosis.root_cause || "No Root Cause was produced", "diagnosis-root-cause"));
     const facts = document.createElement("dl");
     facts.className = "diagnosis-facts";
     facts.append(
-      definitionItem("Source", diagnosis.source),
+      definitionItem("Last activity", formatTimestamp(latestFailure.observed_at).primary),
       definitionItem("Retry", diagnosis.retry_decision || "UNKNOWN"),
       definitionItem("Review", diagnosis.operator_review_required === null
         ? "Unavailable" : diagnosis.operator_review_required ? "Operator required" : "Not required"),
@@ -2904,6 +2942,7 @@ function renderIncidentDetail(payload) {
   currentIncidentStatus = incident.status;
   elements.detailStatus.textContent = incident.status.replaceAll("_", " ");
   elements.detailStatus.dataset.status = incident.status;
+  applyStatusColor(elements.detailStatus, incident.status);
   elements.detailStateHelp.textContent = {
     OPEN: "This incident is awaiting investigation.",
     ACKNOWLEDGED: "An operator has started investigating this incident.",
@@ -3146,14 +3185,16 @@ async function loadDiagnoses() {
 }
 
 function reportStatusBadge(status) {
-  const badge = textElement("span", status, "status-badge");
+  const badge = textElement("span", status, "status-badge badge");
   badge.dataset.status = status;
+  applyStatusColor(badge, status);
   return badge;
 }
 
 function setReportSchedulerStatus(status) {
   elements.reportSchedulerStatus.textContent = status === "ONLINE" ? "정상" : "오프라인";
   elements.reportSchedulerStatus.dataset.status = status;
+  applyStatusColor(elements.reportSchedulerStatus, status);
 }
 
 function formatScheduleTimestamp(value, timezone) {
@@ -3166,7 +3207,7 @@ function formatScheduleTimestamp(value, timezone) {
 
 function scheduleSummary(schedule) {
   const card = document.createElement("article");
-  card.className = "report-schedule-card";
+  card.className = "report-schedule-card card card-body";
   const heading = textElement("h3", schedule.display_name);
   const copy = textElement(
     "p",
@@ -3417,7 +3458,7 @@ function renderReportRows(items) {
   for (const report of items) {
     const row = document.createElement("tr");
     appendCell(row, report.report_date);
-    appendCell(row, textElement("span", report.environment, "environment-chip"));
+    appendCell(row, textElement("span", report.environment, "environment-chip badge bg-secondary-lt"));
     appendCell(row, String(report.statistics.failure_attempts), "numeric");
     appendCell(row, String(report.statistics.affected_dag_runs), "numeric");
     appendCell(row, String(report.statistics.incidents.unresolved), "numeric");
@@ -3540,8 +3581,8 @@ function renderReportDetail(report) {
   const ruleReport = report.rule_based_report;
   elements.reportDetailLabels.replaceChildren(
     reportStatusBadge(report.status),
-    textElement("span", report.environment, "environment-chip"),
-    textElement("span", report.ai_summary_used ? "AI-assisted" : "Rule-based", "source-badge"),
+    textElement("span", report.environment, "environment-chip badge bg-secondary-lt"),
+    textElement("span", report.ai_summary_used ? "AI-assisted" : "Rule-based", "source-badge badge bg-blue-lt"),
   );
   elements.reportDetailTitle.textContent = ruleReport.title;
   elements.reportDetailSubtitle.textContent = `${report.report_date} · ${statistics.timezone} · schema v${report.report_schema_version}`;
@@ -3821,7 +3862,7 @@ async function adminApiRequest(url, options = {}) {
   return response;
 }
 
-function adminActionButton(label, action, className = "button button-secondary") {
+function adminActionButton(label, action, className = "btn btn-outline-secondary") {
   const button = document.createElement("button");
   button.type = "button";
   button.className = className;
@@ -3892,12 +3933,13 @@ function renderAdminUsers(users) {
     );
     appendCell(row, identity);
 
-    const statusBadge = textElement("span", user.status, "status-badge");
+    const statusBadge = textElement("span", user.status, "status-badge badge");
     statusBadge.dataset.status = user.status;
+    applyStatusColor(statusBadge, user.status);
     appendCell(row, statusBadge);
 
     const roleSelect = document.createElement("select");
-    roleSelect.className = "admin-role-select";
+    roleSelect.className = "admin-role-select form-select";
     roleSelect.setAttribute("aria-label", `Role for ${user.email}`);
     for (const role of ["VIEWER", "OPERATOR", "ADMIN"]) {
       const option = document.createElement("option");
@@ -3924,7 +3966,7 @@ function renderAdminUsers(users) {
           { status: user.status === "ACTIVE" ? "DISABLED" : "ACTIVE" },
           `${user.status === "ACTIVE" ? "Disabled" : "Enabled"} ${user.email}.`,
         ),
-        user.status === "ACTIVE" ? "button button-danger" : "button button-secondary",
+        user.status === "ACTIVE" ? "btn btn-outline-danger" : "btn btn-outline-secondary",
       ),
       adminActionButton("Reset password", () => openPasswordResetDialog(user)),
       adminActionButton("Revoke sessions", () => revokeManagedUserSessions(user)),
@@ -4088,8 +4130,9 @@ function renderAdminConnections(connections) {
     const lastTest = document.createElement("div");
     lastTest.className = "task-identity";
     if (connection.last_test_status) {
-      const badge = textElement("span", connection.last_test_status, "status-badge");
+      const badge = textElement("span", connection.last_test_status, "status-badge badge");
       badge.dataset.status = connection.last_test_status;
+      applyStatusColor(badge, connection.last_test_status);
       lastTest.append(
         badge,
         textElement("span", connection.last_test_error_category || "No error"),
@@ -4113,7 +4156,7 @@ function renderAdminConnections(connections) {
       actions.append(adminActionButton(
         "Disable",
         () => disableManagedConnection(connection),
-        "button button-danger",
+        "btn btn-outline-danger",
       ));
     }
     appendCell(row, actions);

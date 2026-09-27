@@ -1,47 +1,48 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
     <meta name="description" content="DagSentry incident operations dashboard">
     <title>DagSentry — Incident operations</title>
-    <link rel="stylesheet" href="/ui/app.css?v=20260830-1">
-    <script src="/ui/app.js?v=20260830-1" defer></script>
+    <link rel="stylesheet" href="/ui/vendor/tabler-1.6.0/tabler.min.css">
+    <link rel="stylesheet" href="/ui/app.css?v=20260927-hierarchy1">
+    <script src="/ui/app.js?v=20260927-hierarchy1" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
 
-    <header class="site-header">
+    <header class="site-header navbar">
       <div class="header-brand-group">
-        <a class="brand" href="/ui/" aria-label="DagSentry home">
+        <a class="brand navbar-brand" href="/ui/" aria-label="DagSentry home">
           <span class="brand-mark" aria-hidden="true"><span></span></span>
           <span class="brand-name">DagSentry</span>
         </a>
       </div>
       <div class="session-actions">
-        <label class="visually-hidden" for="language-select">Language</label>
-        <select id="language-select" aria-label="Language">
+        <label class="visually-hidden form-label" for="language-select">Language</label>
+        <select id="language-select" aria-label="Language" class="form-select">
           <option value="ko">한국어</option>
           <option value="en">English</option>
         </select>
-        <label class="visually-hidden" for="timezone-select">Timezone</label>
-        <select id="timezone-select" aria-label="Timezone">
+        <label class="visually-hidden form-label" for="timezone-select">Timezone</label>
+        <select id="timezone-select" aria-label="Timezone" class="form-select">
           <option value="Asia/Seoul">Asia/Seoul</option>
           <option value="UTC">UTC</option>
           <option value="browser">Browser local</option>
         </select>
         <span id="session-status" class="session-status">Not connected</span>
-        <button id="disconnect-button" class="button button-quiet" type="button" hidden>
+        <button id="disconnect-button" class="btn btn-ghost-secondary" type="button" hidden>
           Log out
         </button>
       </div>
     </header>
 
     <div class="app-shell">
-      <aside id="site-sidebar" class="site-sidebar" hidden>
-        <nav id="primary-navigation" class="primary-nav" aria-label="Primary navigation">
-          <a id="incidents-nav" class="nav-link is-active" href="/ui/" aria-current="page">
+      <aside id="site-sidebar" class="site-sidebar navbar navbar-vertical" hidden>
+        <nav id="primary-navigation" class="primary-nav nav nav-pills" aria-label="Primary navigation">
+          <a id="incidents-nav" class="nav-link active" href="/ui/" aria-current="page">
             <span class="nav-label">Incident response</span>
           </a>
           <a id="signatures-nav" class="nav-link" href="/ui/?view=signatures">
@@ -59,7 +60,7 @@
         </nav>
         <button
           id="sidebar-toggle"
-          class="sidebar-toggle"
+          class="sidebar-toggle btn btn-outline-secondary"
           type="button"
           aria-controls="primary-navigation"
           aria-expanded="true"
@@ -78,11 +79,11 @@
             <span class="auth-title-line">Trace the evidence.</span>
           </h1>
         </div>
-        <form id="auth-form" class="auth-card">
+        <form id="auth-form" class="auth-card card card-body">
           <div>
-            <h2>Sign in to DagSentry</h2>
+            <h2 class="card-title">Sign in to DagSentry</h2>
           </div>
-          <label for="access-email">Email</label>
+          <label for="access-email" class="form-label">Email</label>
           <input
             id="access-email"
             name="email"
@@ -90,8 +91,9 @@
             autocomplete="username"
             maxlength="320"
             required
+            class="form-control"
           >
-          <label for="access-password">Password</label>
+          <label for="access-password" class="form-label">Password</label>
           <input
             id="access-password"
             name="password"
@@ -99,59 +101,63 @@
             autocomplete="current-password"
             spellcheck="false"
             required
+            class="form-control"
           >
-          <p id="auth-error" class="form-error" role="alert" hidden></p>
-          <button id="auth-submit" class="button button-primary" type="submit">Sign in</button>
+          <p id="auth-error" class="form-error text-danger" role="alert" hidden></p>
+          <button id="auth-submit" class="btn btn-primary" type="submit">Sign in</button>
         </form>
-        <form id="change-password-form" class="auth-card" hidden>
+        <form id="change-password-form" class="auth-card card card-body" hidden>
           <div>
-            <h2>Change temporary password</h2>
+            <h2 class="card-title">Change temporary password</h2>
           </div>
-          <label for="current-password">Current temporary password</label>
-          <input id="current-password" type="password" autocomplete="current-password" required>
-          <label for="new-password">New password</label>
-          <input id="new-password" type="password" autocomplete="new-password" minlength="12" required>
-          <label for="confirm-new-password">Confirm new password</label>
-          <input id="confirm-new-password" type="password" autocomplete="new-password" minlength="12" required>
-          <p id="change-password-error" class="form-error" role="alert" hidden></p>
-          <button class="button button-primary" type="submit">Change password</button>
+          <label for="current-password" class="form-label">Current temporary password</label>
+          <input id="current-password" type="password" autocomplete="current-password" required class="form-control">
+          <label for="new-password" class="form-label">New password</label>
+          <input id="new-password" type="password" autocomplete="new-password" minlength="12" required class="form-control">
+          <label for="confirm-new-password" class="form-label">Confirm new password</label>
+          <input id="confirm-new-password" type="password" autocomplete="new-password" minlength="12" required class="form-control">
+          <p id="change-password-error" class="form-error text-danger" role="alert" hidden></p>
+          <button class="btn btn-primary" type="submit">Change password</button>
         </form>
       </section>
 
       <section id="incident-dashboard" class="dashboard" aria-labelledby="dashboard-title" hidden>
-        <div class="dashboard-heading">
+        <div class="dashboard-heading page-header">
           <div>
-            <h1 id="dashboard-title">Incident response</h1>
-            <p class="heading-copy">
+            <h1 id="dashboard-title" class="page-title">Incident response</h1>
+            <p class="heading-copy text-secondary">
               Find an incident, review its cause, and decide the next action.
             </p>
           </div>
           <div class="page-header-actions">
-            <button id="refresh-incidents" class="button button-secondary" type="button">Refresh</button>
+            <button id="refresh-incidents" class="btn btn-outline-secondary" type="button">Refresh</button>
           </div>
         </div>
 
-        <div class="summary-strip" aria-label="Incident summary" aria-describedby="incident-summary-scope">
-          <div class="stat-card" aria-live="polite">
+        <div class="incident-summary" aria-label="Incident summary" aria-describedby="incident-summary-scope">
+          <div aria-live="polite">
             <span>Matching incidents</span>
             <strong id="incident-total">—</strong>
           </div>
-          <div class="stat-card stat-open" aria-live="polite">
+          <div aria-live="polite">
             <span>Open</span>
             <strong id="incident-open-total">—</strong>
           </div>
-          <div class="stat-card stat-acknowledged" aria-live="polite">
+          <div aria-live="polite">
             <span>Acknowledged</span>
             <strong id="incident-acknowledged-total">—</strong>
           </div>
+          <details class="incident-summary-help">
+            <summary>About these counts</summary>
+            <p id="incident-summary-scope" class="heading-copy text-secondary">Status totals use the same environment, DAG and task filters, regardless of the selected status.</p>
+          </details>
         </div>
-        <p id="incident-summary-scope" class="heading-copy">Status totals use the same environment, DAG and task filters, regardless of the selected status.</p>
 
-        <form id="filter-form" class="filter-panel uniform-control-height" aria-label="Incident filters">
-          <div class="filter-grid basic-filter-grid">
+        <form id="filter-form" class="filter-panel card card-body uniform-control-height" aria-label="Incident filters">
+          <div class="incident-primary-filters">
             <div class="field-group">
-              <label for="status-filter">Status</label>
-              <select id="status-filter" name="status">
+              <label for="status-filter" class="form-label">Status</label>
+              <select id="status-filter" name="status" class="form-select">
                 <option value="">All statuses</option>
                 <option value="OPEN">Open</option>
                 <option value="ACKNOWLEDGED">Acknowledged</option>
@@ -161,24 +167,28 @@
               </select>
             </div>
             <div class="field-group">
-              <label for="environment-filter">Environment</label>
-              <input id="environment-filter" name="environment" maxlength="64" placeholder="production">
+              <label for="dag-filter" class="form-label">DAG</label>
+              <input id="dag-filter" name="dag_id" maxlength="250" placeholder="orders_pipeline" class="form-control">
             </div>
-            <div class="field-group">
-              <label for="dag-filter">DAG</label>
-              <input id="dag-filter" name="dag_id" maxlength="250" placeholder="orders_pipeline">
+            <div class="filter-actions">
+              <button class="btn btn-primary" type="submit">Search</button>
+              <button id="clear-filters" class="btn btn-outline-secondary" type="button">Clear</button>
             </div>
           </div>
           <details class="advanced-filters">
             <summary>More filters and sorting</summary>
             <div class="filter-grid basic-filter-grid">
               <div class="field-group">
-                <label for="task-filter">Task</label>
-                <input id="task-filter" name="task_id" maxlength="250" placeholder="load_orders">
+                <label for="environment-filter" class="form-label">Environment</label>
+                <input id="environment-filter" name="environment" maxlength="64" placeholder="production" class="form-control">
               </div>
               <div class="field-group">
-                <label for="sort-filter">Sort by</label>
-                <select id="sort-filter" name="sort">
+                <label for="task-filter" class="form-label">Task</label>
+                <input id="task-filter" name="task_id" maxlength="250" placeholder="load_orders" class="form-control">
+              </div>
+              <div class="field-group">
+                <label for="sort-filter" class="form-label">Sort by</label>
+                <select id="sort-filter" name="sort" class="form-select">
                   <option value="last_failure_at">Latest activity</option>
                   <option value="failure_count">Failure count</option>
                   <option value="created_at">Created</option>
@@ -186,40 +196,36 @@
                 </select>
               </div>
               <div class="field-group">
-                <label for="order-filter">Order</label>
-                <select id="order-filter" name="order">
+                <label for="order-filter" class="form-label">Order</label>
+                <select id="order-filter" name="order" class="form-select">
                   <option value="desc">Descending</option>
                   <option value="asc">Ascending</option>
                 </select>
               </div>
             </div>
           </details>
-          <div class="filter-actions">
-            <button class="button button-primary" type="submit">Search</button>
-            <button id="clear-filters" class="button button-secondary" type="button">Clear</button>
-          </div>
         </form>
 
-        <div id="dashboard-error" class="notice notice-error" role="alert" hidden></div>
-        <div id="loading-state" class="loading-state" role="status" hidden>
-          <span class="spinner" aria-hidden="true"></span>
+        <div id="dashboard-error" class="notice alert notice-error alert-danger" role="alert" hidden></div>
+        <div id="loading-state" class="loading-state card card-body" role="status" hidden>
+          <span class="spinner spinner-border spinner-border-sm" aria-hidden="true"></span>
           <span>Loading incidents…</span>
         </div>
-        <div id="empty-state" class="empty-state" hidden>
+        <div id="empty-state" class="empty-state empty card" hidden>
           <span class="empty-mark" aria-hidden="true">0</span>
-          <h2>No incidents match these filters</h2>
+          <h2 class="card-title">No incidents match these filters</h2>
           <p>Clear a filter or choose another status to widen the operational view.</p>
         </div>
 
-        <section id="results-panel" class="results-panel" aria-labelledby="results-title" hidden>
-          <div class="results-heading">
+        <section id="results-panel" class="results-panel card" aria-labelledby="results-title" hidden>
+          <div class="results-heading card-header">
             <div>
-              <h2 id="results-title">Incident list</h2>
+              <h2 id="results-title" class="card-title">Incident list</h2>
             </div>
             <p id="results-range" class="results-range"></p>
           </div>
-          <div class="table-wrap" role="region" tabindex="0" aria-label="Incident results table">
-            <table>
+          <div class="table-wrap table-responsive" role="region" tabindex="0" aria-label="Incident results table">
+            <table class="table table-vcenter table-hover card-table">
               <caption class="visually-hidden">Incident results</caption>
               <thead>
                 <tr>
@@ -236,48 +242,48 @@
             </table>
           </div>
           <div class="pagination" aria-label="Incident pages">
-            <button id="previous-page" class="button button-secondary" type="button">Previous</button>
+            <button id="previous-page" class="btn btn-outline-secondary" type="button">Previous</button>
             <span id="page-label">Page 1</span>
-            <button id="next-page" class="button button-secondary" type="button">Next</button>
+            <button id="next-page" class="btn btn-outline-secondary" type="button">Next</button>
           </div>
         </section>
       </section>
 
       <section id="signature-dashboard" class="dashboard" aria-labelledby="signature-dashboard-title" hidden>
-        <div class="dashboard-heading">
+        <div class="dashboard-heading page-header">
           <div>
-            <h1 id="signature-dashboard-title">Error patterns</h1>
-            <p class="heading-copy">
+            <h1 id="signature-dashboard-title" class="page-title">Error patterns</h1>
+            <p class="heading-copy text-secondary">
               Find recurring failures with the same error pattern.
             </p>
           </div>
-          <div class="page-result-count" aria-live="polite">
+          <div class="page-result-count badge bg-blue-lt" aria-live="polite">
             <span>Matching signatures</span>
             <strong id="signature-total" class="page-result-total">—</strong>
           </div>
         </div>
 
-        <form id="signature-filter-form" class="filter-panel uniform-control-height" aria-label="Error Signature filters">
+        <form id="signature-filter-form" class="filter-panel card card-body uniform-control-height" aria-label="Error Signature filters">
           <div class="filter-grid basic-filter-grid">
             <div class="field-group">
-              <label for="signature-query-filter">Search</label>
-              <input id="signature-query-filter" name="q" maxlength="250" placeholder="exception, code, or message">
+              <label for="signature-query-filter" class="form-label">Search</label>
+              <input id="signature-query-filter" name="q" maxlength="250" placeholder="exception, code, or message" class="form-control">
             </div>
             <div class="field-group">
-              <label for="signature-environment-filter">Environment</label>
-              <input id="signature-environment-filter" name="environment" maxlength="64" placeholder="production">
+              <label for="signature-environment-filter" class="form-label">Environment</label>
+              <input id="signature-environment-filter" name="environment" maxlength="64" placeholder="production" class="form-control">
             </div>
             <div class="field-group">
-              <label for="signature-dag-filter">DAG</label>
-              <input id="signature-dag-filter" name="dag_id" maxlength="250" placeholder="orders_pipeline">
+              <label for="signature-dag-filter" class="form-label">DAG</label>
+              <input id="signature-dag-filter" name="dag_id" maxlength="250" placeholder="orders_pipeline" class="form-control">
             </div>
           </div>
           <details class="advanced-filters">
             <summary>More filters and sorting</summary>
             <div class="filter-grid basic-filter-grid">
               <div class="field-group">
-                <label for="signature-classification-filter">Classification</label>
-                <select id="signature-classification-filter" name="classification">
+                <label for="signature-classification-filter" class="form-label">Classification</label>
+                <select id="signature-classification-filter" name="classification" class="form-select">
                   <option value="">All classifications</option>
                   <option value="DAG_CODE">DAG code</option>
                   <option value="AIRFLOW_PLATFORM">Airflow platform</option>
@@ -293,20 +299,20 @@
                 </select>
               </div>
               <div class="field-group">
-                <label for="signature-task-filter">Task</label>
-                <input id="signature-task-filter" name="task_id" maxlength="250" placeholder="load_orders">
+                <label for="signature-task-filter" class="form-label">Task</label>
+                <input id="signature-task-filter" name="task_id" maxlength="250" placeholder="load_orders" class="form-control">
               </div>
               <div class="field-group">
-                <label for="signature-date-from-filter">Observed from</label>
-                <input id="signature-date-from-filter" name="date_from" type="date">
+                <label for="signature-date-from-filter" class="form-label">Observed from</label>
+                <input id="signature-date-from-filter" name="date_from" type="date" class="form-control">
               </div>
               <div class="field-group">
-                <label for="signature-date-to-filter">Observed to</label>
-                <input id="signature-date-to-filter" name="date_to" type="date">
+                <label for="signature-date-to-filter" class="form-label">Observed to</label>
+                <input id="signature-date-to-filter" name="date_to" type="date" class="form-control">
               </div>
               <div class="field-group">
-                <label for="signature-sort-filter">Sort by</label>
-                <select id="signature-sort-filter" name="sort">
+                <label for="signature-sort-filter" class="form-label">Sort by</label>
+                <select id="signature-sort-filter" name="sort" class="form-select">
                   <option value="last_seen_at">Latest occurrence</option>
                   <option value="failure_count">Failure count</option>
                   <option value="incident_count">Incident count</option>
@@ -314,8 +320,8 @@
                 </select>
               </div>
               <div class="field-group">
-                <label for="signature-order-filter">Order</label>
-                <select id="signature-order-filter" name="order">
+                <label for="signature-order-filter" class="form-label">Order</label>
+                <select id="signature-order-filter" name="order" class="form-select">
                   <option value="desc">Descending</option>
                   <option value="asc">Ascending</option>
                 </select>
@@ -323,31 +329,31 @@
             </div>
           </details>
           <div class="filter-actions">
-            <button class="button button-primary" type="submit">Search</button>
-            <button id="clear-signature-filters" class="button button-secondary" type="button">Clear</button>
+            <button class="btn btn-primary" type="submit">Search</button>
+            <button id="clear-signature-filters" class="btn btn-outline-secondary" type="button">Clear</button>
           </div>
         </form>
 
-        <div id="signature-dashboard-error" class="notice notice-error" role="alert" hidden></div>
-        <div id="signature-loading" class="loading-state" role="status" hidden>
-          <span class="spinner" aria-hidden="true"></span>
+        <div id="signature-dashboard-error" class="notice alert notice-error alert-danger" role="alert" hidden></div>
+        <div id="signature-loading" class="loading-state card card-body" role="status" hidden>
+          <span class="spinner spinner-border spinner-border-sm" aria-hidden="true"></span>
           <span>Loading Error Signatures…</span>
         </div>
-        <div id="signature-empty" class="empty-state" hidden>
+        <div id="signature-empty" class="empty-state empty card" hidden>
           <span class="empty-mark" aria-hidden="true">0</span>
-          <h2>No Error Signatures match these filters</h2>
+          <h2 class="card-title">No Error Signatures match these filters</h2>
           <p>Clear a filter or widen the observation range.</p>
         </div>
 
-        <section id="signature-results" class="results-panel" aria-labelledby="signature-results-title" hidden>
-          <div class="results-heading">
+        <section id="signature-results" class="results-panel card" aria-labelledby="signature-results-title" hidden>
+          <div class="results-heading card-header">
             <div>
-              <h2 id="signature-results-title">Error Signatures</h2>
+              <h2 id="signature-results-title" class="card-title">Error Signatures</h2>
             </div>
             <p id="signature-range" class="results-range"></p>
           </div>
-          <div class="table-wrap" role="region" tabindex="0" aria-label="Error Signature results table">
-            <table>
+          <div class="table-wrap table-responsive" role="region" tabindex="0" aria-label="Error Signature results table">
+            <table class="table table-vcenter table-hover card-table">
               <caption class="visually-hidden">Error Signature results</caption>
               <thead>
                 <tr>
@@ -364,47 +370,47 @@
             </table>
           </div>
           <div class="pagination" aria-label="Error Signature pages">
-            <button id="signature-previous-page" class="button button-secondary" type="button">Previous</button>
+            <button id="signature-previous-page" class="btn btn-outline-secondary" type="button">Previous</button>
             <span id="signature-page-label">Page 1</span>
-            <button id="signature-next-page" class="button button-secondary" type="button">Next</button>
+            <button id="signature-next-page" class="btn btn-outline-secondary" type="button">Next</button>
           </div>
         </section>
       </section>
 
       <section id="diagnosis-dashboard" class="dashboard" aria-labelledby="diagnosis-dashboard-title" hidden>
-        <div class="dashboard-heading">
+        <div class="dashboard-heading page-header">
           <div>
-            <h1 id="diagnosis-dashboard-title">Diagnosis History</h1>
-            <p class="heading-copy">
+            <h1 id="diagnosis-dashboard-title" class="page-title">Diagnosis History</h1>
+            <p class="heading-copy text-secondary">
               Search AI, Rule, and operator-authored diagnosis records with their Incident and Error Signature context.
             </p>
           </div>
         </div>
 
-        <div class="summary-strip summary-strip-four" aria-label="Diagnosis summary">
-          <div class="stat-card" aria-live="polite">
+        <div class="summary-strip card summary-strip-four" aria-label="Diagnosis summary">
+          <div class="stat-card card-body" aria-live="polite">
             <span>Total Diagnoses</span>
             <strong id="diagnosis-total">—</strong>
           </div>
-          <div class="stat-card stat-passed" aria-live="polite">
+          <div class="stat-card card-body stat-passed" aria-live="polite">
             <span>AI</span>
             <strong id="diagnosis-passed-total">—</strong>
           </div>
-          <div class="stat-card stat-reused" aria-live="polite">
+          <div class="stat-card card-body stat-reused" aria-live="polite">
             <span>Rule</span>
             <strong id="diagnosis-reused-total">—</strong>
           </div>
-          <div class="stat-card stat-rejected" aria-live="polite">
+          <div class="stat-card card-body stat-rejected" aria-live="polite">
             <span>Operator</span>
             <strong id="diagnosis-rejected-total">—</strong>
           </div>
         </div>
 
-        <form id="diagnosis-filter-form" class="filter-panel uniform-control-height" aria-label="Diagnosis History filters">
+        <form id="diagnosis-filter-form" class="filter-panel card card-body uniform-control-height" aria-label="Diagnosis History filters">
           <div class="filter-grid diagnosis-filter-grid">
             <div class="field-group">
-              <label for="diagnosis-source-filter">Source</label>
-              <select id="diagnosis-source-filter" name="source_type">
+              <label for="diagnosis-source-filter" class="form-label">Source</label>
+              <select id="diagnosis-source-filter" name="source_type" class="form-select">
                 <option value="">All sources</option>
                 <option value="RULE">Rule</option>
                 <option value="AI">AI</option>
@@ -412,44 +418,44 @@
               </select>
             </div>
             <div class="field-group">
-              <label for="diagnosis-signature-filter">Error Signature ID</label>
-              <input id="diagnosis-signature-filter" name="error_signature_id" placeholder="UUID" spellcheck="false">
+              <label for="diagnosis-signature-filter" class="form-label">Error Signature ID</label>
+              <input id="diagnosis-signature-filter" name="error_signature_id" placeholder="UUID" spellcheck="false" class="form-control">
             </div>
             <div class="field-group">
-              <label for="diagnosis-date-from-filter">Created from</label>
-              <input id="diagnosis-date-from-filter" name="date_from" type="date">
+              <label for="diagnosis-date-from-filter" class="form-label">Created from</label>
+              <input id="diagnosis-date-from-filter" name="date_from" type="date" class="form-control">
             </div>
             <div class="field-group">
-              <label for="diagnosis-date-to-filter">Created to</label>
-              <input id="diagnosis-date-to-filter" name="date_to" type="date">
+              <label for="diagnosis-date-to-filter" class="form-label">Created to</label>
+              <input id="diagnosis-date-to-filter" name="date_to" type="date" class="form-control">
             </div>
           </div>
           <div class="filter-actions">
-            <button class="button button-primary" type="submit">Search</button>
-            <button id="clear-diagnosis-filters" class="button button-secondary" type="button">Clear</button>
+            <button class="btn btn-primary" type="submit">Search</button>
+            <button id="clear-diagnosis-filters" class="btn btn-outline-secondary" type="button">Clear</button>
           </div>
         </form>
 
-        <div id="diagnosis-dashboard-error" class="notice notice-error" role="alert" hidden></div>
-        <div id="diagnosis-loading" class="loading-state" role="status" hidden>
-          <span class="spinner" aria-hidden="true"></span>
+        <div id="diagnosis-dashboard-error" class="notice alert notice-error alert-danger" role="alert" hidden></div>
+        <div id="diagnosis-loading" class="loading-state card card-body" role="status" hidden>
+          <span class="spinner spinner-border spinner-border-sm" aria-hidden="true"></span>
           <span>Loading Diagnosis History…</span>
         </div>
-        <div id="diagnosis-empty" class="empty-state" hidden>
+        <div id="diagnosis-empty" class="empty-state empty card" hidden>
           <span class="empty-mark" aria-hidden="true">0</span>
-          <h2>No Diagnoses match these filters</h2>
+          <h2 class="card-title">No Diagnoses match these filters</h2>
           <p>Clear a filter or widen the creation range.</p>
         </div>
 
-        <section id="diagnosis-results" class="results-panel" aria-labelledby="diagnosis-results-title" hidden>
-          <div class="results-heading">
+        <section id="diagnosis-results" class="results-panel card" aria-labelledby="diagnosis-results-title" hidden>
+          <div class="results-heading card-header">
             <div>
-              <h2 id="diagnosis-results-title">Diagnosis History</h2>
+              <h2 id="diagnosis-results-title" class="card-title">Diagnosis History</h2>
             </div>
             <p id="diagnosis-range" class="results-range"></p>
           </div>
-          <div class="table-wrap" role="region" tabindex="0" aria-label="Diagnosis History results table">
-            <table>
+          <div class="table-wrap table-responsive" role="region" tabindex="0" aria-label="Diagnosis History results table">
+            <table class="table table-vcenter table-hover card-table">
               <caption class="visually-hidden">Diagnosis History results</caption>
               <thead>
                 <tr>
@@ -466,52 +472,52 @@
             </table>
           </div>
           <div class="pagination" aria-label="Diagnosis History pages">
-            <button id="diagnosis-previous-page" class="button button-secondary" type="button">Previous</button>
+            <button id="diagnosis-previous-page" class="btn btn-outline-secondary" type="button">Previous</button>
             <span id="diagnosis-page-label">Page 1</span>
-            <button id="diagnosis-next-page" class="button button-secondary" type="button">Next</button>
+            <button id="diagnosis-next-page" class="btn btn-outline-secondary" type="button">Next</button>
           </div>
         </section>
       </section>
 
       <section id="report-dashboard" class="dashboard" aria-labelledby="report-dashboard-title" hidden>
-        <div class="dashboard-heading">
+        <div class="dashboard-heading page-header">
           <div>
-            <h1 id="report-dashboard-title">Daily Reports</h1>
-            <p class="heading-copy">
+            <h1 id="report-dashboard-title" class="page-title">Daily Reports</h1>
+            <p class="heading-copy text-secondary">
               Review daily failures, recommended actions, and report delivery.
             </p>
           </div>
         </div>
 
-        <div class="summary-strip summary-strip-four" aria-label="Daily Report summary">
-          <div class="stat-card" aria-live="polite">
+        <div class="summary-strip card summary-strip-four" aria-label="Daily Report summary">
+          <div class="stat-card card-body" aria-live="polite">
             <span>Total Reports</span>
             <strong id="report-total">—</strong>
           </div>
-          <div class="stat-card stat-passed" aria-live="polite">
+          <div class="stat-card card-body stat-passed" aria-live="polite">
             <span>Delivered</span>
             <strong id="report-delivered-total">—</strong>
           </div>
-          <div class="stat-card stat-rejected" aria-live="polite">
+          <div class="stat-card card-body stat-rejected" aria-live="polite">
             <span>Failed</span>
             <strong id="report-failed-total">—</strong>
           </div>
-          <div class="stat-card stat-reused" aria-live="polite">
+          <div class="stat-card card-body stat-reused" aria-live="polite">
             <span>AI-assisted</span>
             <strong id="report-ai-total">—</strong>
           </div>
         </div>
 
-        <details id="report-schedule-panel" class="context-panel report-schedule-panel disclosure-panel" aria-labelledby="report-schedule-title">
+        <details id="report-schedule-panel" class="context-panel card card-body report-schedule-panel disclosure-panel" aria-labelledby="report-schedule-title">
           <summary>Report delivery settings</summary>
           <div class="section-heading report-schedule-heading">
             <div>
-              <h2 id="report-schedule-title">리포트 스케줄 설정</h2>
+              <h2 id="report-schedule-title" class="card-title">리포트 스케줄 설정</h2>
               <p class="report-schedule-copy">매일 생성되는 DagSentry 리포트의 발송 설정입니다.</p>
             </div>
-            <p class="scheduler-state"><span>스케줄러 상태</span><span id="report-scheduler-status" class="status-badge" data-status="OFFLINE">오프라인</span></p>
+            <p class="scheduler-state"><span>스케줄러 상태</span><span id="report-scheduler-status" class="status-badge badge" data-status="OFFLINE">오프라인</span></p>
           </div>
-          <div id="report-schedule-error" class="notice notice-error" role="alert" hidden></div>
+          <div id="report-schedule-error" class="notice alert notice-error alert-danger" role="alert" hidden></div>
           <div id="report-schedule-list" class="report-schedule-list" aria-live="polite"></div>
 
           <form id="report-schedule-form" class="report-schedule-form uniform-control-height" hidden>
@@ -519,69 +525,69 @@
             <input id="report-schedule-revision" name="expected_revision" type="hidden">
             <div class="report-schedule-grid">
               <div class="field-group report-schedule-full-width">
-                <label for="report-schedule-name">리포트 이름</label>
-                <input id="report-schedule-name" name="display_name" maxlength="120" required>
+                <label for="report-schedule-name" class="form-label">리포트 이름</label>
+                <input id="report-schedule-name" name="display_name" maxlength="120" required class="form-control">
               </div>
               <div class="field-group report-schedule-full-width">
-                <label for="report-schedule-title-input">리포트 제목</label>
-                <input id="report-schedule-title-input" name="report_title" maxlength="160" required>
+                <label for="report-schedule-title-input" class="form-label">리포트 제목</label>
+                <input id="report-schedule-title-input" name="report_title" maxlength="160" required class="form-control">
               </div>
               <div class="field-group">
-                <label for="report-schedule-environment">환경</label>
-                <input id="report-schedule-environment" name="environment" maxlength="64" required>
+                <label for="report-schedule-environment" class="form-label">환경</label>
+                <input id="report-schedule-environment" name="environment" maxlength="64" required class="form-control">
               </div>
               <div class="field-group">
-                <label for="report-schedule-notification-connection">발송 대상</label>
-                <select id="report-schedule-notification-connection" name="notification_connection_id">
+                <label for="report-schedule-notification-connection" class="form-label">발송 대상</label>
+                <select id="report-schedule-notification-connection" name="notification_connection_id" class="form-select">
                   <option value="">기본 알림 설정</option>
                 </select>
               </div>
               <div class="field-group">
-                <label for="report-schedule-time">실행 시간</label>
-                <input id="report-schedule-time" name="run_at_local_time" type="time" required>
+                <label for="report-schedule-time" class="form-label">실행 시간</label>
+                <input id="report-schedule-time" name="run_at_local_time" type="time" required class="form-control">
               </div>
               <div class="field-group">
-                <label for="report-schedule-timezone">시간대</label>
-                <select id="report-schedule-timezone" name="timezone">
+                <label for="report-schedule-timezone" class="form-label">시간대</label>
+                <select id="report-schedule-timezone" name="timezone" class="form-select">
                   <option value="UTC">UTC</option>
                   <option value="Asia/Seoul">Asia/Seoul</option>
                 </select>
               </div>
               <div class="setting-toggle-row report-schedule-full-width">
                 <div><strong>AI 요약</strong><p>AI가 주요 장애 내용을 요약합니다.</p></div>
-                <label class="toggle-switch" for="report-schedule-ai-summary"><input id="report-schedule-ai-summary" name="use_ai_summary" type="checkbox"><span aria-hidden="true"></span><span class="visually-hidden">AI 요약 사용</span></label>
+                <label class="toggle-switch form-check form-switch" for="report-schedule-ai-summary"><input id="report-schedule-ai-summary" name="use_ai_summary" type="checkbox" class="form-check-input"><span class="visually-hidden">AI 요약 사용</span></label>
               </div>
               <div class="setting-toggle-row report-schedule-full-width">
                 <div><strong>자동 리포트</strong><p>매일 설정된 시간에 자동으로 발송합니다.</p></div>
-                <label class="toggle-switch" for="report-schedule-enabled"><input id="report-schedule-enabled" name="enabled" type="checkbox" checked><span aria-hidden="true"></span><span class="visually-hidden">자동 리포트 활성화</span></label>
+                <label class="toggle-switch form-check form-switch" for="report-schedule-enabled"><input id="report-schedule-enabled" name="enabled" type="checkbox" checked class="form-check-input"><span class="visually-hidden">자동 리포트 활성화</span></label>
               </div>
             </div>
-            <div id="report-schedule-preview" class="report-schedule-preview" aria-live="polite"></div>
+            <div id="report-schedule-preview" class="report-schedule-preview alert alert-info" aria-live="polite"></div>
             <div class="filter-actions report-schedule-actions">
-              <button id="report-schedule-save" class="button button-primary" type="submit">설정 저장</button>
+              <button id="report-schedule-save" class="btn btn-primary" type="submit">설정 저장</button>
             </div>
-            <div id="report-schedule-feedback" class="notice notice-success" role="status" hidden></div>
+            <div id="report-schedule-feedback" class="notice alert notice-success alert-success" role="status" hidden></div>
           </form>
 
           <form id="report-manual-run-form" class="report-manual-run-form uniform-control-height" hidden>
             <div class="field-group">
-              <label for="report-manual-date">스케줄 시간대의 완료된 리포트 날짜</label>
-              <input id="report-manual-date" name="report_date" type="date" required>
+              <label for="report-manual-date" class="form-label">스케줄 시간대의 완료된 리포트 날짜</label>
+              <input id="report-manual-date" name="report_date" type="date" required class="form-control">
             </div>
-            <button id="report-manual-run" class="button button-secondary" type="submit">지금 실행</button>
+            <button id="report-manual-run" class="btn btn-outline-secondary" type="submit">지금 실행</button>
           </form>
-          <section class="report-execution-status" aria-labelledby="report-execution-title"><h3 id="report-execution-title">최근 실행</h3><div id="report-schedule-runs" class="report-schedule-runs" aria-live="polite"></div></section>
+          <section class="report-execution-status card card-body" aria-labelledby="report-execution-title"><h3 id="report-execution-title">최근 실행</h3><div id="report-schedule-runs" class="report-schedule-runs" aria-live="polite"></div></section>
         </details>
 
-        <form id="report-filter-form" class="filter-panel uniform-control-height" aria-label="Daily Report filters">
+        <form id="report-filter-form" class="filter-panel card card-body uniform-control-height" aria-label="Daily Report filters">
           <div class="filter-grid report-filter-grid">
             <div class="field-group">
-              <label for="report-environment-filter">Environment</label>
-              <input id="report-environment-filter" name="environment" maxlength="64" placeholder="production">
+              <label for="report-environment-filter" class="form-label">Environment</label>
+              <input id="report-environment-filter" name="environment" maxlength="64" placeholder="production" class="form-control">
             </div>
             <div class="field-group">
-              <label for="report-status-filter">Delivery status</label>
-              <select id="report-status-filter" name="status">
+              <label for="report-status-filter" class="form-label">Delivery status</label>
+              <select id="report-status-filter" name="status" class="form-select">
                 <option value="">All statuses</option>
                 <option value="DELIVERED">Delivered</option>
                 <option value="FAILED">Failed</option>
@@ -589,38 +595,38 @@
               </select>
             </div>
             <div class="field-group">
-              <label for="report-date-from-filter">Report date from</label>
-              <input id="report-date-from-filter" name="date_from" type="date">
+              <label for="report-date-from-filter" class="form-label">Report date from</label>
+              <input id="report-date-from-filter" name="date_from" type="date" class="form-control">
             </div>
             <div class="field-group">
-              <label for="report-date-to-filter">Report date to</label>
-              <input id="report-date-to-filter" name="date_to" type="date">
+              <label for="report-date-to-filter" class="form-label">Report date to</label>
+              <input id="report-date-to-filter" name="date_to" type="date" class="form-control">
             </div>
           </div>
           <div class="filter-actions">
-            <button class="button button-primary" type="submit">Search</button>
-            <button id="clear-report-filters" class="button button-secondary" type="button">Clear</button>
+            <button class="btn btn-primary" type="submit">Search</button>
+            <button id="clear-report-filters" class="btn btn-outline-secondary" type="button">Clear</button>
           </div>
         </form>
 
-        <div id="report-dashboard-error" class="notice notice-error" role="alert" hidden></div>
-        <div id="report-loading" class="loading-state" role="status" hidden>
-          <span class="spinner" aria-hidden="true"></span>
+        <div id="report-dashboard-error" class="notice alert notice-error alert-danger" role="alert" hidden></div>
+        <div id="report-loading" class="loading-state card card-body" role="status" hidden>
+          <span class="spinner spinner-border spinner-border-sm" aria-hidden="true"></span>
           <span>Loading Daily Reports…</span>
         </div>
-        <div id="report-empty" class="empty-state" hidden>
+        <div id="report-empty" class="empty-state empty card" hidden>
           <span class="empty-mark" aria-hidden="true">0</span>
-          <h2>No Daily Reports match these filters</h2>
+          <h2 class="card-title">No Daily Reports match these filters</h2>
           <p>Clear a filter or widen the report date range.</p>
         </div>
 
-        <section id="report-results" class="results-panel" aria-labelledby="report-results-title" hidden>
-          <div class="results-heading">
-            <h2 id="report-results-title">Daily Reports</h2>
+        <section id="report-results" class="results-panel card" aria-labelledby="report-results-title" hidden>
+          <div class="results-heading card-header">
+            <h2 id="report-results-title" class="card-title">Daily Reports</h2>
             <p id="report-range" class="results-range"></p>
           </div>
-          <div class="table-wrap" role="region" tabindex="0" aria-label="Daily Report results table">
-            <table>
+          <div class="table-wrap table-responsive" role="region" tabindex="0" aria-label="Daily Report results table">
+            <table class="table table-vcenter table-hover card-table">
               <caption class="visually-hidden">Daily Report results</caption>
               <thead>
                 <tr>
@@ -638,9 +644,9 @@
             </table>
           </div>
           <div class="pagination" aria-label="Daily Report pages">
-            <button id="report-previous-page" class="button button-secondary" type="button">Previous</button>
+            <button id="report-previous-page" class="btn btn-outline-secondary" type="button">Previous</button>
             <span id="report-page-label">Page 1</span>
-            <button id="report-next-page" class="button button-secondary" type="button">Next</button>
+            <button id="report-next-page" class="btn btn-outline-secondary" type="button">Next</button>
           </div>
         </section>
       </section>
@@ -648,17 +654,17 @@
       <section id="report-detail" class="detail-view" aria-labelledby="report-detail-title" hidden>
         <a id="report-detail-back" class="back-link" href="/ui/?view=reports">← Back to Daily Reports</a>
 
-        <div id="report-detail-loading" class="loading-state" role="status" hidden>
-          <span class="spinner" aria-hidden="true"></span>
+        <div id="report-detail-loading" class="loading-state card card-body" role="status" hidden>
+          <span class="spinner spinner-border spinner-border-sm" aria-hidden="true"></span>
           <span>Loading Daily Report detail…</span>
         </div>
-        <div id="report-detail-error" class="notice notice-error" role="alert" hidden></div>
+        <div id="report-detail-error" class="notice alert notice-error alert-danger" role="alert" hidden></div>
 
         <div id="report-detail-content" class="detail-content" hidden>
-          <header class="detail-header report-detail-header">
+          <header class="detail-header page-header report-detail-header">
             <div>
               <div id="report-detail-labels" class="detail-status-line"></div>
-              <h1 id="report-detail-title"></h1>
+              <h1 id="report-detail-title" class="page-title"></h1>
               <p id="report-detail-subtitle" class="detail-task"></p>
             </div>
             <dl class="detail-metrics report-detail-metrics">
@@ -671,24 +677,24 @@
 
           <div class="detail-layout report-detail-layout">
             <div class="detail-main report-detail-main">
-              <section class="context-panel report-section">
-                <h2>Overview</h2>
+              <section class="context-panel card card-body report-section">
+                <h2 class="card-title">Overview</h2>
                 <p id="report-detail-overview" class="report-overview"></p>
               </section>
-              <section class="context-panel report-section">
-                <h2>Highlights</h2>
+              <section class="context-panel card card-body report-section">
+                <h2 class="card-title">Highlights</h2>
                 <ul id="report-detail-highlights" class="report-list"></ul>
               </section>
-              <section class="context-panel report-section">
-                <h2>Priorities</h2>
+              <section class="context-panel card card-body report-section">
+                <h2 class="card-title">Priorities</h2>
                 <ul id="report-detail-priorities" class="report-list"></ul>
                 <h3 id="report-top-failures-title">Top failures</h3>
                 <ul id="report-top-failures" class="report-list"></ul>
               </section>
-              <section id="report-detail-ai" class="context-panel report-section" hidden>
+              <section id="report-detail-ai" class="context-panel card card-body report-section" hidden>
                 <div class="section-heading">
-                  <h2>AI summary</h2>
-                  <span id="report-detail-ai-provider" class="source-badge"></span>
+                  <h2 class="card-title">AI summary</h2>
+                  <span id="report-detail-ai-provider" class="source-badge badge"></span>
                 </div>
                 <h3>Key changes</h3>
                 <ul id="report-detail-ai-changes" class="report-list"></ul>
@@ -698,16 +704,16 @@
             </div>
 
             <aside class="detail-aside report-detail-aside" aria-label="Daily Report metadata">
-              <div class="aside-panel">
-                <h2>Delivery</h2>
+              <div class="aside-panel card card-body">
+                <h2 class="card-title">Delivery</h2>
                 <dl id="report-delivery-fields" class="canonical-fields"></dl>
               </div>
-              <div class="aside-panel">
-                <h2>Incidents</h2>
+              <div class="aside-panel card card-body">
+                <h2 class="card-title">Incidents</h2>
                 <dl id="report-incident-fields" class="canonical-fields"></dl>
               </div>
-              <div class="aside-panel">
-                <h2>Error classifications</h2>
+              <div class="aside-panel card card-body">
+                <h2 class="card-title">Error classifications</h2>
                 <dl id="report-classification-fields" class="canonical-fields"></dl>
               </div>
             </aside>
@@ -718,87 +724,91 @@
       <section id="incident-detail" class="detail-view" aria-labelledby="detail-title" hidden>
         <a id="detail-back" class="back-link" href="/ui/">← Back to incidents</a>
 
-        <div id="detail-loading" class="loading-state" role="status" hidden>
-          <span class="spinner" aria-hidden="true"></span>
+        <div id="detail-loading" class="loading-state card card-body" role="status" hidden>
+          <span class="spinner spinner-border spinner-border-sm" aria-hidden="true"></span>
           <span>Loading Incident detail…</span>
         </div>
-        <div id="detail-error" class="notice notice-error" role="alert" hidden></div>
-        <div id="detail-feedback" class="notice notice-success" role="status" tabindex="-1" hidden></div>
+        <div id="detail-error" class="notice alert notice-error alert-danger" role="alert" hidden></div>
+        <div id="detail-feedback" class="notice alert notice-success alert-success" role="status" tabindex="-1" hidden></div>
 
         <div id="detail-content" class="detail-content" hidden>
-          <header class="detail-header">
+          <header class="detail-header page-header">
             <div>
               <div class="detail-status-line">
-                <span id="detail-status" class="status-badge"></span>
-                <span id="detail-environment" class="environment-chip"></span>
+                <span id="detail-status" class="status-badge badge"></span>
+                <span id="detail-environment" class="environment-chip badge bg-secondary-lt"></span>
               </div>
-              <h1 id="detail-title"></h1>
+              <h1 id="detail-title" class="page-title"></h1>
               <p id="detail-task" class="detail-task"></p>
-              <p id="detail-state-help" class="heading-copy"></p>
+              <p id="detail-state-help" class="heading-copy text-secondary"></p>
             </div>
-            <dl class="detail-metrics">
-              <div>
-                <dt>Failure tries</dt>
-                <dd id="detail-failure-count"></dd>
-              </div>
-              <div>
-                <dt>First seen</dt>
-                <dd id="detail-first-seen"></dd>
-              </div>
-              <div>
-                <dt>Last activity</dt>
-                <dd id="detail-last-seen"></dd>
-              </div>
-            </dl>
           </header>
 
           <div class="detail-layout incident-detail-layout">
             <div class="detail-main incident-detail-main">
-              <div id="operator-controls" class="aside-panel operator-panel" hidden>
-                <h2>Change state</h2>
+              <div id="incident-diagnoses">
+                <details id="current-diagnosis-panel" class="context-panel card card-body disclosure-panel" open>
+                  <summary>Automatic diagnosis for the latest failure</summary>
+                  <div id="current-diagnosis-content"></div>
+                </details>
+                <details id="human-diagnosis-panel" class="aside-panel card card-body human-diagnosis-panel disclosure-panel" aria-labelledby="human-diagnosis-title">
+                  <summary class="aside-title-row">
+                    <span id="human-diagnosis-title">Operator-confirmed diagnosis</span>
+                    <span id="human-diagnosis-revision" class="history-count badge bg-secondary-lt" hidden></span>
+                  </summary>
+                  <div id="human-diagnosis-content"></div>
+                  <div id="human-diagnosis-actions" class="operator-actions" hidden></div>
+                </details>
+              </div>
+              <div id="operator-controls" class="aside-panel card card-body operator-panel" hidden>
+                <h2 class="card-title">Change state</h2>
                 <p id="operator-help" class="aside-empty"></p>
                 <div id="operator-actions" class="operator-actions"></div>
               </div>
-              <div id="viewer-state-note" class="aside-panel read-only-panel" hidden>
+              <div id="viewer-state-note" class="aside-panel card card-body read-only-panel" hidden>
                 <p class="table-kicker">Read-only access</p>
-                <h2>State changes unavailable</h2>
+                <h2 class="card-title">State changes unavailable</h2>
                 <p>Sign in with an Operator or Admin account to change this Incident.</p>
               </div>
-              <section class="aside-panel human-diagnosis-panel" aria-labelledby="human-diagnosis-title">
-                <div class="aside-title-row">
-                  <h2 id="human-diagnosis-title">Operator-confirmed diagnosis</h2>
-                  <span id="human-diagnosis-revision" class="history-count" hidden></span>
-                </div>
-                <div id="human-diagnosis-content"></div>
-                <div id="human-diagnosis-actions" class="operator-actions" hidden></div>
-              </section>
-              <details id="current-diagnosis-panel" class="context-panel disclosure-panel" open>
-                <summary>Automatic diagnosis for the latest failure</summary>
-                <div id="current-diagnosis-content"></div>
-              </details>
-              <details id="failure-history-panel" class="context-panel disclosure-panel">
+              <details id="failure-history-panel" class="context-panel card card-body disclosure-panel">
                 <summary id="failure-history-title">Failure &amp; Diagnosis history</summary>
                 <div id="detail-failures" class="failure-list"></div>
               </details>
-              <details class="context-panel human-diagnosis-history disclosure-panel" aria-labelledby="human-diagnosis-history-title">
+              <details class="context-panel card card-body human-diagnosis-history disclosure-panel" aria-labelledby="human-diagnosis-history-title">
                 <summary id="human-diagnosis-history-title">Operator diagnosis history</summary>
                 <ol id="human-diagnosis-history" class="transition-list"></ol>
               </details>
             </div>
 
             <aside class="detail-aside" aria-labelledby="transition-title">
-              <div class="aside-panel">
+              <div class="aside-panel card card-body">
+                <dl class="detail-metrics incident-metrics">
+                  <div>
+                    <dt>Failure tries</dt>
+                    <dd id="detail-failure-count"></dd>
+                  </div>
+                  <div>
+                    <dt>First seen</dt>
+                    <dd id="detail-first-seen"></dd>
+                  </div>
+                  <div>
+                    <dt>Last activity</dt>
+                    <dd id="detail-last-seen"></dd>
+                  </div>
+                </dl>
+              </div>
+              <div class="aside-panel card card-body">
                 <div class="aside-title-row">
-                  <h2 id="transition-title">State history</h2>
-                  <span id="transition-count" class="history-count" aria-label="State history count">0</span>
+                  <h2 id="transition-title" class="card-title">State history</h2>
+                  <span id="transition-count" class="history-count badge bg-secondary-lt" aria-label="State history count">0</span>
                 </div>
                 <ol id="transition-history" class="transition-list"></ol>
                 <p id="transition-empty" class="aside-empty" hidden>
                   No state transitions have been recorded.
                 </p>
               </div>
-              <div class="aside-panel identity-panel">
-                <h2>Incident ID</h2>
+              <div class="aside-panel card card-body identity-panel">
+                <h2 class="card-title">Incident ID</h2>
                 <code id="detail-incident-id"></code>
                 <a id="detail-signature-link" class="table-link" hidden>Error patterns</a>
                 <p>
@@ -816,16 +826,16 @@
           <span aria-hidden="true">/</span>
           <span id="signature-breadcrumb-current" aria-current="page">Signature Detail</span>
         </nav>
-        <div id="signature-detail-loading" class="loading-state" role="status" hidden>
-          <span class="spinner" aria-hidden="true"></span>
+        <div id="signature-detail-loading" class="loading-state card card-body" role="status" hidden>
+          <span class="spinner spinner-border spinner-border-sm" aria-hidden="true"></span>
           <span>Loading Error Signature detail…</span>
         </div>
-        <div id="signature-detail-error" class="notice notice-error" role="alert" hidden></div>
+        <div id="signature-detail-error" class="notice alert notice-error alert-danger" role="alert" hidden></div>
 
         <div id="signature-detail-content" class="detail-content" hidden>
-          <header class="detail-header signature-detail-header">
+          <header class="detail-header page-header signature-detail-header">
             <div>
-              <h1 id="signature-detail-title"></h1>
+              <h1 id="signature-detail-title" class="page-title"></h1>
               <p id="signature-detail-message" class="detail-task"></p>
             </div>
             <dl class="detail-metrics signature-metrics">
@@ -838,15 +848,15 @@
 
           <div class="detail-layout signature-detail-layout">
             <div class="detail-main signature-detail-main">
-              <section class="trend-panel" aria-labelledby="signature-trend-title">
+              <section class="trend-panel card card-body" aria-labelledby="signature-trend-title">
                 <div class="section-heading">
                   <div>
-                    <h2 id="signature-trend-title">Occurrence trend</h2>
+                    <h2 id="signature-trend-title" class="card-title">Occurrence trend</h2>
                   </div>
                   <div class="trend-controls">
-                    <div class="segmented-control" aria-label="Trend range">
-                      <button id="signature-trend-7" type="button" aria-pressed="true">7 days</button>
-                      <button id="signature-trend-30" type="button" aria-pressed="false">30 days</button>
+                    <div class="segmented-control btn-group" aria-label="Trend range">
+                      <button id="signature-trend-7" type="button" aria-pressed="true" class="btn btn-outline-secondary btn-sm">7 days</button>
+                      <button id="signature-trend-30" type="button" aria-pressed="false" class="btn btn-outline-secondary btn-sm">30 days</button>
                     </div>
                     <p id="signature-trend-range" class="results-range"></p>
                   </div>
@@ -859,10 +869,10 @@
                 ></ol>
               </section>
 
-              <section class="results-panel occurrence-panel" aria-labelledby="signature-occurrences-title">
-                <div class="results-heading">
+              <section class="results-panel card occurrence-panel" aria-labelledby="signature-occurrences-title">
+                <div class="results-heading card-header">
                   <div>
-                    <h2 id="signature-occurrences-title">Occurrences</h2>
+                    <h2 id="signature-occurrences-title" class="card-title">Occurrences</h2>
                   </div>
                   <p id="signature-occurrence-range" class="results-range"></p>
                 </div>
@@ -871,12 +881,12 @@
                 </div>
                 <div
                   id="signature-occurrence-table"
-                  class="table-wrap"
+                  class="table-wrap table-responsive"
                   role="region"
                   tabindex="0"
                   aria-label="Error Signature occurrence table"
                 >
-                  <table>
+                  <table class="table table-vcenter table-hover card-table">
                     <caption class="visually-hidden">Error Signature occurrences</caption>
                     <thead>
                       <tr>
@@ -892,29 +902,29 @@
                   </table>
                 </div>
                 <div class="pagination" aria-label="Signature occurrence pages">
-                  <button id="occurrence-previous-page" class="button button-secondary" type="button">Previous</button>
+                  <button id="occurrence-previous-page" class="btn btn-outline-secondary" type="button">Previous</button>
                   <span id="occurrence-page-label">Page 1</span>
-                  <button id="occurrence-next-page" class="button button-secondary" type="button">Next</button>
+                  <button id="occurrence-next-page" class="btn btn-outline-secondary" type="button">Next</button>
                 </div>
               </section>
 
-              <section class="context-panel signature-diagnosis-panel" aria-labelledby="signature-diagnosis-title">
+              <section class="context-panel card card-body signature-diagnosis-panel" aria-labelledby="signature-diagnosis-title">
                 <div class="section-heading">
                   <div>
-                    <h2 id="signature-diagnosis-title">Latest Verified Diagnosis</h2>
+                    <h2 id="signature-diagnosis-title" class="card-title">Latest Verified Diagnosis</h2>
                   </div>
                 </div>
                 <div id="signature-latest-diagnosis"></div>
               </section>
-              <section class="context-panel signature-diagnosis-panel" aria-labelledby="signature-operator-diagnoses-title">
-                <div class="section-heading"><div><h2 id="signature-operator-diagnoses-title">과거 운영자 진단</h2></div></div>
+              <section class="context-panel card card-body signature-diagnosis-panel" aria-labelledby="signature-operator-diagnoses-title">
+                <div class="section-heading"><div><h2 id="signature-operator-diagnoses-title" class="card-title">과거 운영자 진단</h2></div></div>
                 <div id="signature-operator-diagnoses"></div>
               </section>
             </div>
 
             <aside class="detail-aside signature-detail-aside" aria-label="Error Signature context">
-              <div class="aside-panel">
-                <h2>Signature Metadata</h2>
+              <div class="aside-panel card card-body">
+                <h2 class="card-title">Signature Metadata</h2>
                 <dl id="signature-canonical-fields" class="canonical-fields"></dl>
               </div>
             </aside>
@@ -928,17 +938,17 @@
           <span aria-hidden="true">/</span>
           <span id="diagnosis-breadcrumb-current" aria-current="page">Diagnosis Detail</span>
         </nav>
-        <div id="diagnosis-detail-loading" class="loading-state" role="status" hidden>
-          <span class="spinner" aria-hidden="true"></span>
+        <div id="diagnosis-detail-loading" class="loading-state card card-body" role="status" hidden>
+          <span class="spinner spinner-border spinner-border-sm" aria-hidden="true"></span>
           <span>Loading Diagnosis detail…</span>
         </div>
-        <div id="diagnosis-detail-error" class="notice notice-error" role="alert" hidden></div>
+        <div id="diagnosis-detail-error" class="notice alert notice-error alert-danger" role="alert" hidden></div>
 
         <div id="diagnosis-detail-content" class="detail-content" hidden>
-          <header class="detail-header diagnosis-detail-header">
+          <header class="detail-header page-header diagnosis-detail-header">
             <div>
               <div id="diagnosis-detail-labels" class="detail-status-line diagnosis-labels"></div>
-              <h1 id="diagnosis-detail-title"></h1>
+              <h1 id="diagnosis-detail-title" class="page-title"></h1>
               <p id="diagnosis-detail-root-cause" class="diagnosis-detail-root-cause"></p>
             </div>
             <dl class="detail-metrics diagnosis-detail-metrics">
@@ -953,23 +963,23 @@
           <div class="detail-layout diagnosis-detail-layout">
             <div class="detail-main diagnosis-detail-main">
               <div id="diagnosis-detail-card" class="diagnosis-detail-sections"></div>
-              <details id="diagnosis-log-panel" class="context-panel relevant-log-panel" hidden>
+              <details id="diagnosis-log-panel" class="context-panel card card-body relevant-log-panel" hidden>
                 <summary>Relevant Log</summary>
                 <p>Full task logs remain in Airflow and are not copied into DagSentry.</p>
                 <div id="diagnosis-context-links" class="context-links"></div>
               </details>
-              <section id="diagnosis-similar" class="context-panel" aria-labelledby="diagnosis-similar-title">
+              <section id="diagnosis-similar" class="context-panel card card-body" aria-labelledby="diagnosis-similar-title">
                 <div class="section-heading">
                   <div>
-                    <h2 id="diagnosis-similar-title">Similar Diagnosis</h2>
+                    <h2 id="diagnosis-similar-title" class="card-title">Similar Diagnosis</h2>
                   </div>
                 </div>
                 <div id="diagnosis-similar-list" class="similar-diagnosis-list"></div>
               </section>
-              <section class="context-panel" aria-labelledby="diagnosis-failure-title">
+              <section class="context-panel card card-body" aria-labelledby="diagnosis-failure-title">
                 <div class="section-heading">
                   <div>
-                    <h2 id="diagnosis-failure-title">Failure run information</h2>
+                    <h2 id="diagnosis-failure-title" class="card-title">Failure run information</h2>
                   </div>
                 </div>
                 <dl id="diagnosis-failure-fields" class="context-fields"></dl>
@@ -977,24 +987,24 @@
             </div>
 
             <aside class="detail-aside diagnosis-detail-aside" aria-label="Diagnosis provenance">
-              <div class="aside-panel">
-                <h2>Diagnosis Metadata</h2>
+              <div class="aside-panel card card-body">
+                <h2 class="card-title">Diagnosis Metadata</h2>
                 <dl id="diagnosis-provenance-fields" class="canonical-fields"></dl>
                 <details class="diagnosis-technical-details">
                   <summary>Technical details</summary>
                   <dl id="diagnosis-technical-fields" class="canonical-fields"></dl>
                 </details>
               </div>
-              <div class="aside-panel">
-                <h2>Linked Incident</h2>
+              <div class="aside-panel card card-body">
+                <h2 class="card-title">Linked Incident</h2>
                 <div id="diagnosis-linked-incident" class="relationship-links"></div>
               </div>
-              <div class="aside-panel">
-                <h2>Error Signature</h2>
+              <div class="aside-panel card card-body">
+                <h2 class="card-title">Error Signature</h2>
                 <div id="diagnosis-signature-link" class="relationship-links"></div>
               </div>
-              <div id="diagnosis-related-diagnoses" class="aside-panel" hidden>
-                <h2>Related Diagnosis</h2>
+              <div id="diagnosis-related-diagnoses" class="aside-panel card card-body" hidden>
+                <h2 class="card-title">Related Diagnosis</h2>
                 <div id="diagnosis-relationship-links" class="relationship-links"></div>
               </div>
             </aside>
@@ -1003,10 +1013,10 @@
       </section>
 
       <section id="admin-dashboard" class="dashboard" aria-labelledby="admin-dashboard-title" hidden>
-        <div class="dashboard-heading">
+        <div class="dashboard-heading page-header">
           <div>
-            <h1 id="admin-dashboard-title">Settings</h1>
-            <p class="heading-copy">
+            <h1 id="admin-dashboard-title" class="page-title">Settings</h1>
+            <p class="heading-copy text-secondary">
               Manage users, external connections, and administration history.
             </p>
           </div>
@@ -1020,28 +1030,28 @@
           </div>
         </div>
 
-        <details class="context-panel disclosure-panel">
+        <details class="context-panel card card-body disclosure-panel">
           <summary>Create user</summary>
-          <form id="admin-create-form" class="filter-panel uniform-control-height" aria-label="Create local user">
+          <form id="admin-create-form" class="filter-panel card card-body uniform-control-height" aria-label="Create local user">
             <div class="admin-create-grid">
               <div class="field-group">
-                <label for="admin-user-email">Email</label>
-                <input id="admin-user-email" name="email" type="email" autocomplete="off" maxlength="320" required>
+                <label for="admin-user-email" class="form-label">Email</label>
+                <input id="admin-user-email" name="email" type="email" autocomplete="off" maxlength="320" required class="form-control">
               </div>
               <div class="field-group">
-                <label for="admin-user-display-name">Display name</label>
-                <input id="admin-user-display-name" name="display_name" maxlength="250" required>
+                <label for="admin-user-display-name" class="form-label">Display name</label>
+                <input id="admin-user-display-name" name="display_name" maxlength="250" required class="form-control">
               </div>
               <div class="field-group">
-                <label for="admin-user-role">Role</label>
-                <select id="admin-user-role" name="role">
+                <label for="admin-user-role" class="form-label">Role</label>
+                <select id="admin-user-role" name="role" class="form-select">
                   <option value="VIEWER">Viewer</option>
                   <option value="OPERATOR">Operator</option>
                   <option value="ADMIN">Admin</option>
                 </select>
               </div>
               <div class="field-group">
-                <label for="admin-user-password">Temporary password</label>
+                <label for="admin-user-password" class="form-label">Temporary password</label>
                 <input
                   id="admin-user-password"
                   name="temporary_password"
@@ -1049,31 +1059,32 @@
                   autocomplete="new-password"
                   minlength="12"
                   required
+                  class="form-control"
                 >
               </div>
             </div>
             <div class="filter-actions">
-              <button class="button button-primary" type="submit">Create user</button>
+              <button class="btn btn-primary" type="submit">Create user</button>
             </div>
           </form>
         </details>
 
-        <div id="admin-feedback" class="notice notice-success" role="status" tabindex="-1" hidden></div>
-        <div id="admin-error" class="notice notice-error" role="alert" hidden></div>
-        <div id="admin-loading" class="loading-state" role="status" hidden>
-          <span class="spinner" aria-hidden="true"></span>
+        <div id="admin-feedback" class="notice alert notice-success alert-success" role="status" tabindex="-1" hidden></div>
+        <div id="admin-error" class="notice alert notice-error alert-danger" role="alert" hidden></div>
+        <div id="admin-loading" class="loading-state card card-body" role="status" hidden>
+          <span class="spinner spinner-border spinner-border-sm" aria-hidden="true"></span>
           <span>Loading user administration…</span>
         </div>
 
         <div id="admin-content" class="admin-panels" hidden>
-          <section class="results-panel" aria-labelledby="admin-users-title">
-            <div class="results-heading">
+          <section class="results-panel card" aria-labelledby="admin-users-title">
+            <div class="results-heading card-header">
               <div>
-                <h2 id="admin-users-title">User list</h2>
+                <h2 id="admin-users-title" class="card-title">User list</h2>
               </div>
             </div>
-            <div class="table-wrap" role="region" tabindex="0" aria-label="Managed users table">
-              <table>
+            <div class="table-wrap table-responsive" role="region" tabindex="0" aria-label="Managed users table">
+              <table class="table table-vcenter table-hover card-table">
                 <thead>
                   <tr>
                     <th scope="col">User</th>
@@ -1088,48 +1099,48 @@
             </div>
           </section>
 
-          <details class="results-panel settings-section" aria-labelledby="admin-connections-title">
+          <details class="results-panel card settings-section" aria-labelledby="admin-connections-title">
             <summary id="admin-connections-title">External connections</summary>
-            <form id="connection-form" class="connection-form uniform-control-height" aria-label="Create or edit external connection">
+            <form id="connection-form" class="connection-form card card-body uniform-control-height" aria-label="Create or edit external connection">
               <div class="connection-form-grid">
                 <div class="field-group">
-                  <label for="connection-environment">Environment</label>
-                  <input id="connection-environment" name="environment" maxlength="64" required>
+                  <label for="connection-environment" class="form-label">Environment</label>
+                  <input id="connection-environment" name="environment" maxlength="64" required class="form-control">
                 </div>
                 <div class="field-group">
-                  <label for="connection-provider">Provider</label>
-                  <select id="connection-provider" name="provider">
+                  <label for="connection-provider" class="form-label">Provider</label>
+                  <select id="connection-provider" name="provider" class="form-select">
                     <option value="AIRFLOW">Airflow</option>
                     <option value="OLLAMA">Ollama</option>
                     <option value="SLACK">Slack</option>
                   </select>
                 </div>
                 <div class="field-group">
-                  <label for="connection-display-name">Display name</label>
-                  <input id="connection-display-name" name="display_name" maxlength="250" required>
+                  <label for="connection-display-name" class="form-label">Display name</label>
+                  <input id="connection-display-name" name="display_name" maxlength="250" required class="form-control">
                 </div>
                 <div class="field-group">
-                  <label for="connection-api-base-url">API base URL</label>
-                  <input id="connection-api-base-url" name="api_base_url" type="url" required>
+                  <label for="connection-api-base-url" class="form-label">API base URL</label>
+                  <input id="connection-api-base-url" name="api_base_url" type="url" required class="form-control">
                 </div>
                 <div id="connection-ui-url-group" class="field-group">
-                  <label for="connection-ui-url">UI base URL <span class="optional-label">Optional</span></label>
-                  <input id="connection-ui-url" name="ui_base_url" type="url">
+                  <label for="connection-ui-url" class="form-label">UI base URL <span class="optional-label">Optional</span></label>
+                  <input id="connection-ui-url" name="ui_base_url" type="url" class="form-control">
                 </div>
                 <div id="connection-model-group" class="field-group" hidden>
-                  <label for="connection-model">Model</label>
-                  <input id="connection-model" name="model" maxlength="250">
+                  <label for="connection-model" class="form-label">Model</label>
+                  <input id="connection-model" name="model" maxlength="250" class="form-control">
                 </div>
                 <div id="connection-channel-group" class="field-group" hidden>
-                  <label for="connection-channel">Channel ID</label>
-                  <input id="connection-channel" name="channel" maxlength="250">
+                  <label for="connection-channel" class="form-label">Channel ID</label>
+                  <input id="connection-channel" name="channel" maxlength="250" class="form-control">
                 </div>
                 <div id="connection-secret-group" class="field-group">
-                  <label id="connection-secret-label" for="connection-secret">Token</label>
+                  <label id="connection-secret-label" for="connection-secret" class="form-label">Token</label>
                   <span class="field-help-popover">
                     <button
                       id="connection-secret-help-trigger"
-                      class="field-help-trigger"
+                      class="field-help-trigger btn btn-ghost-secondary btn-sm"
                       type="button"
                       aria-label="Secret field help"
                       aria-describedby="connection-secret-help"
@@ -1143,17 +1154,18 @@
                     autocomplete="new-password"
                     maxlength="8192"
                     aria-describedby="connection-secret-help"
+                    class="form-control"
                   >
                 </div>
               </div>
               <div class="filter-actions">
-                <button id="connection-cancel-edit" class="button button-secondary" type="button" hidden>Cancel edit</button>
-                <button id="connection-save" class="button button-primary" type="submit">Create connection</button>
+                <button id="connection-cancel-edit" class="btn btn-outline-secondary" type="button" hidden>Cancel edit</button>
+                <button id="connection-save" class="btn btn-primary" type="submit">Create connection</button>
               </div>
             </form>
             <div id="admin-connections-empty" class="compact-empty" role="status" hidden>No external connections yet.</div>
-            <div id="admin-connections-table" class="table-wrap" role="region" tabindex="0" aria-label="External connections table" hidden>
-              <table>
+            <div id="admin-connections-table" class="table-wrap table-responsive" role="region" tabindex="0" aria-label="External connections table" hidden>
+              <table class="table table-vcenter table-hover card-table">
                 <caption class="visually-hidden">External connections</caption>
                 <thead>
                   <tr>
@@ -1169,10 +1181,10 @@
             </div>
           </details>
 
-          <details class="results-panel settings-section" aria-labelledby="admin-audit-title">
+          <details class="results-panel card settings-section" aria-labelledby="admin-audit-title">
             <summary id="admin-audit-title">Administrator audit history</summary>
-            <div class="table-wrap" role="region" tabindex="0" aria-label="Administrator audit history table">
-              <table>
+            <div class="table-wrap table-responsive" role="region" tabindex="0" aria-label="Administrator audit history table">
+              <table class="table table-vcenter table-hover card-table">
                 <thead>
                   <tr>
                     <th scope="col">Time</th>
@@ -1199,8 +1211,8 @@
       aria-label="Signing in…"
       hidden
     >
-      <div class="auth-loading-card">
-        <span class="spinner auth-loading-spinner" aria-hidden="true"></span>
+      <div class="auth-loading-card card card-body">
+        <span class="spinner spinner-border spinner-border-sm auth-loading-spinner" aria-hidden="true"></span>
         <span>Signing in…</span>
       </div>
     </div>
@@ -1212,100 +1224,114 @@
       aria-live="polite"
       aria-label="Loading DagSentry…"
     >
-      <div class="auth-loading-card">
-        <span class="spinner auth-loading-spinner" aria-hidden="true"></span>
+      <div class="auth-loading-card card card-body">
+        <span class="spinner spinner-border spinner-border-sm auth-loading-spinner" aria-hidden="true"></span>
         <span>Loading DagSentry…</span>
       </div>
     </div>
 
-    <dialog id="password-reset-dialog" aria-labelledby="password-reset-title">
-      <form id="password-reset-form" class="transition-form">
-        <div class="dialog-heading">
-          <div>
-            <p class="card-kicker">Account recovery</p>
-            <h2 id="password-reset-title">Reset temporary password</h2>
+    <dialog id="password-reset-dialog" aria-labelledby="password-reset-title" class="modal modal-blur">
+      <div class="modal-dialog">
+        <form id="password-reset-form" class="transition-form modal-content">
+          <div class="dialog-heading modal-header">
+            <div>
+              <p class="card-kicker">Account recovery</p>
+              <h2 id="password-reset-title" class="modal-title">Reset temporary password</h2>
+            </div>
+            <button id="password-reset-close" class="dialog-close btn-close" type="button" aria-label="Close"></button>
           </div>
-          <button id="password-reset-close" class="dialog-close" type="button" aria-label="Close">×</button>
-        </div>
-        <p id="password-reset-copy" class="dialog-copy"></p>
-        <label for="password-reset-value">Temporary password</label>
-        <input
-          id="password-reset-value"
-          type="password"
-          autocomplete="new-password"
-          minlength="12"
-          required
-        >
-        <p id="password-reset-error" class="form-error" role="alert" hidden></p>
-        <div class="dialog-actions">
-          <button id="password-reset-cancel" class="button button-secondary" type="button">Cancel</button>
-          <button class="button button-primary" type="submit">Reset password</button>
-        </div>
-      </form>
+          <div class="modal-body">
+            <p id="password-reset-copy" class="dialog-copy"></p>
+            <label for="password-reset-value" class="form-label">Temporary password</label>
+            <input
+              id="password-reset-value"
+              type="password"
+              autocomplete="new-password"
+              minlength="12"
+              required
+              class="form-control"
+            >
+            <p id="password-reset-error" class="form-error text-danger" role="alert" hidden></p>
+          </div>
+          <div class="dialog-actions modal-footer">
+            <button id="password-reset-cancel" class="btn btn-outline-secondary" type="button">Cancel</button>
+            <button class="btn btn-primary" type="submit">Reset password</button>
+          </div>
+        </form>
+      </div>
     </dialog>
 
     <dialog
       id="transition-dialog"
       aria-labelledby="transition-dialog-title"
       aria-describedby="transition-dialog-copy"
+      class="modal modal-blur"
     >
-      <form id="transition-form" class="transition-form">
-        <div class="dialog-heading">
-          <div>
-            <p class="table-kicker">Confirm operator action</p>
-            <h2 id="transition-dialog-title"></h2>
+      <div class="modal-dialog">
+        <form id="transition-form" class="transition-form modal-content">
+          <div class="dialog-heading modal-header">
+            <div>
+              <p class="table-kicker">Confirm operator action</p>
+              <h2 id="transition-dialog-title" class="modal-title"></h2>
+            </div>
+            <button id="transition-close" class="dialog-close btn-close" type="button" aria-label="Close"></button>
           </div>
-          <button id="transition-close" class="dialog-close" type="button" aria-label="Close">×</button>
-        </div>
-        <p id="transition-dialog-copy" class="dialog-copy"></p>
-        <label for="transition-reason">
-          Reason <span class="optional-label">Optional</span>
-        </label>
-        <textarea id="transition-reason" rows="4" maxlength="2000"></textarea>
-        <p id="transition-error" class="form-error" role="alert" hidden></p>
-        <div class="dialog-actions">
-          <button id="transition-cancel" class="button button-secondary" type="button">Cancel</button>
-          <button id="transition-confirm" class="button button-primary" type="submit">Confirm</button>
-        </div>
-      </form>
+          <div class="modal-body">
+            <p id="transition-dialog-copy" class="dialog-copy"></p>
+            <label for="transition-reason" class="form-label">
+              Reason <span class="optional-label">Optional</span>
+            </label>
+            <textarea id="transition-reason" rows="4" maxlength="2000" class="form-control"></textarea>
+            <p id="transition-error" class="form-error text-danger" role="alert" hidden></p>
+          </div>
+          <div class="dialog-actions modal-footer">
+            <button id="transition-cancel" class="btn btn-outline-secondary" type="button">Cancel</button>
+            <button id="transition-confirm" class="btn btn-primary" type="submit">Confirm</button>
+          </div>
+        </form>
+      </div>
     </dialog>
 
-    <dialog id="human-diagnosis-dialog" aria-labelledby="human-diagnosis-dialog-title">
-      <form id="human-diagnosis-form" class="transition-form">
-        <div class="dialog-heading">
-          <div>
-            <p class="table-kicker">Operator judgment</p>
-            <h2 id="human-diagnosis-dialog-title">Publish operator-confirmed diagnosis</h2>
+    <dialog id="human-diagnosis-dialog" aria-labelledby="human-diagnosis-dialog-title" class="modal modal-blur">
+      <div class="modal-dialog">
+        <form id="human-diagnosis-form" class="transition-form modal-content">
+          <div class="dialog-heading modal-header">
+            <div>
+              <p class="table-kicker">Operator judgment</p>
+              <h2 id="human-diagnosis-dialog-title" class="modal-title">Publish operator-confirmed diagnosis</h2>
+            </div>
+            <button id="human-diagnosis-close" class="dialog-close btn-close" type="button" aria-label="Close"></button>
           </div>
-          <button id="human-diagnosis-close" class="dialog-close" type="button" aria-label="Close">×</button>
-        </div>
-        <label for="human-diagnosis-classification">Classification</label>
-        <select id="human-diagnosis-classification" required>
-          <option value="DAG_CODE">DAG_CODE</option><option value="AIRFLOW_PLATFORM">AIRFLOW_PLATFORM</option>
-          <option value="SOURCE_DATABASE">SOURCE_DATABASE</option><option value="NETWORK">NETWORK</option>
-          <option value="AUTHENTICATION">AUTHENTICATION</option><option value="AUTHORIZATION">AUTHORIZATION</option>
-          <option value="RESOURCE">RESOURCE</option><option value="DATA_QUALITY">DATA_QUALITY</option>
-          <option value="EXTERNAL_SYSTEM">EXTERNAL_SYSTEM</option><option value="CONFIGURATION">CONFIGURATION</option>
-          <option value="UNKNOWN">UNKNOWN</option>
-        </select>
-        <label for="human-diagnosis-root-cause">Root cause</label>
-        <textarea id="human-diagnosis-root-cause" rows="4" maxlength="4000" required></textarea>
-        <label for="human-diagnosis-actions-input">Recommended actions <span class="optional-label">One per line</span></label>
-        <textarea id="human-diagnosis-actions-input" rows="3" maxlength="4000"></textarea>
-        <label for="human-diagnosis-retry">Retry advice</label>
-        <select id="human-diagnosis-retry" required>
-          <option value="RETRYABLE">RETRYABLE</option><option value="NOT_RETRYABLE">NOT_RETRYABLE</option><option value="UNKNOWN">UNKNOWN</option>
-        </select>
-        <label for="human-diagnosis-notes">Operator notes <span class="optional-label">Optional</span></label>
-        <textarea id="human-diagnosis-notes" rows="3" maxlength="4000"></textarea>
-        <label for="human-diagnosis-change-reason">Change reason <span class="optional-label">Required after the first revision</span></label>
-        <textarea id="human-diagnosis-change-reason" rows="2" maxlength="1000"></textarea>
-        <p id="human-diagnosis-error" class="form-error" role="alert" hidden></p>
-        <div class="dialog-actions">
-          <button id="human-diagnosis-cancel" class="button button-secondary" type="button">Cancel</button>
-          <button id="human-diagnosis-confirm" class="button button-primary" type="submit">Publish diagnosis</button>
-        </div>
-      </form>
+          <div class="modal-body">
+            <label for="human-diagnosis-classification" class="form-label">Classification</label>
+            <select id="human-diagnosis-classification" required class="form-select">
+              <option value="DAG_CODE">DAG_CODE</option><option value="AIRFLOW_PLATFORM">AIRFLOW_PLATFORM</option>
+              <option value="SOURCE_DATABASE">SOURCE_DATABASE</option><option value="NETWORK">NETWORK</option>
+              <option value="AUTHENTICATION">AUTHENTICATION</option><option value="AUTHORIZATION">AUTHORIZATION</option>
+              <option value="RESOURCE">RESOURCE</option><option value="DATA_QUALITY">DATA_QUALITY</option>
+              <option value="EXTERNAL_SYSTEM">EXTERNAL_SYSTEM</option><option value="CONFIGURATION">CONFIGURATION</option>
+              <option value="UNKNOWN">UNKNOWN</option>
+            </select>
+            <label for="human-diagnosis-root-cause" class="form-label">Root cause</label>
+            <textarea id="human-diagnosis-root-cause" rows="4" maxlength="4000" required class="form-control"></textarea>
+            <label for="human-diagnosis-actions-input" class="form-label">Recommended actions <span class="optional-label">One per line</span></label>
+            <textarea id="human-diagnosis-actions-input" rows="3" maxlength="4000" class="form-control"></textarea>
+            <label for="human-diagnosis-retry" class="form-label">Retry advice</label>
+            <select id="human-diagnosis-retry" required class="form-select">
+              <option value="RETRYABLE">RETRYABLE</option><option value="NOT_RETRYABLE">NOT_RETRYABLE</option><option value="UNKNOWN">UNKNOWN</option>
+            </select>
+            <label for="human-diagnosis-notes" class="form-label">Operator notes <span class="optional-label">Optional</span></label>
+            <textarea id="human-diagnosis-notes" rows="3" maxlength="4000" class="form-control"></textarea>
+            <label for="human-diagnosis-change-reason" class="form-label">Change reason <span class="optional-label">Required after the first revision</span></label>
+            <textarea id="human-diagnosis-change-reason" rows="2" maxlength="1000" class="form-control"></textarea>
+            <p id="human-diagnosis-error" class="form-error text-danger" role="alert" hidden></p>
+          </div>
+          <div class="dialog-actions modal-footer">
+            <button id="human-diagnosis-cancel" class="btn btn-outline-secondary" type="button">Cancel</button>
+            <button id="human-diagnosis-confirm" class="btn btn-primary" type="submit">Publish diagnosis</button>
+          </div>
+        </form>
+      </div>
     </dialog>
 
   </body>

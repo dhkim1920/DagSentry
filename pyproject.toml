@@ -56,6 +56,9 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/dagsentry"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"THIRD_PARTY_NOTICES.md" = "dagsentry/web/THIRD_PARTY_NOTICES.md"
+
 [tool.hatch.build.targets.sdist]
 exclude = ["/.github", "/AGENTS.md", "/Todo.md", "/docs", "/tests", "/typings"]
 

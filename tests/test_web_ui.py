@@ -40,7 +40,7 @@ def test_web_ui_serves_dashboard_with_browser_security_headers(
 
     script = request(create_app(settings, session_factory), "GET", "/ui/app.js")
     assert script.headers["cache-control"] == "no-store"
-    assert 'src="/ui/app.js?v=20260830-1"' in response.text
+    assert 'src="/ui/app.js?v=20260927-hierarchy1"' in response.text
 
 
 def test_auth_title_remains_exactly_two_lines_in_both_languages(
@@ -221,10 +221,10 @@ def test_primary_navigation_and_page_titles_follow_selected_language_without_glo
     assert 'id="signatures-nav" data-i18n-fixed' not in shell.text
     assert 'id="diagnoses-nav" data-i18n-fixed' not in shell.text
     assert 'id="reports-nav" data-i18n-fixed' not in shell.text
-    assert 'id="dashboard-title">Incident response</h1>' in shell.text
-    assert 'id="signature-dashboard-title">Error patterns</h1>' in shell.text
-    assert 'id="diagnosis-dashboard-title">Diagnosis History</h1>' in shell.text
-    assert 'id="report-dashboard-title">Daily Reports</h1>' in shell.text
+    assert 'id="dashboard-title" class="page-title">Incident response</h1>' in shell.text
+    assert 'id="signature-dashboard-title" class="page-title">Error patterns</h1>' in shell.text
+    assert 'id="diagnosis-dashboard-title" class="page-title">Diagnosis History</h1>' in shell.text
+    assert 'id="report-dashboard-title" class="page-title">Daily Reports</h1>' in shell.text
     assert '"Incident response": "장애 대응"' in script.text
     assert '"Error patterns": "오류 패턴"' in script.text
     assert "<footer>" not in shell.text
@@ -368,7 +368,7 @@ def test_primary_navigation_uses_a_collapsible_left_sidebar(
     script = request(app, "GET", "/ui/app.js")
 
     header = shell.text[
-        shell.text.index('<header class="site-header">') : shell.text.index("</header>")
+        shell.text.index('<header class="site-header navbar">') : shell.text.index("</header>")
     ]
     sidebar = shell.text[
         shell.text.index('<aside id="site-sidebar"') : shell.text.index("</aside>")
@@ -379,7 +379,7 @@ def test_primary_navigation_uses_a_collapsible_left_sidebar(
     assert 'aria-controls="primary-navigation"' in sidebar
     assert 'aria-expanded="true"' in sidebar
     assert 'id="sidebar-toggle-icon"' in sidebar
-    assert 'id="site-sidebar" class="site-sidebar" hidden' in shell.text
+    assert 'id="site-sidebar" class="site-sidebar navbar navbar-vertical" hidden' in shell.text
     assert '<span class="nav-label">Error patterns</span>' in shell.text
     assert '<span class="nav-label">Diagnosis History</span>' in shell.text
     assert ".app-shell" in stylesheet.text
@@ -409,7 +409,7 @@ def test_operational_lists_use_compact_headers_and_data_first_tables(
 
     assert 'class="page-header-actions"' in shell.text
     assert 'id="refresh-incidents"' in shell.text
-    assert 'class="summary-strip"' in shell.text
+    assert 'class="incident-summary"' in shell.text
     assert 'id="incident-open-total"' in shell.text
     assert 'id="incident-acknowledged-total"' in shell.text
     incident_list = shell.text.split('id="incident-dashboard"')[1].split(
@@ -436,14 +436,14 @@ def test_filter_and_managed_connection_controls_share_an_explicit_height(
     shell = request(app, "GET", "/ui/")
     stylesheet = request(app, "GET", "/ui/app.css")
 
-    assert shell.text.count('class="filter-panel uniform-control-height"') == 5
-    assert 'class="connection-form uniform-control-height"' in shell.text
+    assert shell.text.count('class="filter-panel card card-body uniform-control-height"') == 5
+    assert 'class="connection-form card card-body uniform-control-height"' in shell.text
     assert "--control-height: 38px" in stylesheet.text
     assert ".uniform-control-height input," in stylesheet.text
     assert ".uniform-control-height select" in stylesheet.text
     uniform_controls = stylesheet.text[
         stylesheet.text.index(".uniform-control-height input,") : stylesheet.text.index(
-            ".filter-grid {"
+            "\n.filter-grid {"
         )
     ]
     assert "height: var(--control-height)" in uniform_controls
@@ -522,7 +522,7 @@ def test_incident_detail_uses_clear_korean_copy_and_collapses_version_metadata(
     assert "schema v${diagnosis.diagnosis_schema_version}" in script.text
     assert "Change state" in shell.text
     assert "State history" in shell.text
-    assert 'id="transition-count" class="history-count"' in shell.text
+    assert 'id="transition-count" class="history-count badge bg-secondary-lt"' in shell.text
     assert "Incident ID" in shell.text
     transition_heading = stylesheet.text[
         stylesheet.text.index(".transition-heading strong {") : stylesheet.text.index(
@@ -599,7 +599,10 @@ def test_operator_diagnosis_history_uses_latest_open_timeline_layout(
     assert 'fields.className = "human-diagnosis-revision-fields"' in renderer
     assert 'definitionItem("생성 시각"' not in renderer
     assert ".human-diagnosis-history li summary" in stylesheet.text
-    assert ".detail-main > .human-diagnosis-panel" in stylesheet.text
+    assert "#incident-diagnoses {" in stylesheet.text
+    assert shell.text.index('id="incident-diagnoses"') < shell.text.index(
+        'id="operator-controls"'
+    )
     assert ".human-diagnosis-revision-fields" in stylesheet.text
     assert "width: 100%" in stylesheet.text
     assert "justify-content: flex-start" in stylesheet.text
@@ -608,7 +611,9 @@ def test_operator_diagnosis_history_uses_latest_open_timeline_layout(
     assert ".human-diagnosis-actions-section li::marker" in stylesheet.text
     assert (
         shell.text.index('id="detail-failures"')
-        < shell.text.index('class="context-panel human-diagnosis-history disclosure-panel"')
+        < shell.text.index(
+            'class="context-panel card card-body human-diagnosis-history disclosure-panel"'
+        )
         < shell.text.index('class="detail-aside"')
     )
 
@@ -621,15 +626,15 @@ def test_operator_confirmed_diagnosis_uses_site_ui_font(
     shell = request(app, "GET", "/ui/")
     stylesheet = request(app, "GET", "/ui/app.css")
 
-    assert 'class="aside-panel human-diagnosis-panel"' in shell.text
+    assert 'class="aside-panel card card-body human-diagnosis-panel disclosure-panel"' in shell.text
     assert ".human-diagnosis-panel dt," in stylesheet.text
     assert ".human-diagnosis-panel .history-count," in stylesheet.text
-    assert ".human-diagnosis-panel .button," in stylesheet.text
+    assert ".human-diagnosis-panel .btn," in stylesheet.text
     assert (
-        "font-family: var(--sans);"
+        "font-family: var(--tblr-font-sans-serif);"
         in stylesheet.text[
             stylesheet.text.index(".human-diagnosis-panel,") : stylesheet.text.index(
-                ".human-diagnosis-panel h2 {",
+                "}",
                 stylesheet.text.index(".human-diagnosis-panel,"),
             )
         ]
@@ -730,7 +735,7 @@ def test_error_signature_list_is_compact_and_preserves_signature_distinction(
     script = request(app, "GET", "/ui/app.js")
 
     assert 'id="signature-total" class="page-result-total"' in shell.text
-    assert '<button class="button button-primary" type="submit">Search</button>' in shell.text
+    assert '<button class="btn btn-primary" type="submit">Search</button>' in shell.text
     assert '<th scope="col">Operator / Exception</th>' in shell.text
     assert shell.text.index('<th scope="col" class="numeric">Incidents</th>') < shell.text.index(
         '<th scope="col" class="numeric">Failures</th>',
@@ -756,7 +761,9 @@ def test_error_signature_detail_prioritizes_occurrences_and_verified_diagnosis(
     assert 'id="signature-breadcrumb-current"' in shell.text
     assert 'id="signature-trend-7"' in shell.text
     assert 'id="signature-trend-30"' in shell.text
-    assert 'aria-pressed="true">7 days</button>' in shell.text
+    assert (
+        'aria-pressed="true" class="btn btn-outline-secondary btn-sm">7 days</button>' in shell.text
+    )
     assert '<th scope="col">Environment</th>' in shell.text
     assert shell.text.index('id="signature-latest-diagnosis"') < shell.text.index(
         'class="detail-aside signature-detail-aside"',
@@ -767,11 +774,14 @@ def test_error_signature_detail_prioritizes_occurrences_and_verified_diagnosis(
             "function addUtcDays"
         )
     ]
-    assert 'item.className = "diagnosis-card operator-diagnosis-card"' in signature_identity
+    assert (
+        'item.className = "diagnosis-card card card-body operator-diagnosis-card"'
+        in signature_identity
+    )
     assert 'body.className = "operator-diagnosis-body"' in signature_identity
     assert 'footer.className = "operator-diagnosis-actions"' in signature_identity
     assert (
-        'incidentButton.className = "button button-secondary operator-diagnosis-button"'
+        'incidentButton.className = "btn btn-outline-secondary operator-diagnosis-button"'
         in signature_identity
     )
     assert ".operator-diagnosis-card .diagnosis-card-fields" in stylesheet.text
@@ -831,7 +841,7 @@ def test_error_signature_detail_removes_decorative_kickers_and_uses_clear_labels
         assert kicker not in script.text
 
     assert 'id="signature-version"' not in shell.text
-    assert '<span class="source-badge">Deterministic</span>' not in shell.text
+    assert '<span class="source-badge badge">Deterministic</span>' not in shell.text
     assert "signatureVersion" not in script.text
     assert "<dt>Failure count</dt>" in shell.text
     assert "<dt>Incident count</dt>" in shell.text
@@ -877,7 +887,7 @@ def test_diagnosis_history_prioritizes_source_validation_and_signature_context(
     assert 'id="diagnosis-passed-total"' in shell.text
     assert 'id="diagnosis-reused-total"' in shell.text
     assert 'id="diagnosis-rejected-total"' in shell.text
-    assert '<button class="button button-primary" type="submit">Search</button>' in shell.text
+    assert '<button class="btn btn-primary" type="submit">Search</button>' in shell.text
     diagnosis_table = shell.text[
         shell.text.index('id="diagnosis-results"') : shell.text.index('id="diagnosis-detail"')
     ]
@@ -958,11 +968,16 @@ def test_diagnosis_detail_removes_redundant_kickers_and_collapses_technical_meta
         assert kicker not in shell.text
         assert kicker not in script.text
 
-    assert '<h2 id="diagnosis-similar-title">Similar Diagnosis</h2>' in shell.text
-    assert '<h2 id="diagnosis-failure-title">Failure run information</h2>' in shell.text
-    assert "<h2>Diagnosis Metadata</h2>" in shell.text
-    assert "<h2>Linked Incident</h2>" in shell.text
-    assert "<h2>Error Signature</h2>" in shell.text
+    assert (
+        '<h2 id="diagnosis-similar-title" class="card-title">Similar Diagnosis</h2>' in shell.text
+    )
+    assert (
+        '<h2 id="diagnosis-failure-title" class="card-title">Failure run information</h2>'
+        in shell.text
+    )
+    assert '<h2 class="card-title">Diagnosis Metadata</h2>' in shell.text
+    assert '<h2 class="card-title">Linked Incident</h2>' in shell.text
+    assert '<h2 class="card-title">Error Signature</h2>' in shell.text
     assert '"Similar Diagnosis": "유사 진단 이력"' in script.text
     assert '"Failure run information": "실패 실행 정보"' in script.text
     assert '"Reasoning metadata": "근거 메타데이터"' in script.text
@@ -999,11 +1014,11 @@ def test_web_ui_exposes_keyboard_and_assistive_technology_contracts(
 
     assert 'class="skip-link" href="#main-content"' in shell.text
     assert (
-        'id="detail-feedback" class="notice notice-success" role="status" tabindex="-1"'
+        'id="detail-feedback" class="notice alert notice-success alert-success" role="status" tabindex="-1"'
         in shell.text
     )
     assert 'aria-describedby="transition-dialog-copy"' in shell.text
-    assert 'class="table-wrap" role="region" tabindex="0"' in shell.text
+    assert 'class="table-wrap table-responsive" role="region" tabindex="0"' in shell.text
     assert shell.text.count('<caption class="visually-hidden">') == 6
     assert 'id="signature-trend"' in shell.text
     assert 'aria-labelledby="signature-trend-title signature-trend-range"' in shell.text
