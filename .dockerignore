@@ -1,6 +1,8 @@
 *
 !Dockerfile
 !README.md
+!LICENSE
+!THIRD_PARTY_NOTICES.md
 !alembic.ini
 !pyproject.toml
 !uv.lock

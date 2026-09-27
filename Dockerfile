@@ -14,7 +14,7 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_PROJECT_ENVIRONMENT=/opt/dagsentry-venv
 
 WORKDIR /build
-COPY pyproject.toml uv.lock README.md ./
+COPY pyproject.toml uv.lock README.md LICENSE THIRD_PARTY_NOTICES.md ./
 COPY src ./src
 RUN uv sync --frozen --no-dev --no-editable
 
