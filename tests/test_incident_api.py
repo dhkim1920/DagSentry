@@ -267,12 +267,18 @@ def test_list_filters_and_detail_include_failures(
     assert listing.json()["total"] == 1
     assert listing.json()["items"][0]["id"] == str(production_id)
     assert listing.json()["items"][0]["failure_count"] == 2
+    assert listing.json()["items"][0]["exception_class"] == "ValueError"
+    assert listing.json()["items"][0]["normalized_message"] == "ValueError: production:orders:load"
     assert listing.json()["items"][0]["first_failure_at"] == NOW.isoformat().replace("+00:00", "Z")
     assert listing.json()["items"][0]["last_failure_at"] == (
         NOW + timedelta(minutes=1)
     ).isoformat().replace("+00:00", "Z")
     assert detail.status_code == 200
     assert detail.json()["incident"]["id"] == str(production_id)
+    assert (
+        detail.json()["incident"]["normalized_message"]
+        == (listing.json()["items"][0]["normalized_message"])
+    )
     assert (
         detail.json()["incident"]["first_failure_at"]
         == listing.json()["items"][0]["first_failure_at"]
@@ -290,6 +296,54 @@ def test_list_filters_and_detail_include_failures(
     assert all(item["error_signature"] is not None for item in detail.json()["failures"])
     assert all(item["airflow_log_url"] is None for item in detail.json()["failures"])
     assert detail.json()["transitions"] == []
+
+
+def test_list_error_summaries_keep_unsigned_incidents_without_per_row_queries(
+    settings: Settings,
+    session_factory: SessionFactory,
+) -> None:
+    with session_factory() as session:
+        for index in range(3):
+            create_incident(session, dag_id=f"orders_{index}")
+        unsigned_id, _ = create_incident(session, dag_id="unsigned")
+        unsigned = session.get(IncidentRecord, unsigned_id)
+        assert unsigned is not None
+        unsigned.error_signature_id = None
+        session.commit()
+        engine = session.get_bind()
+
+    statements: list[str] = []
+
+    def capture_sql(
+        connection: object,
+        cursor: object,
+        statement: str,
+        parameters: object,
+        context: object,
+        executemany: bool,
+    ) -> None:
+        if statement.lstrip().upper().startswith("SELECT"):
+            statements.append(statement)
+
+    app = create_app(settings, session_factory)
+    sqlalchemy_event.listen(engine, "before_cursor_execute", capture_sql)
+    try:
+        first = request(app, "GET", "/api/v1/incidents?limit=1", headers=TOKEN_HEADER)
+        first_query_count = len(statements)
+        statements.clear()
+        listing = request(app, "GET", "/api/v1/incidents?limit=10", headers=TOKEN_HEADER)
+    finally:
+        sqlalchemy_event.remove(engine, "before_cursor_execute", capture_sql)
+
+    assert first.status_code == listing.status_code == 200
+    assert len(statements) == first_query_count == 2
+    assert listing.json()["total"] == 4
+    items = listing.json()["items"]
+    assert len(items) == 4
+    unsigned_item = next(item for item in items if item["id"] == str(unsigned_id))
+    assert unsigned_item["exception_class"] is None
+    assert unsigned_item["normalized_message"] is None
+    assert all(item["exception_class"] == "ValueError" for item in items if item != unsigned_item)
 
 
 def test_detail_exposes_diagnosis_history_reuse_and_delivery_log_url(

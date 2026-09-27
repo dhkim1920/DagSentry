@@ -21,15 +21,37 @@ function generateUuid() {
 }
 
 const KOREAN_TRANSLATIONS = Object.freeze({
+  "Incident response": "장애 대응",
+  "Error patterns": "오류 패턴",
+  "Settings": "설정",
+  "Find an incident, review its cause, and decide the next action.": "장애를 찾고 원인을 확인한 뒤 다음 조치를 결정합니다.",
+  "Find recurring failures with the same error pattern.": "같은 오류 패턴으로 반복되는 실패를 확인합니다.",
+  "Manage users, external connections, and administration history.": "사용자, 외부 연결, 관리자 변경 이력을 관리합니다.",
+  "Review daily failures, recommended actions, and report delivery.": "일별 장애와 권장 조치, 리포트 전송 결과를 확인합니다.",
+  "Error summary": "오류 요약",
+  "Error summary unavailable": "오류 요약 없음",
+  "Status totals use the same environment, DAG and task filters, regardless of the selected status.": "대응 대기·조사 중 건수는 선택한 상태와 무관하게 같은 환경·DAG·태스크 조건으로 집계합니다.",
+  "More filters and sorting": "상세 필터 및 정렬",
+  "Report delivery settings": "리포트 발송 설정",
+  "Automatic diagnosis for the latest failure": "최신 실패의 자동 진단",
+  "No validated diagnosis is available for the latest failure. Review its task log or earlier attempts in the history.": "최신 실패의 유효한 진단이 아직 없습니다. 태스크 로그 또는 이전 실패 이력을 확인하세요.",
+  "Evidence and diagnosis details": "근거 및 진단 상세",
+  "Confidence is the diagnosis score, not a measured accuracy rate.": "신뢰도는 진단이 제시한 점수이며, 측정된 정확도가 아닙니다.",
+  "Validation describes automated checks, not operator confirmation of the cause. AI checks include matching cited evidence to the log.": "검증 상태는 자동 검사의 결과이며 운영자의 원인 확정을 뜻하지 않습니다. AI 검증에는 인용 근거와 로그의 일치 여부가 포함됩니다.",
+  "This incident is awaiting investigation.": "아직 조사를 시작하지 않은 장애입니다.",
+  "An operator has started investigating this incident.": "운영자가 확인하고 조사 중인 장애입니다.",
+  "The task has recovered. Confirm whether follow-up is complete before resolving the incident.": "태스크 실행이 복구되었습니다. 후속 조치가 끝났는지 확인한 뒤 처리를 완료하세요.",
+  "An operator has closed this incident after confirming remediation.": "운영자가 조치 완료를 확인하고 종결한 장애입니다.",
+  "An operator has closed this incident without further action.": "운영자가 추가 조치 없이 종결한 장애입니다.",
   "DagSentry — Incident operations": "DagSentry — 인시던트 운영",
   "DagSentry — Connect": "DagSentry — 연결",
-  "DagSentry — Incidents": "DagSentry — 인시던트",
+  "DagSentry — Incident response": "DagSentry — 장애 대응",
   "DagSentry — Incident detail": "DagSentry — 인시던트 상세",
-  "DagSentry — Error Signatures": "DagSentry — 오류 시그니처",
+  "DagSentry — Error patterns": "DagSentry — 오류 패턴",
   "DagSentry — Error Signature detail": "DagSentry — 오류 시그니처 상세",
   "DagSentry — Diagnosis History": "DagSentry — 진단 이력",
   "DagSentry — Diagnosis detail": "DagSentry — 진단 상세",
-  "DagSentry — User Administration": "DagSentry — 사용자 관리",
+  "DagSentry — Settings": "DagSentry — 설정",
   "DagSentry — Daily Reports": "DagSentry — 데일리 리포트",
   "DagSentry — Daily Report detail": "DagSentry — 데일리 리포트 상세",
   "DagSentry — Change temporary password": "DagSentry — 임시 비밀번호 변경",
@@ -108,7 +130,6 @@ const KOREAN_TRANSLATIONS = Object.freeze({
   "Passwords do not match.": "새 비밀번호가 일치하지 않습니다.",
   "Password changed. Sign in again.": "비밀번호가 변경되었습니다. 다시 로그인하세요.",
   "Unable to reach DagSentry.": "DagSentry에 연결할 수 없습니다.",
-  "Create users, manage roles and account status, revoke sessions, and review Admin audit history.": "사용자 생성, 역할 및 계정 상태 관리, 세션 폐기, 관리자 감사 이력을 확인합니다.",
   "Managed users": "관리 사용자",
   "Create local user": "로컬 사용자 생성",
   "Display name": "표시 이름",
@@ -134,15 +155,14 @@ const KOREAN_TRANSLATIONS = Object.freeze({
   Enable: "활성화",
   "Revoke sessions": "세션 폐기",
   "Live operational queue": "실시간 운영 대기열",
-  "Review correlated Airflow failures in chronological order.": "연관된 Airflow 실패를 시간순으로 확인합니다.",
   "Matching incidents": "일치하는 인시던트",
   "Incident filters": "인시던트 필터",
   Status: "상태",
   "All statuses": "모든 상태",
-  Open: "열림",
-  Acknowledged: "확인됨",
-  Recovered: "복구됨",
-  Resolved: "해결됨",
+  Open: "대응 대기",
+  Acknowledged: "조사 중",
+  Recovered: "실행 복구됨",
+  Resolved: "처리 완료",
   Ignored: "무시됨",
   Environment: "환경",
   Task: "태스크",
@@ -166,12 +186,11 @@ const KOREAN_TRANSLATIONS = Object.freeze({
   "DAG / Task": "DAG / 태스크",
   Failures: "실패",
   "First seen": "최초 발생",
-  "Last activity": "최근 활동",
+  "Last activity": "최근 실패",
   Actions: "작업",
   Previous: "이전",
   Next: "다음",
   "Recurring failure identity": "반복 실패 식별",
-  "Review failure groups classified by the same cause and their occurrence overview.": "동일한 원인으로 분류된 실패 그룹과 발생 현황을 확인합니다.",
   "Matching signatures": "일치하는 시그니처",
   "Error Signature filters": "오류 시그니처 필터",
   Search: "검색",
@@ -389,8 +408,8 @@ const KOREAN_TRANSLATIONS = Object.freeze({
   "Another active Incident already exists for this failure group": "동일한 실패 그룹에 활성 인시던트가 이미 존재합니다.",
   Reopen: "다시 열기",
   "Reopen this Incident for active investigation.": "이 인시던트를 다시 열어 조사를 계속합니다.",
-  Acknowledge: "확인",
-  Resolve: "해결",
+  Acknowledge: "조사 시작",
+  Resolve: "처리 완료",
   Ignore: "무시",
   "Mark this Incident as actively investigated.": "이 인시던트를 조사 중 상태로 표시합니다.",
   "Close this Incident after confirming remediation is complete.": "조치 완료를 확인한 후 이 인시던트를 종료합니다.",
@@ -431,10 +450,10 @@ const KOREAN_TRANSLATIONS = Object.freeze({
   "Never tested": "테스트 안 함",
   Edit: "수정",
   Test: "테스트",
-  OPEN: "열림",
-  ACKNOWLEDGED: "확인됨",
-  RECOVERED: "복구됨",
-  RESOLVED: "해결됨",
+  OPEN: "대응 대기",
+  ACKNOWLEDGED: "조사 중",
+  RECOVERED: "실행 복구됨",
+  RESOLVED: "처리 완료",
   IGNORED: "무시됨",
   REOPENED: "다시 열림",
   FAILED: "실패",
@@ -764,6 +783,9 @@ const elements = {
   detailFeedback: document.querySelector("#detail-feedback"),
   detailContent: document.querySelector("#detail-content"),
   detailStatus: document.querySelector("#detail-status"),
+  detailStateHelp: document.querySelector("#detail-state-help"),
+  currentDiagnosisPanel: document.querySelector("#current-diagnosis-panel"),
+  currentDiagnosisContent: document.querySelector("#current-diagnosis-content"),
   detailEnvironment: document.querySelector("#detail-environment"),
   detailTitle: document.querySelector("#detail-title"),
   detailTask: document.querySelector("#detail-task"),
@@ -771,6 +793,7 @@ const elements = {
   detailFirstSeen: document.querySelector("#detail-first-seen"),
   detailLastSeen: document.querySelector("#detail-last-seen"),
   detailIncidentId: document.querySelector("#detail-incident-id"),
+  detailSignatureLink: document.querySelector("#detail-signature-link"),
   detailFailures: document.querySelector("#detail-failures"),
   transitionHistory: document.querySelector("#transition-history"),
   transitionCount: document.querySelector("#transition-count"),
@@ -1135,15 +1158,15 @@ function showConnectedView(view) {
   const reportView = view === "reports" || view === "report-detail";
   const incidentView = !signatureView && !diagnosisView && !reportView && !adminView;
   const titles = {
-    dashboard: "DagSentry — Incidents",
+    dashboard: "DagSentry — Incident response",
     detail: "DagSentry — Incident detail",
-    signatures: "DagSentry — Error Signatures",
+    signatures: "DagSentry — Error patterns",
     "signature-detail": "DagSentry — Error Signature detail",
     diagnoses: "DagSentry — Diagnosis History",
     "diagnosis-detail": "DagSentry — Diagnosis detail",
     reports: "DagSentry — Daily Reports",
     "report-detail": "DagSentry — Daily Report detail",
-    admin: "DagSentry — User Administration",
+    admin: "DagSentry — Settings",
   };
   document.title = translatedText(titles[view] || "DagSentry");
   elements.authPanel.hidden = true;
@@ -1187,6 +1210,16 @@ function setLoading(isLoading) {
   elements.next.disabled = isLoading || currentOffset + PAGE_SIZE >= currentTotal;
 }
 
+function revealAdvancedFilters(form) {
+  const details = form.querySelector(".advanced-filters");
+  details.open = Array.from(details.querySelectorAll("input, select")).some((control) => {
+    const defaultValue = control.tagName === "SELECT"
+      ? control.options[0].value
+      : control.defaultValue;
+    return control.value !== defaultValue;
+  });
+}
+
 function setFiltersFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const defaults = { status: "OPEN", sort: "last_failure_at", order: "desc" };
@@ -1196,6 +1229,7 @@ function setFiltersFromUrl() {
     }
     control.value = params.get(control.name) ?? defaults[control.name] ?? "";
   }
+  revealAdvancedFilters(elements.filterForm);
   currentOffset = Number.parseInt(params.get("offset") || "0", 10);
   if (!Number.isFinite(currentOffset) || currentOffset < 0) {
     currentOffset = 0;
@@ -1211,6 +1245,7 @@ function setSignatureFiltersFromUrl() {
     }
     control.value = params.get(control.name) ?? defaults[control.name] ?? "";
   }
+  revealAdvancedFilters(elements.signatureFilterForm);
   currentSignatureOffset = Number.parseInt(params.get("offset") || "0", 10);
   if (!Number.isFinite(currentSignatureOffset) || currentSignatureOffset < 0) {
     currentSignatureOffset = 0;
@@ -1472,11 +1507,13 @@ function renderRows(items) {
     appendCell(row, status);
 
     const incidentIdentity = document.createElement("div");
-    incidentIdentity.className = "task-identity";
+    incidentIdentity.className = "task-identity incident-error-summary";
     incidentIdentity.append(
-      textElement("strong", `INC-${shortId(incident.id)}`),
-      textElement("span", "Airflow task incident"),
+      textElement("strong", incident.exception_class || incident.normalized_message || "Error summary unavailable"),
     );
+    if (incident.exception_class && incident.normalized_message && incident.normalized_message !== incident.exception_class) {
+      incidentIdentity.append(textElement("span", incident.normalized_message));
+    }
     appendCell(row, incidentIdentity);
     appendCell(row, incident.environment);
 
@@ -1488,22 +1525,10 @@ function renderRows(items) {
     );
     appendCell(row, taskIdentity);
 
-    if (incident.error_signature_id) {
-      const signature = document.createElement("a");
-      signature.className = "table-link";
-      signature.href = `/ui/?view=signatures&signature=${encodeURIComponent(incident.error_signature_id)}`;
-      signature.textContent = `SIG-${shortId(incident.error_signature_id)}`;
-      signature.setAttribute("aria-label", `Explore Error Signature ${incident.error_signature_id}`);
-      appendCell(row, signature);
-    } else {
-      appendCell(row, textElement("span", "UNSIGNABLE", "muted-badge"));
-    }
-
     const failures = document.createElement("span");
     failures.className = "failure-count";
     failures.textContent = String(incident.failure_count);
     appendCell(row, failures, "numeric");
-    appendCell(row, timestampBlock(incident.first_failure_at));
     appendCell(row, timestampBlock(incident.last_failure_at));
 
     const inspect = document.createElement("a");
@@ -1536,9 +1561,13 @@ function renderPage(payload) {
   elements.next.disabled = currentOffset + PAGE_SIZE >= payload.total;
 }
 
-async function loadIncidentSummary() {
+async function loadIncidentSummary(submittedParams) {
   const totals = await Promise.all(["OPEN", "ACKNOWLEDGED"].map(async (status) => {
-    const response = await fetch(`/api/v1/incidents?status=${status}&limit=1&offset=0`, {
+    const params = new URLSearchParams(submittedParams);
+    params.set("status", status);
+    params.set("limit", "1");
+    params.set("offset", "0");
+    const response = await fetch(`/api/v1/incidents?${params.toString()}`, {
       headers: authHeaders(),
     });
     return response.ok ? (await response.json()).total : null;
@@ -2040,6 +2069,8 @@ function renderDiagnosisDetail(diagnosis) {
     definitionItem("Matched rule", diagnosis.matched_rule || "Unavailable"),
   );
   reasoning.append(reasoningFields);
+  reasoning.append(textElement("p", "Confidence is the diagnosis score, not a measured accuracy rate.", "heading-copy"));
+  reasoning.append(textElement("p", "Validation describes automated checks, not operator confirmation of the cause. AI checks include matching cited evidence to the log.", "heading-copy"));
   if (diagnosis.extracted_values.length) {
     const extracted = document.createElement("ul");
     extracted.className = "extracted-values";
@@ -2359,7 +2390,10 @@ function renderDiagnosis(diagnosis, includeDetailLink = true) {
         : diagnosis.operator_review_required ? "Operator required" : "Not required",
     ),
   );
-  card.append(facts, renderEvidence(diagnosis.evidence));
+  card.append(facts);
+  card.append(textElement("p", "Confidence is the diagnosis score, not a measured accuracy rate.", "heading-copy"));
+  card.append(textElement("p", "Validation describes automated checks, not operator confirmation of the cause. AI checks include matching cited evidence to the log.", "heading-copy"));
+  card.append(renderEvidence(diagnosis.evidence));
 
   const actions = renderActions(diagnosis.recommended_actions);
   if (actions) {
@@ -2819,12 +2853,64 @@ function showDetailFeedback(message) {
   elements.detailFeedback.focus();
 }
 
+function latestFailureDiagnosis(failures) {
+  const latestFailure = failures.at(-1);
+  return latestFailure?.diagnoses.find((diagnosis) => (
+    diagnosis.effective && diagnosis.validation_status === "PASSED"
+  )) || null;
+}
+
+function renderCurrentDiagnosis(payload) {
+  const content = elements.currentDiagnosisContent;
+  content.replaceChildren();
+  elements.currentDiagnosisPanel.open = !payload.current_human_diagnosis;
+  const diagnosis = latestFailureDiagnosis(payload.failures);
+  const latestFailure = payload.failures.at(-1);
+  if (latestFailure) {
+    content.append(textElement("p", formatTimestamp(latestFailure.observed_at).primary, "heading-copy"));
+  }
+  if (!diagnosis) {
+    content.append(textElement("p", "No validated diagnosis is available for the latest failure. Review its task log or earlier attempts in the history.", "heading-copy"));
+  } else {
+    content.append(textElement("h3", diagnosis.root_cause || "No Root Cause was produced", "diagnosis-root-cause"));
+    const facts = document.createElement("dl");
+    facts.className = "diagnosis-facts";
+    facts.append(
+      definitionItem("Source", diagnosis.source),
+      definitionItem("Retry", diagnosis.retry_decision || "UNKNOWN"),
+      definitionItem("Review", diagnosis.operator_review_required === null
+        ? "Unavailable" : diagnosis.operator_review_required ? "Operator required" : "Not required"),
+    );
+    content.append(facts);
+    const actions = renderActions(diagnosis.recommended_actions);
+    if (actions) content.append(actions);
+    const evidence = document.createElement("details");
+    evidence.className = "diagnosis-technical-details";
+    evidence.append(textElement("summary", "Evidence and diagnosis details"), renderDiagnosis(diagnosis));
+    content.append(evidence);
+  }
+  const logUrl = safeHttpUrl(latestFailure?.airflow_log_url);
+  if (latestFailure?.airflow_log_url && logUrl) {
+    const link = contextLink("Open Task log in Airflow ↗", logUrl);
+    link.target = "_blank";
+    link.rel = "noreferrer noopener";
+    content.append(link);
+  }
+}
+
 function renderIncidentDetail(payload) {
   const incident = payload.incident;
   currentIncidentId = incident.id;
   currentIncidentStatus = incident.status;
   elements.detailStatus.textContent = incident.status.replaceAll("_", " ");
   elements.detailStatus.dataset.status = incident.status;
+  elements.detailStateHelp.textContent = {
+    OPEN: "This incident is awaiting investigation.",
+    ACKNOWLEDGED: "An operator has started investigating this incident.",
+    RECOVERED: "The task has recovered. Confirm whether follow-up is complete before resolving the incident.",
+    RESOLVED: "An operator has closed this incident after confirming remediation.",
+    IGNORED: "An operator has closed this incident without further action.",
+  }[incident.status];
   elements.detailEnvironment.textContent = incident.environment;
   elements.detailTitle.textContent = incident.dag_id;
   elements.detailTask.textContent = incident.task_id;
@@ -2832,6 +2918,12 @@ function renderIncidentDetail(payload) {
   elements.detailFirstSeen.textContent = formatTimestamp(incident.first_failure_at).primary;
   elements.detailLastSeen.textContent = formatTimestamp(incident.last_failure_at).primary;
   elements.detailIncidentId.textContent = incident.id;
+  elements.detailSignatureLink.hidden = !incident.error_signature_id;
+  if (incident.error_signature_id) {
+    elements.detailSignatureLink.href = `/ui/?view=signatures&signature=${encodeURIComponent(incident.error_signature_id)}`;
+  } else {
+    elements.detailSignatureLink.removeAttribute("href");
+  }
   elements.detailFailures.replaceChildren();
   for (const [index, failure] of payload.failures.entries()) {
     elements.detailFailures.append(renderFailure(failure, index));
@@ -2839,6 +2931,7 @@ function renderIncidentDetail(payload) {
   renderTransitions(payload.transitions);
   renderOperatorControls(incident.status, payload.transitions);
   renderHumanDiagnosis(payload.current_human_diagnosis);
+  renderCurrentDiagnosis(payload);
   void renderHumanDiagnosisHistory();
   elements.detailContent.hidden = false;
 }
@@ -3590,7 +3683,7 @@ async function loadIncidents() {
       throw new Error(detail);
     }
     renderPage(await response.json());
-    await loadIncidentSummary();
+    await loadIncidentSummary(params);
     return true;
   } catch (error) {
     elements.results.hidden = true;
@@ -4356,6 +4449,7 @@ elements.refreshIncidents.addEventListener("click", async () => {
 
 elements.clearFilters.addEventListener("click", async () => {
   elements.filterForm.reset();
+  revealAdvancedFilters(elements.filterForm);
   document.querySelector("#status-filter").value = "OPEN";
   currentOffset = 0;
   await loadIncidents();
@@ -4369,6 +4463,7 @@ elements.signatureFilterForm.addEventListener("submit", async (event) => {
 
 elements.clearSignatureFilters.addEventListener("click", async () => {
   elements.signatureFilterForm.reset();
+  revealAdvancedFilters(elements.signatureFilterForm);
   currentSignatureOffset = 0;
   await loadSignatures();
 });

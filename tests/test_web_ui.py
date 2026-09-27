@@ -209,7 +209,7 @@ def test_web_ui_supports_persisted_timezone_with_selected_timezone_only(
     assert "#timezone-select" in stylesheet.text
 
 
-def test_primary_navigation_and_page_titles_are_language_invariant_without_global_footer(
+def test_primary_navigation_and_page_titles_follow_selected_language_without_global_footer(
     settings: Settings,
     session_factory: SessionFactory,
 ) -> None:
@@ -217,14 +217,16 @@ def test_primary_navigation_and_page_titles_are_language_invariant_without_globa
     shell = request(app, "GET", "/ui/")
     script = request(app, "GET", "/ui/app.js")
 
-    assert 'id="incidents-nav" data-i18n-fixed' in shell.text
-    assert 'id="signatures-nav" data-i18n-fixed' in shell.text
-    assert 'id="diagnoses-nav" data-i18n-fixed' in shell.text
-    assert 'id="reports-nav" data-i18n-fixed' in shell.text
-    assert 'id="dashboard-title" data-i18n-fixed>Incidents</h1>' in shell.text
-    assert 'id="signature-dashboard-title" data-i18n-fixed>Error Signatures</h1>' in shell.text
-    assert 'id="diagnosis-dashboard-title" data-i18n-fixed>Diagnosis History</h1>' in shell.text
-    assert 'id="report-dashboard-title" data-i18n-fixed>Daily Reports</h1>' in shell.text
+    assert 'id="incidents-nav" data-i18n-fixed' not in shell.text
+    assert 'id="signatures-nav" data-i18n-fixed' not in shell.text
+    assert 'id="diagnoses-nav" data-i18n-fixed' not in shell.text
+    assert 'id="reports-nav" data-i18n-fixed' not in shell.text
+    assert 'id="dashboard-title">Incident response</h1>' in shell.text
+    assert 'id="signature-dashboard-title">Error patterns</h1>' in shell.text
+    assert 'id="diagnosis-dashboard-title">Diagnosis History</h1>' in shell.text
+    assert 'id="report-dashboard-title">Daily Reports</h1>' in shell.text
+    assert '"Incident response": "장애 대응"' in script.text
+    assert '"Error patterns": "오류 패턴"' in script.text
     assert "<footer>" not in shell.text
     assert 'closest("[data-i18n-fixed]")' in script.text
 
@@ -306,17 +308,17 @@ def test_page_descriptions_use_matching_english_and_korean_operational_copy(
     script = request(app, "GET", "/ui/app.js")
 
     descriptions = {
-        "Review correlated Airflow failures in chronological order.": (
-            "연관된 Airflow 실패를 시간순으로 확인합니다."
+        "Find an incident, review its cause, and decide the next action.": (
+            "장애를 찾고 원인을 확인한 뒤 다음 조치를 결정합니다."
         ),
-        "Review failure groups classified by the same cause and their occurrence overview.": (
-            "동일한 원인으로 분류된 실패 그룹과 발생 현황을 확인합니다."
+        "Find recurring failures with the same error pattern.": (
+            "같은 오류 패턴으로 반복되는 실패를 확인합니다."
         ),
         "Search AI, Rule, and operator-authored diagnosis records with their Incident and Error Signature context.": (
             "AI, 규칙 및 운영자 작성 진단 기록을 인시던트와 오류 시그니처 맥락과 함께 검색합니다."
         ),
-        "Create users, manage roles and account status, revoke sessions, and review Admin audit history.": (
-            "사용자 생성, 역할 및 계정 상태 관리, 세션 폐기, 관리자 감사 이력을 확인합니다."
+        "Manage users, external connections, and administration history.": (
+            "사용자, 외부 연결, 관리자 변경 이력을 관리합니다."
         ),
     }
     for english, korean in descriptions.items():
@@ -378,8 +380,8 @@ def test_primary_navigation_uses_a_collapsible_left_sidebar(
     assert 'aria-expanded="true"' in sidebar
     assert 'id="sidebar-toggle-icon"' in sidebar
     assert 'id="site-sidebar" class="site-sidebar" hidden' in shell.text
-    assert '<span class="nav-label nav-label-two-line">Error<br>Signatures</span>' in shell.text
-    assert '<span class="nav-label nav-label-two-line">Diagnosis<br>History</span>' in shell.text
+    assert '<span class="nav-label">Error patterns</span>' in shell.text
+    assert '<span class="nav-label">Diagnosis History</span>' in shell.text
     assert ".app-shell" in stylesheet.text
     assert ".site-sidebar" in stylesheet.text
     assert "body.sidebar-collapsed .app-shell" in stylesheet.text
@@ -410,10 +412,18 @@ def test_operational_lists_use_compact_headers_and_data_first_tables(
     assert 'class="summary-strip"' in shell.text
     assert 'id="incident-open-total"' in shell.text
     assert 'id="incident-acknowledged-total"' in shell.text
-    assert '<th scope="col">Incident</th>' in shell.text
-    assert '<th scope="col">Error Signature</th>' in shell.text
+    incident_list = shell.text.split('id="incident-dashboard"')[1].split(
+        'id="signature-dashboard"'
+    )[0]
+    assert '<th scope="col">Error summary</th>' in incident_list
+    assert '<th scope="col">Error Signature</th>' not in incident_list
+    assert '<th scope="col">First seen</th>' not in incident_list
+    assert incident_list.count('<th scope="col"') == 7
+    assert 'aria-describedby="incident-summary-scope"' in incident_list
     assert "incident.error_signature_id" in script.text
-    assert "shortId(incident.id)" in script.text
+    assert 'id="detail-first-seen"' in shell.text
+    assert 'id="detail-incident-id"' in shell.text
+    assert 'id="detail-signature-link"' in shell.text
     assert "radial-gradient" not in stylesheet.text
     assert "linear-gradient" not in stylesheet.text
 
@@ -493,8 +503,8 @@ def test_incident_detail_uses_clear_korean_copy_and_collapses_version_metadata(
     assert "return `대표 진단 ${match[1]}`;" in script.text
     assert 'Review: "운영자 검토"' in script.text
     assert 'PASSED: "검증 통과"' in script.text
-    assert 'Acknowledge: "확인"' in script.text
-    assert 'Resolve: "해결"' in script.text
+    assert 'Acknowledge: "조사 시작"' in script.text
+    assert 'Resolve: "처리 완료"' in script.text
     assert 'Ignore: "무시"' in script.text
     assert '"Explore recurring occurrences →": "동일 오류 발생 이력 →"' in script.text
     assert "return `발생 ${match[1]}회`;" in script.text
@@ -588,7 +598,7 @@ def test_operator_diagnosis_history_uses_latest_open_timeline_layout(
     assert "details.open = index === 0" in renderer
     assert 'fields.className = "human-diagnosis-revision-fields"' in renderer
     assert 'definitionItem("생성 시각"' not in renderer
-    assert ".human-diagnosis-history summary" in stylesheet.text
+    assert ".human-diagnosis-history li summary" in stylesheet.text
     assert ".detail-main > .human-diagnosis-panel" in stylesheet.text
     assert ".human-diagnosis-revision-fields" in stylesheet.text
     assert "width: 100%" in stylesheet.text
@@ -598,7 +608,7 @@ def test_operator_diagnosis_history_uses_latest_open_timeline_layout(
     assert ".human-diagnosis-actions-section li::marker" in stylesheet.text
     assert (
         shell.text.index('id="detail-failures"')
-        < shell.text.index('class="context-panel human-diagnosis-history"')
+        < shell.text.index('class="context-panel human-diagnosis-history disclosure-panel"')
         < shell.text.index('class="detail-aside"')
     )
 
@@ -635,11 +645,8 @@ def test_admin_user_management_ui_is_role_gated_and_uses_write_only_password_fie
     stylesheet = request(app, "GET", "/ui/app.css")
     script = request(app, "GET", "/ui/app.js")
 
-    assert 'id="admin-nav" data-i18n-fixed' in shell.text
-    assert (
-        'id="admin-nav" data-i18n-fixed class="nav-link" href="/ui/?view=admin" hidden'
-        in shell.text
-    )
+    assert 'id="admin-nav" class="nav-link" href="/ui/?view=admin" hidden' in shell.text
+    assert 'id="admin-nav" data-i18n-fixed' not in shell.text
     assert 'id="admin-dashboard"' in shell.text
     assert 'id="admin-create-form"' in shell.text
     assert 'id="admin-user-password"' in shell.text

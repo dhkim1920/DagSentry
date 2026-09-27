@@ -230,10 +230,6 @@ body.sidebar-collapsed .primary-nav {
   line-height: 1.25;
 }
 
-.nav-label-two-line {
-  min-height: 2.5em;
-}
-
 .nav-link.is-disabled {
   cursor: not-allowed;
   opacity: 0.45;
@@ -496,7 +492,7 @@ input::placeholder {
 .page-result-count span {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.64rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -535,7 +531,7 @@ input::placeholder {
   display: block;
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.64rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -567,7 +563,7 @@ input::placeholder {
   display: block;
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
 }
 
@@ -599,14 +595,80 @@ input::placeholder {
   gap: 12px;
 }
 
-.signature-filter-grid,
 .diagnosis-filter-grid,
 .report-filter-grid {
   grid-template-columns: repeat(6, minmax(130px, 1fr));
 }
 
-.signature-filter-grid .field-group:first-child {
-  grid-column: span 2;
+.basic-filter-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.advanced-filters {
+  margin-top: 12px;
+}
+
+.advanced-filters > summary,
+.disclosure-panel > summary,
+.settings-section > summary {
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.advanced-filters[open] > summary,
+.disclosure-panel[open] > summary {
+  margin-bottom: 16px;
+}
+
+.settings-section > summary {
+  padding: 18px;
+}
+
+.incident-error-summary {
+  min-width: 220px;
+  max-width: 360px;
+  overflow-wrap: anywhere;
+}
+
+.incident-error-summary > strong,
+.incident-error-summary > span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.incident-error-summary > span {
+  font-family: var(--sans);
+  font-size: 0.8125rem;
+}
+
+.incident-detail-main {
+  display: grid;
+  gap: 16px;
+}
+
+#incident-detail .human-diagnosis-panel,
+#incident-detail .human-diagnosis-history {
+  margin-top: 0;
+}
+
+.incident-detail-main .operator-actions {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+#current-diagnosis-content {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+#current-diagnosis-content > .heading-copy,
+#current-diagnosis-content > .diagnosis-root-cause {
+  margin: 0;
 }
 
 .field-group {
@@ -764,7 +826,7 @@ td {
 th {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -796,7 +858,7 @@ tbody tr:hover {
   border-radius: 999px;
   color: var(--muted-strong);
   font-family: var(--mono);
-  font-size: 0.69rem;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
@@ -873,7 +935,7 @@ tbody tr:hover {
 .task-identity span {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
 }
 
 .signature-identity {
@@ -923,7 +985,7 @@ tbody tr:hover {
   border-radius: 4px;
   color: var(--muted-strong);
   font-family: var(--mono);
-  font-size: 0.64rem;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
@@ -949,7 +1011,7 @@ tbody tr:hover {
 .relation-link {
   color: var(--blue);
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
@@ -958,7 +1020,7 @@ tbody tr:hover {
 .muted-label {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
 }
 
 .failure-count {
@@ -1102,7 +1164,7 @@ tbody tr:hover {
   border-radius: 4px;
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.64rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1142,7 +1204,7 @@ tbody tr:hover {
 .signature-fields dt {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -1464,7 +1526,7 @@ tbody tr:hover {
   gap: 7px 14px;
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.75rem;
 }
 
 .airflow-link {
@@ -1830,7 +1892,7 @@ tbody tr:hover {
   margin: 5px 0 0;
   color: var(--muted-strong);
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   overflow-wrap: anywhere;
 }
 
@@ -2081,7 +2143,7 @@ tbody tr:hover {
 .transition-list p {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
 }
 
 .transition-list p {
@@ -2124,7 +2186,7 @@ tbody tr:hover {
   min-width: 0;
 }
 
-.human-diagnosis-history summary {
+.human-diagnosis-history li summary {
   display: flex;
   align-items: baseline;
   justify-content: flex-start;
@@ -2133,28 +2195,28 @@ tbody tr:hover {
   list-style: none;
 }
 
-.human-diagnosis-history summary::-webkit-details-marker {
+.human-diagnosis-history li summary::-webkit-details-marker {
   display: none;
 }
 
-.human-diagnosis-history summary::before {
+.human-diagnosis-history li summary::before {
   color: var(--lime);
   content: "▸";
   font-size: 0.72rem;
 }
 
-.human-diagnosis-history details[open] summary::before {
+.human-diagnosis-history li details[open] summary::before {
   content: "▾";
 }
 
-.human-diagnosis-history summary strong {
+.human-diagnosis-history li summary strong {
   min-width: 0;
   font-family: var(--sans);
   font-size: 0.76rem;
   font-weight: 650;
 }
 
-.human-diagnosis-history summary time {
+.human-diagnosis-history li summary time {
   color: var(--muted);
   font-family: var(--sans);
   font-size: 0.65rem;
@@ -2361,7 +2423,7 @@ tbody tr:hover {
 .signature-diagnosis-facts dt {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -2371,7 +2433,7 @@ tbody tr:hover {
   margin: 4px 0 0;
   color: var(--muted-strong);
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   overflow-wrap: anywhere;
 }
 
@@ -2596,7 +2658,7 @@ tbody tr:hover {
 .context-fields dt {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -2605,7 +2667,7 @@ tbody tr:hover {
   margin: 5px 0 0;
   color: var(--muted-strong);
   font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   overflow-wrap: anywhere;
 }
 
@@ -2923,7 +2985,7 @@ footer {
     margin-top: 8px;
   }
 
-  .human-diagnosis-history summary {
+  .human-diagnosis-history li summary {
     flex-wrap: wrap;
   }
 

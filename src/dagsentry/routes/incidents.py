@@ -66,6 +66,8 @@ class IncidentSummaryResponse(BaseModel):
     dag_id: str
     task_id: str
     error_signature_id: UUID | None
+    exception_class: str | None = None
+    normalized_message: str | None = None
     status: IncidentStatus
     failure_count: int
     first_failure_at: datetime
@@ -305,8 +307,12 @@ def list_incidents(
             failure_stats.c.failure_count,
             failure_stats.c.first_failure_at,
             failure_stats.c.last_failure_at,
+            ErrorSignatureRecord,
         )
         .join(failure_stats, failure_stats.c.incident_id == IncidentRecord.id)
+        .outerjoin(
+            ErrorSignatureRecord, ErrorSignatureRecord.id == IncidentRecord.error_signature_id
+        )
         .where(*filters)
         .order_by(primary_order, stable_order)
         .limit(limit)
@@ -320,8 +326,9 @@ def list_incidents(
                 int(failure_count),
                 first_failure_at,
                 last_failure_at,
+                signature=signature,
             )
-            for record, failure_count, first_failure_at, last_failure_at in rows
+            for record, failure_count, first_failure_at, last_failure_at, signature in rows
         ],
         total=total,
         limit=limit,
@@ -445,6 +452,11 @@ def get_incident(
             len(failures),
             failures[0].observed_at,
             failures[-1].observed_at,
+            signature=(
+                signatures_by_id.get(incident.error_signature_id)
+                if incident.error_signature_id is not None
+                else None
+            ),
         ),
         failures=[
             _failure_response(
@@ -530,6 +542,8 @@ def _summary(
     failure_count: int,
     first_failure_at: datetime,
     last_failure_at: datetime,
+    *,
+    signature: ErrorSignatureRecord | None,
 ) -> IncidentSummaryResponse:
     return IncidentSummaryResponse(
         id=record.id,
@@ -537,6 +551,8 @@ def _summary(
         dag_id=record.dag_id,
         task_id=record.task_id,
         error_signature_id=record.error_signature_id,
+        exception_class=signature.exception_class if signature else None,
+        normalized_message=signature.normalized_message if signature else None,
         status=record.status,
         failure_count=failure_count,
         first_failure_at=_as_utc(first_failure_at),

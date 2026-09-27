@@ -41,20 +41,20 @@
     <div class="app-shell">
       <aside id="site-sidebar" class="site-sidebar" hidden>
         <nav id="primary-navigation" class="primary-nav" aria-label="Primary navigation">
-          <a id="incidents-nav" data-i18n-fixed class="nav-link is-active" href="/ui/" aria-current="page">
-            <span class="nav-label">Incidents</span>
+          <a id="incidents-nav" class="nav-link is-active" href="/ui/" aria-current="page">
+            <span class="nav-label">Incident response</span>
           </a>
-          <a id="signatures-nav" data-i18n-fixed class="nav-link" href="/ui/?view=signatures">
-            <span class="nav-label nav-label-two-line">Error<br>Signatures</span>
+          <a id="signatures-nav" class="nav-link" href="/ui/?view=signatures">
+            <span class="nav-label">Error patterns</span>
           </a>
-          <a id="diagnoses-nav" data-i18n-fixed class="nav-link" href="/ui/?view=diagnoses">
-            <span class="nav-label nav-label-two-line">Diagnosis<br>History</span>
+          <a id="diagnoses-nav" class="nav-link" href="/ui/?view=diagnoses">
+            <span class="nav-label">Diagnosis History</span>
           </a>
-          <a id="reports-nav" data-i18n-fixed class="nav-link" href="/ui/?view=reports">
-            <span class="nav-label nav-label-two-line">Daily<br>Reports</span>
+          <a id="reports-nav" class="nav-link" href="/ui/?view=reports">
+            <span class="nav-label">Daily Reports</span>
           </a>
-          <a id="admin-nav" data-i18n-fixed class="nav-link" href="/ui/?view=admin" hidden>
-            <span class="nav-label">Admin</span>
+          <a id="admin-nav" class="nav-link" href="/ui/?view=admin" hidden>
+            <span class="nav-label">Settings</span>
           </a>
         </nav>
         <button
@@ -121,9 +121,9 @@
       <section id="incident-dashboard" class="dashboard" aria-labelledby="dashboard-title" hidden>
         <div class="dashboard-heading">
           <div>
-            <h1 id="dashboard-title" data-i18n-fixed>Incidents</h1>
+            <h1 id="dashboard-title">Incident response</h1>
             <p class="heading-copy">
-              Review correlated Airflow failures in chronological order.
+              Find an incident, review its cause, and decide the next action.
             </p>
           </div>
           <div class="page-header-actions">
@@ -131,9 +131,9 @@
           </div>
         </div>
 
-        <div class="summary-strip" aria-label="Incident summary">
+        <div class="summary-strip" aria-label="Incident summary" aria-describedby="incident-summary-scope">
           <div class="stat-card" aria-live="polite">
-            <span>Matching</span>
+            <span>Matching incidents</span>
             <strong id="incident-total">—</strong>
           </div>
           <div class="stat-card stat-open" aria-live="polite">
@@ -145,9 +145,10 @@
             <strong id="incident-acknowledged-total">—</strong>
           </div>
         </div>
+        <p id="incident-summary-scope" class="heading-copy">Status totals use the same environment, DAG and task filters, regardless of the selected status.</p>
 
         <form id="filter-form" class="filter-panel uniform-control-height" aria-label="Incident filters">
-          <div class="filter-grid">
+          <div class="filter-grid basic-filter-grid">
             <div class="field-group">
               <label for="status-filter">Status</label>
               <select id="status-filter" name="status">
@@ -167,27 +168,32 @@
               <label for="dag-filter">DAG</label>
               <input id="dag-filter" name="dag_id" maxlength="250" placeholder="orders_pipeline">
             </div>
-            <div class="field-group">
-              <label for="task-filter">Task</label>
-              <input id="task-filter" name="task_id" maxlength="250" placeholder="load_orders">
-            </div>
-            <div class="field-group">
-              <label for="sort-filter">Sort by</label>
-              <select id="sort-filter" name="sort">
-                <option value="last_failure_at">Latest activity</option>
-                <option value="failure_count">Failure count</option>
-                <option value="created_at">Created</option>
-                <option value="updated_at">State updated</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <label for="order-filter">Order</label>
-              <select id="order-filter" name="order">
-                <option value="desc">Descending</option>
-                <option value="asc">Ascending</option>
-              </select>
-            </div>
           </div>
+          <details class="advanced-filters">
+            <summary>More filters and sorting</summary>
+            <div class="filter-grid basic-filter-grid">
+              <div class="field-group">
+                <label for="task-filter">Task</label>
+                <input id="task-filter" name="task_id" maxlength="250" placeholder="load_orders">
+              </div>
+              <div class="field-group">
+                <label for="sort-filter">Sort by</label>
+                <select id="sort-filter" name="sort">
+                  <option value="last_failure_at">Latest activity</option>
+                  <option value="failure_count">Failure count</option>
+                  <option value="created_at">Created</option>
+                  <option value="updated_at">State updated</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="order-filter">Order</label>
+                <select id="order-filter" name="order">
+                  <option value="desc">Descending</option>
+                  <option value="asc">Ascending</option>
+                </select>
+              </div>
+            </div>
+          </details>
           <div class="filter-actions">
             <button class="button button-primary" type="submit">Search</button>
             <button id="clear-filters" class="button button-secondary" type="button">Clear</button>
@@ -218,12 +224,10 @@
               <thead>
                 <tr>
                   <th scope="col">Status</th>
-                  <th scope="col">Incident</th>
+                  <th scope="col">Error summary</th>
                   <th scope="col">Environment</th>
                   <th scope="col">DAG / Task</th>
-                  <th scope="col">Error Signature</th>
                   <th scope="col" class="numeric">Failures</th>
-                  <th scope="col">First seen</th>
                   <th scope="col">Last activity</th>
                   <th scope="col"><span class="visually-hidden">Actions</span></th>
                 </tr>
@@ -242,9 +246,9 @@
       <section id="signature-dashboard" class="dashboard" aria-labelledby="signature-dashboard-title" hidden>
         <div class="dashboard-heading">
           <div>
-            <h1 id="signature-dashboard-title" data-i18n-fixed>Error Signatures</h1>
+            <h1 id="signature-dashboard-title">Error patterns</h1>
             <p class="heading-copy">
-              Review failure groups classified by the same cause and their occurrence overview.
+              Find recurring failures with the same error pattern.
             </p>
           </div>
           <div class="page-result-count" aria-live="polite">
@@ -254,27 +258,10 @@
         </div>
 
         <form id="signature-filter-form" class="filter-panel uniform-control-height" aria-label="Error Signature filters">
-          <div class="filter-grid signature-filter-grid">
+          <div class="filter-grid basic-filter-grid">
             <div class="field-group">
               <label for="signature-query-filter">Search</label>
               <input id="signature-query-filter" name="q" maxlength="250" placeholder="exception, code, or message">
-            </div>
-            <div class="field-group">
-              <label for="signature-classification-filter">Classification</label>
-              <select id="signature-classification-filter" name="classification">
-                <option value="">All classifications</option>
-                <option value="DAG_CODE">DAG code</option>
-                <option value="AIRFLOW_PLATFORM">Airflow platform</option>
-                <option value="SOURCE_DATABASE">Source database</option>
-                <option value="NETWORK">Network</option>
-                <option value="AUTHENTICATION">Authentication</option>
-                <option value="AUTHORIZATION">Authorization</option>
-                <option value="RESOURCE">Resource</option>
-                <option value="DATA_QUALITY">Data quality</option>
-                <option value="EXTERNAL_SYSTEM">External system</option>
-                <option value="CONFIGURATION">Configuration</option>
-                <option value="UNKNOWN">Unknown</option>
-              </select>
             </div>
             <div class="field-group">
               <label for="signature-environment-filter">Environment</label>
@@ -284,35 +271,57 @@
               <label for="signature-dag-filter">DAG</label>
               <input id="signature-dag-filter" name="dag_id" maxlength="250" placeholder="orders_pipeline">
             </div>
-            <div class="field-group">
-              <label for="signature-task-filter">Task</label>
-              <input id="signature-task-filter" name="task_id" maxlength="250" placeholder="load_orders">
-            </div>
-            <div class="field-group">
-              <label for="signature-date-from-filter">Observed from</label>
-              <input id="signature-date-from-filter" name="date_from" type="date">
-            </div>
-            <div class="field-group">
-              <label for="signature-date-to-filter">Observed to</label>
-              <input id="signature-date-to-filter" name="date_to" type="date">
-            </div>
-            <div class="field-group">
-              <label for="signature-sort-filter">Sort by</label>
-              <select id="signature-sort-filter" name="sort">
-                <option value="last_seen_at">Latest occurrence</option>
-                <option value="failure_count">Failure count</option>
-                <option value="incident_count">Incident count</option>
-                <option value="created_at">Created</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <label for="signature-order-filter">Order</label>
-              <select id="signature-order-filter" name="order">
-                <option value="desc">Descending</option>
-                <option value="asc">Ascending</option>
-              </select>
-            </div>
           </div>
+          <details class="advanced-filters">
+            <summary>More filters and sorting</summary>
+            <div class="filter-grid basic-filter-grid">
+              <div class="field-group">
+                <label for="signature-classification-filter">Classification</label>
+                <select id="signature-classification-filter" name="classification">
+                  <option value="">All classifications</option>
+                  <option value="DAG_CODE">DAG code</option>
+                  <option value="AIRFLOW_PLATFORM">Airflow platform</option>
+                  <option value="SOURCE_DATABASE">Source database</option>
+                  <option value="NETWORK">Network</option>
+                  <option value="AUTHENTICATION">Authentication</option>
+                  <option value="AUTHORIZATION">Authorization</option>
+                  <option value="RESOURCE">Resource</option>
+                  <option value="DATA_QUALITY">Data quality</option>
+                  <option value="EXTERNAL_SYSTEM">External system</option>
+                  <option value="CONFIGURATION">Configuration</option>
+                  <option value="UNKNOWN">Unknown</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="signature-task-filter">Task</label>
+                <input id="signature-task-filter" name="task_id" maxlength="250" placeholder="load_orders">
+              </div>
+              <div class="field-group">
+                <label for="signature-date-from-filter">Observed from</label>
+                <input id="signature-date-from-filter" name="date_from" type="date">
+              </div>
+              <div class="field-group">
+                <label for="signature-date-to-filter">Observed to</label>
+                <input id="signature-date-to-filter" name="date_to" type="date">
+              </div>
+              <div class="field-group">
+                <label for="signature-sort-filter">Sort by</label>
+                <select id="signature-sort-filter" name="sort">
+                  <option value="last_seen_at">Latest occurrence</option>
+                  <option value="failure_count">Failure count</option>
+                  <option value="incident_count">Incident count</option>
+                  <option value="created_at">Created</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="signature-order-filter">Order</label>
+                <select id="signature-order-filter" name="order">
+                  <option value="desc">Descending</option>
+                  <option value="asc">Ascending</option>
+                </select>
+              </div>
+            </div>
+          </details>
           <div class="filter-actions">
             <button class="button button-primary" type="submit">Search</button>
             <button id="clear-signature-filters" class="button button-secondary" type="button">Clear</button>
@@ -365,7 +374,7 @@
       <section id="diagnosis-dashboard" class="dashboard" aria-labelledby="diagnosis-dashboard-title" hidden>
         <div class="dashboard-heading">
           <div>
-            <h1 id="diagnosis-dashboard-title" data-i18n-fixed>Diagnosis History</h1>
+            <h1 id="diagnosis-dashboard-title">Diagnosis History</h1>
             <p class="heading-copy">
               Search AI, Rule, and operator-authored diagnosis records with their Incident and Error Signature context.
             </p>
@@ -467,9 +476,9 @@
       <section id="report-dashboard" class="dashboard" aria-labelledby="report-dashboard-title" hidden>
         <div class="dashboard-heading">
           <div>
-            <h1 id="report-dashboard-title" data-i18n-fixed>Daily Reports</h1>
+            <h1 id="report-dashboard-title">Daily Reports</h1>
             <p class="heading-copy">
-              Review immutable daily Statistics, rule-based guidance, optional AI summaries, and delivery outcomes.
+              Review daily failures, recommended actions, and report delivery.
             </p>
           </div>
         </div>
@@ -493,7 +502,8 @@
           </div>
         </div>
 
-        <section id="report-schedule-panel" class="context-panel report-schedule-panel" aria-labelledby="report-schedule-title">
+        <details id="report-schedule-panel" class="context-panel report-schedule-panel disclosure-panel" aria-labelledby="report-schedule-title">
+          <summary>Report delivery settings</summary>
           <div class="section-heading report-schedule-heading">
             <div>
               <h2 id="report-schedule-title">리포트 스케줄 설정</h2>
@@ -561,7 +571,7 @@
             <button id="report-manual-run" class="button button-secondary" type="submit">지금 실행</button>
           </form>
           <section class="report-execution-status" aria-labelledby="report-execution-title"><h3 id="report-execution-title">최근 실행</h3><div id="report-schedule-runs" class="report-schedule-runs" aria-live="polite"></div></section>
-        </section>
+        </details>
 
         <form id="report-filter-form" class="filter-panel uniform-control-height" aria-label="Daily Report filters">
           <div class="filter-grid report-filter-grid">
@@ -724,6 +734,7 @@
               </div>
               <h1 id="detail-title"></h1>
               <p id="detail-task" class="detail-task"></p>
+              <p id="detail-state-help" class="heading-copy"></p>
             </div>
             <dl class="detail-metrics">
               <div>
@@ -741,31 +752,8 @@
             </dl>
           </header>
 
-          <div class="detail-layout">
-            <section class="detail-main" aria-labelledby="failure-history-title">
-              <div class="section-heading">
-                <div>
-                  <h2 id="failure-history-title">Failure &amp; Diagnosis history</h2>
-                </div>
-              </div>
-              <div id="detail-failures" class="failure-list"></div>
-              <section class="aside-panel human-diagnosis-panel" aria-labelledby="human-diagnosis-title">
-                <div class="aside-title-row">
-                  <h2 id="human-diagnosis-title">Operator-confirmed diagnosis</h2>
-                  <span id="human-diagnosis-revision" class="history-count" hidden></span>
-                </div>
-                <div id="human-diagnosis-content"></div>
-                <div id="human-diagnosis-actions" class="operator-actions" hidden></div>
-              </section>
-              <section class="context-panel human-diagnosis-history" aria-labelledby="human-diagnosis-history-title">
-                <div class="section-heading">
-                  <div><h2 id="human-diagnosis-history-title">Operator diagnosis history</h2></div>
-                </div>
-                <ol id="human-diagnosis-history" class="transition-list"></ol>
-              </section>
-            </section>
-
-            <aside class="detail-aside" aria-labelledby="transition-title">
+          <div class="detail-layout incident-detail-layout">
+            <div class="detail-main incident-detail-main">
               <div id="operator-controls" class="aside-panel operator-panel" hidden>
                 <h2>Change state</h2>
                 <p id="operator-help" class="aside-empty"></p>
@@ -776,6 +764,29 @@
                 <h2>State changes unavailable</h2>
                 <p>Sign in with an Operator or Admin account to change this Incident.</p>
               </div>
+              <section class="aside-panel human-diagnosis-panel" aria-labelledby="human-diagnosis-title">
+                <div class="aside-title-row">
+                  <h2 id="human-diagnosis-title">Operator-confirmed diagnosis</h2>
+                  <span id="human-diagnosis-revision" class="history-count" hidden></span>
+                </div>
+                <div id="human-diagnosis-content"></div>
+                <div id="human-diagnosis-actions" class="operator-actions" hidden></div>
+              </section>
+              <details id="current-diagnosis-panel" class="context-panel disclosure-panel" open>
+                <summary>Automatic diagnosis for the latest failure</summary>
+                <div id="current-diagnosis-content"></div>
+              </details>
+              <details id="failure-history-panel" class="context-panel disclosure-panel">
+                <summary id="failure-history-title">Failure &amp; Diagnosis history</summary>
+                <div id="detail-failures" class="failure-list"></div>
+              </details>
+              <details class="context-panel human-diagnosis-history disclosure-panel" aria-labelledby="human-diagnosis-history-title">
+                <summary id="human-diagnosis-history-title">Operator diagnosis history</summary>
+                <ol id="human-diagnosis-history" class="transition-list"></ol>
+              </details>
+            </div>
+
+            <aside class="detail-aside" aria-labelledby="transition-title">
               <div class="aside-panel">
                 <div class="aside-title-row">
                   <h2 id="transition-title">State history</h2>
@@ -789,6 +800,7 @@
               <div class="aside-panel identity-panel">
                 <h2>Incident ID</h2>
                 <code id="detail-incident-id"></code>
+                <a id="detail-signature-link" class="table-link" hidden>Error patterns</a>
                 <p>
                   Failures are grouped by environment, DAG, Task, and versioned Error Signature.
                 </p>
@@ -993,9 +1005,9 @@
       <section id="admin-dashboard" class="dashboard" aria-labelledby="admin-dashboard-title" hidden>
         <div class="dashboard-heading">
           <div>
-            <h1 id="admin-dashboard-title" data-i18n-fixed>User Administration</h1>
+            <h1 id="admin-dashboard-title">Settings</h1>
             <p class="heading-copy">
-              Create users, manage roles and account status, revoke sessions, and review Admin audit history.
+              Manage users, external connections, and administration history.
             </p>
           </div>
           <div class="metric-card" aria-live="polite">
@@ -1008,40 +1020,43 @@
           </div>
         </div>
 
-        <form id="admin-create-form" class="filter-panel uniform-control-height" aria-label="Create local user">
-          <div class="admin-create-grid">
-            <div class="field-group">
-              <label for="admin-user-email">Email</label>
-              <input id="admin-user-email" name="email" type="email" autocomplete="off" maxlength="320" required>
+        <details class="context-panel disclosure-panel">
+          <summary>Create user</summary>
+          <form id="admin-create-form" class="filter-panel uniform-control-height" aria-label="Create local user">
+            <div class="admin-create-grid">
+              <div class="field-group">
+                <label for="admin-user-email">Email</label>
+                <input id="admin-user-email" name="email" type="email" autocomplete="off" maxlength="320" required>
+              </div>
+              <div class="field-group">
+                <label for="admin-user-display-name">Display name</label>
+                <input id="admin-user-display-name" name="display_name" maxlength="250" required>
+              </div>
+              <div class="field-group">
+                <label for="admin-user-role">Role</label>
+                <select id="admin-user-role" name="role">
+                  <option value="VIEWER">Viewer</option>
+                  <option value="OPERATOR">Operator</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="admin-user-password">Temporary password</label>
+                <input
+                  id="admin-user-password"
+                  name="temporary_password"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="12"
+                  required
+                >
+              </div>
             </div>
-            <div class="field-group">
-              <label for="admin-user-display-name">Display name</label>
-              <input id="admin-user-display-name" name="display_name" maxlength="250" required>
+            <div class="filter-actions">
+              <button class="button button-primary" type="submit">Create user</button>
             </div>
-            <div class="field-group">
-              <label for="admin-user-role">Role</label>
-              <select id="admin-user-role" name="role">
-                <option value="VIEWER">Viewer</option>
-                <option value="OPERATOR">Operator</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <label for="admin-user-password">Temporary password</label>
-              <input
-                id="admin-user-password"
-                name="temporary_password"
-                type="password"
-                autocomplete="new-password"
-                minlength="12"
-                required
-              >
-            </div>
-          </div>
-          <div class="filter-actions">
-            <button class="button button-primary" type="submit">Create user</button>
-          </div>
-        </form>
+          </form>
+        </details>
 
         <div id="admin-feedback" class="notice notice-success" role="status" tabindex="-1" hidden></div>
         <div id="admin-error" class="notice notice-error" role="alert" hidden></div>
@@ -1073,12 +1088,8 @@
             </div>
           </section>
 
-          <section class="results-panel" aria-labelledby="admin-connections-title">
-            <div class="results-heading">
-              <div>
-                <h2 id="admin-connections-title">External connections</h2>
-              </div>
-            </div>
+          <details class="results-panel settings-section" aria-labelledby="admin-connections-title">
+            <summary id="admin-connections-title">External connections</summary>
             <form id="connection-form" class="connection-form uniform-control-height" aria-label="Create or edit external connection">
               <div class="connection-form-grid">
                 <div class="field-group">
@@ -1156,14 +1167,10 @@
                 <tbody id="admin-connection-rows"></tbody>
               </table>
             </div>
-          </section>
+          </details>
 
-          <section class="results-panel" aria-labelledby="admin-audit-title">
-            <div class="results-heading">
-              <div>
-                <h2 id="admin-audit-title">Administrator audit history</h2>
-              </div>
-            </div>
+          <details class="results-panel settings-section" aria-labelledby="admin-audit-title">
+            <summary id="admin-audit-title">Administrator audit history</summary>
             <div class="table-wrap" role="region" tabindex="0" aria-label="Administrator audit history table">
               <table>
                 <thead>
@@ -1178,7 +1185,7 @@
                 <tbody id="admin-audit-rows"></tbody>
               </table>
             </div>
-          </section>
+          </details>
         </div>
       </section>
       </main>
