@@ -52,7 +52,7 @@ function control(name, defaultValue = "", select = false) {
 
 function filters(signature = false) {
   const advanced = [
-    ...(!signature ? [control("environment")] : []),
+    control("environment"),
     control("task_id"),
     control("sort", signature ? "last_seen_at" : "last_failure_at", true),
     control("order", "desc", true),
@@ -60,7 +60,7 @@ function filters(signature = false) {
   ];
   const details = { open: false, querySelectorAll: () => advanced };
   const form = {
-    elements: [control("status", "OPEN", true), ...(signature ? [control("environment")] : []), control("dag_id"), ...advanced],
+    elements: [control("status", "OPEN", true), control("dag_id"), ...advanced],
     querySelector: () => details,
   };
   const context = runtime(["revealAdvancedFilters", "setFiltersFromUrl", "setSignatureFiltersFromUrl"], {
@@ -87,7 +87,7 @@ test("URL task filters and non-default ordering remain visible and preserve pagi
 });
 
 test("signature date and classification filters expand even when loaded directly from a link", () => {
-  for (const query of ["date_from=2026-09-01", "date_to=2026-09-27", "classification=NETWORK", "order=asc"]) {
+  for (const query of ["environment=production", "date_from=2026-09-01", "date_to=2026-09-27", "classification=NETWORK", "order=asc"]) {
     const { context, details, restore } = filters(true);
     context.window.location.search = `?view=signatures&${query}`;
     context[restore]();
@@ -100,6 +100,25 @@ test("default sorting leaves advanced filters collapsed", () => {
   context.window.location.search = "?sort=last_failure_at&order=desc";
   context[restore]();
   assert.equal(details.open, false);
+});
+
+test("diagnosis date filters restored from a URL are expanded without changing their values", () => {
+  const dates = [control("date_from"), control("date_to")];
+  const details = { open: false, querySelectorAll: () => dates };
+  const form = { elements: [control("source_type"), control("error_signature_id"), ...dates], querySelector: () => details };
+  const context = runtime(["revealAdvancedFilters", "setDiagnosisFiltersFromUrl"], {
+    window: { location: { search: "?view=diagnoses&source_type=RULE&date_from=2026-09-01&date_to=2026-09-27&offset=20" } },
+    elements: { diagnosisFilterForm: form },
+  });
+  context.setDiagnosisFiltersFromUrl();
+  assert.equal(details.open, true);
+  assert.deepEqual(dates.map(item => item.value), ["2026-09-01", "2026-09-27"]);
+  assert.equal(form.elements[0].value, "RULE");
+  assert.equal(context.currentDiagnosisOffset, 20);
+  context.window.location.search = "?view=diagnoses&source_type=AI";
+  context.setDiagnosisFiltersFromUrl();
+  assert.equal(details.open, false);
+  assert.ok(dates.every(item => item.value === ""));
 });
 
 test("status totals use the submitted environment, DAG and task, independently of pagination", async () => {
@@ -245,4 +264,90 @@ test("Tabler badges retain source, validation and status meanings when reused", 
     assert.equal(result.dataset.validation, status);
     assert.ok(result.className.includes(["REJECTED", "WITHDRAWN"].includes(status) ? "bg-red-lt" : "bg-green-lt"));
   }
+});
+
+function adminRuntime(request) {
+  const rendered = [];
+  const context = runtime(["adminPageFromUrl", "loadAdminDashboard"], {
+    window: { location: { search: "?view=admin" } },
+    adminLoadSequence: 0,
+    elements: {
+      adminLoading: { hidden: true }, adminContent: { hidden: true },
+      adminFeedback: { hidden: false }, adminError: { hidden: true },
+      adminUserTotal: {}, adminConnectionTotal: {},
+    },
+    showAdminPage() {},
+    adminApiRequest: request,
+    renderAdminUsers: items => rendered.push(["users", items]),
+    renderAdminConnections: items => rendered.push(["connections", items]),
+    renderAdminAudit: items => rendered.push(["audit", items]),
+    showAdminError: message => rendered.push(["error", message]),
+  });
+  return { context, rendered };
+}
+
+test("settings links load only their own data; old and unknown links open users", async () => {
+  const requests = [];
+  const { context, rendered } = adminRuntime(async url => {
+    requests.push(url);
+    return { json: async () => ({ total: 1, items: [url] }) };
+  });
+  for (const [section, endpoint] of [
+    ["", "users?limit=200"], ["unknown", "users?limit=200"],
+    ["connections", "connections?limit=200"], ["audit", "audit-events?limit=100"],
+  ]) {
+    context.window.location.search = `?view=admin&section=${section}`;
+    assert.equal(await context.loadAdminDashboard(), true);
+    assert.equal(requests.at(-1), `/api/v1/admin/${endpoint}`);
+    assert.equal(context.elements.adminContent.hidden, false);
+    assert.equal(context.elements.adminLoading.hidden, true);
+  }
+  assert.equal(requests.length, 4);
+  assert.deepEqual(rendered.map(entry => entry[0]), ["users", "users", "connections", "audit"]);
+});
+
+test("a delayed settings response cannot overwrite a more recent page", async () => {
+  let finishUsers;
+  const { context, rendered } = adminRuntime(url => url.includes("/users?")
+    ? new Promise(resolve => { finishUsers = resolve; })
+    : Promise.resolve({ json: async () => ({ items: ["connection"] }) }));
+  const users = context.loadAdminDashboard();
+  context.window.location.search = "?view=admin&section=connections";
+  await context.loadAdminDashboard();
+  finishUsers({ json: async () => ({ items: ["user"] }) });
+  assert.equal(await users, false);
+  assert.deepEqual(rendered, [["connections", ["connection"]]]);
+});
+
+test("settings request failures display an error and end loading", async () => {
+  const { context, rendered } = adminRuntime(async () => { throw new Error("Unavailable"); });
+  assert.equal(await context.loadAdminDashboard(), false);
+  assert.equal(context.elements.adminLoading.hidden, true);
+  assert.equal(context.elements.adminContent.hidden, true);
+  assert.equal(rendered[0][0], "error");
+});
+
+test("report settings load their own data and keep load errors visible", async () => {
+  const { context } = adminRuntime(() => { throw new Error("Unrelated admin request"); });
+  context.window.location.search = "?view=admin&section=reports";
+  for (const loaded of [true, false]) {
+    context.loadReportSchedules = async () => loaded;
+    assert.equal(context.adminPageFromUrl(), "reports");
+    assert.equal(await context.loadAdminDashboard(), loaded);
+    assert.equal(context.elements.adminContent.hidden, false);
+    assert.equal(context.elements.adminLoading.hidden, true);
+  }
+});
+
+test("report browsing does not request schedule configuration", async () => {
+  const requests = [];
+  const context = runtime(["loadReports"], {
+    elements: { reportError: {} }, setReportLoading() {},
+    reportQueryFromFilters: () => new URLSearchParams(), updateReportUrl() {},
+    authHeaders: () => ({}), renderReportPage() {}, loadReportSummary() {},
+    loadReportSchedules() { throw new Error("Configuration loaded on report list"); },
+    fetch: async url => { requests.push(url); return { ok: true, json: async () => ({ items: [] }) }; },
+  });
+  assert.equal(await context.loadReports(), true);
+  assert.deepEqual(requests, ["/api/v1/daily-reports?"]);
 });

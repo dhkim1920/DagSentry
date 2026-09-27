@@ -96,7 +96,10 @@ async function login(page) {
       ["signature-detail", signatureUrl, "#signature-detail-content"],
       ["diagnoses", `${base}/ui/?view=diagnoses`, "#diagnosis-results"],
       ["reports-empty", `${base}/ui/?view=reports`, "#report-dashboard"],
-      ["settings", `${base}/ui/?view=admin`, "#admin-dashboard"],
+      ["settings", `${base}/ui/?view=admin`, "#admin-users-page"],
+      ["settings-connections", `${base}/ui/?view=admin&section=connections`, "#admin-connections-page"],
+      ["settings-audit", `${base}/ui/?view=admin&section=audit`, "#admin-audit-page"],
+      ["settings-reports", `${base}/ui/?view=admin&section=reports`, "#report-schedule-form"],
     ];
     await page.goto(signatureUrl);
     await visible(page, "#signature-latest-diagnosis a");
@@ -138,7 +141,7 @@ async function login(page) {
       });
       for (const [name, url, selector] of routes) {
         await page.setViewportSize({ width: 1440, height: 1000 });
-        await page.goto(url); await visible(page, selector); await page.waitForLoadState("networkidle");
+        await page.goto(url); await visible(page, name.startsWith("settings") ? "#admin-content" : selector); await page.waitForLoadState("networkidle");
         for (const width of [1440, 390]) {
           await page.setViewportSize({ width, height: width === 1440 ? 1000 : 844 });
           await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: "instant" }));
@@ -149,6 +152,40 @@ async function login(page) {
       await page.unroute("**/ui/**");
     }
     await fs.writeFile(path.join(output, "content-positions.json"), JSON.stringify(positions, null, 2));
+    // Relocated advanced filters remain keyboard accessible and survive URL reloads.
+    for (const [view, prefix, field, value] of [
+      ["signatures", "signature", "environment", incident.environment],
+      ["diagnoses", "diagnosis", "date_from", "2026-09-01"],
+    ]) {
+      await page.goto(`${base}/ui/?view=${view}`);
+      await page.waitForLoadState("networkidle");
+      const form = page.locator(`#${prefix}-filter-form`);
+      const details = form.locator("details");
+      const control = form.locator(`[name="${field}"]`);
+      assert.equal(await details.evaluate(el => el.open), false);
+      await details.locator("summary").focus();
+      await page.keyboard.press("Enter");
+      assert.equal(await details.evaluate(el => el.open), true);
+      await form.locator(`label[for="${await control.getAttribute("id")}"]`).click();
+      assert.equal(await control.evaluate(el => el === document.activeElement), true);
+      await control.fill(value);
+      await form.locator('button[type="submit"]').click();
+      await page.waitForLoadState("networkidle");
+      assert.equal(new URL(page.url()).searchParams.get(field), value);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+      assert.equal(await control.inputValue(), value);
+      assert.equal(await details.evaluate(el => el.open), true);
+      for (const width of [1440, 768, 390, 320]) {
+        await page.setViewportSize({ width, height: width === 1440 ? 1000 : 844 });
+        await layout(page, `${view}-filters-expanded-${width}`);
+      }
+      await page.locator(`#clear-${prefix}-filters`).click();
+      await page.waitForLoadState("networkidle");
+      assert.equal(await control.inputValue(), "");
+      assert.equal(await details.evaluate(el => el.open), false);
+      assert.equal(new URL(page.url()).searchParams.has(field), false);
+    }
     await require("./verify-ui-trend.cjs")(page, signatureUrl, layout);
     // Details route, filters, ordering, browser back/forward and preferences survive reload.
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -221,23 +258,84 @@ async function login(page) {
     await visible(page, "#password-reset-dialog"); await layout(page, "password-reset-modal-320");
     assert.equal(await page.locator("#password-reset-value").getAttribute("type"), "password");
     await page.keyboard.press("Escape");
-    for (const selector of ["#admin-dashboard > details > summary", "#admin-connections-title", "#admin-audit-title"]) {
-      await page.locator(selector).click();
-    }
+    await page.locator("#admin-users-page > details > summary").click();
     for (const width of [1440, 768, 390, 320]) {
-      await page.setViewportSize({ width, height: 844 }); await layout(page, `settings-expanded-${width}`);
+      await page.setViewportSize({ width, height: 844 }); await layout(page, `settings-create-user-${width}`);
     }
+    // The nested settings menu has real links, one active child and isolated pages.
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    if (await page.locator("body").evaluate(el => el.classList.contains("sidebar-collapsed"))) {
+      await page.locator("#sidebar-toggle").click();
+    }
+    await page.locator("#admin-nav").focus(); await page.keyboard.press("Enter");
+    assert.equal(await page.locator("#admin-navigation").evaluate(el => el.open), false);
+    await page.keyboard.press("Space");
+    assert.equal(await page.locator("#admin-navigation").evaluate(el => el.open), true);
+    for (const section of ["connections", "reports", "audit", "users"]) {
+      const requests = [];
+      const capture = request => { if (request.url().includes("/api/v1/admin/")) requests.push(new URL(request.url()).pathname); };
+      page.on("request", capture);
+      await page.locator(`[data-settings-link="${section}"]`).click();
+      await visible(page, `#admin-${section}-page`);
+      await page.waitForLoadState("networkidle");
+      page.off("request", capture);
+      assert.deepEqual(requests, [`/api/v1/admin/${section === "audit" ? "audit-events" : section === "reports" ? "connections" : section}`]);
+      assert.equal(await page.locator("[data-settings-page]:visible").count(), 1);
+      assert.equal(await page.locator('#primary-navigation [aria-current="page"]').getAttribute("data-settings-link"), section);
+      assert.equal(new URL(page.url()).searchParams.get("section"), section);
+      await page.reload(); await visible(page, `#admin-${section}-page`);
+      assert.equal(await page.locator("#admin-navigation").evaluate(el => el.open), true);
+    }
+    await page.goBack(); await visible(page, "#admin-audit-page");
+    await page.goForward(); await visible(page, "#admin-users-page");
+    for (const width of [1440, 768, 390, 320]) {
+      await page.setViewportSize({ width, height: 844 }); await layout(page, `settings-navigation-${width}`);
+    }
+    await page.goto(`${base}/ui/?view=admin&section=connections`); await visible(page, "#admin-connections-page");
     await page.locator("#connection-secret-help-trigger").focus();
     await page.keyboard.press("Shift+Tab");
     await page.keyboard.press("Tab");
     assert.equal(await page.locator(".field-help-tooltip").evaluate(el => getComputedStyle(el).visibility), "visible");
-    // Report settings (including real checkboxes) and a fixture report detail.
+    // Report browsing no longer loads configuration; settings has its own page.
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`${base}/ui/?view=reports`); await visible(page, "#report-dashboard");
-    await page.locator("#report-schedule-panel > summary").click(); await visible(page, "#report-schedule-form");
+    assert.equal(await page.locator("#report-dashboard #report-schedule-panel").count(), 0);
+    await page.locator("#admin-nav").click();
+    await page.locator('[data-settings-link="reports"]').click(); await visible(page, "#report-schedule-form");
     const checked = await page.locator("#report-schedule-ai-summary").isChecked();
     await page.locator("#report-schedule-ai-summary").setChecked(!checked);
     assert.equal(await page.locator("#report-schedule-ai-summary").isChecked(), !checked);
+    await page.setViewportSize({ width: 320, height: 844 });
     await layout(page, "report-settings-320");
+    // Exercise relocated write handlers against response fixtures, without scheduling work.
+    const schedule = {
+      id: "00000000-0000-4000-8000-000000000002", revision: 2, applied_revision: 2,
+      environment: "production", display_name: "Browser schedule fixture",
+      report_title: "Browser report fixture", enabled: false, use_ai_summary: false,
+      run_at_local_time: "09:00:00", timezone: "Asia/Seoul", notification_connection_id: null,
+      next_run_at: null, last_heartbeat_at: null,
+    };
+    await page.route("**/api/v1/daily-report-schedules", route => route.fulfill({ json: { items: [schedule] } }));
+    await page.reload(); await visible(page, "#report-manual-run-form");
+    const writes = [];
+    await page.route("**/api/v1/admin/daily-report-schedules/**", async route => {
+      writes.push(route.request());
+      await route.fulfill({ status: 409, json: { detail: "Fixture rejection; no changes made" } });
+    });
+    await page.locator("#report-schedule-name").fill("Edited schedule fixture");
+    await page.locator("#report-schedule-save").click(); await visible(page, "#report-schedule-error");
+    assert.equal(writes[0].method(), "PUT");
+    assert.equal(writes[0].postDataJSON().expected_revision, 2);
+    assert.equal(writes[0].postDataJSON().display_name, "Edited schedule fixture");
+    assert.equal(writes[0].headers()["x-csrf-token"], decodeURIComponent(csrf.value));
+    const reportDate = await page.locator("#report-manual-date").inputValue();
+    await page.locator("#report-manual-run").click(); await visible(page, "#report-schedule-error");
+    assert.equal(writes[1].method(), "POST");
+    assert.ok(writes[1].url().endsWith(`${schedule.id}/runs`));
+    assert.equal(writes[1].postDataJSON().report_date, reportDate);
+    assert.equal(writes[1].headers()["x-csrf-token"], decodeURIComponent(csrf.value));
+    await page.unroute("**/api/v1/admin/daily-report-schedules/**");
+    await page.unroute("**/api/v1/daily-report-schedules");
     await page.route("**/api/v1/daily-reports**", async route => {
       await route.fulfill({ json: new URL(route.request().url()).pathname.endsWith(reportId) ? report : { items: [report], total: 1, limit: 20, offset: 0 } });
     });
@@ -331,10 +429,30 @@ async function login(page) {
       data.role = "VIEWER"; await route.fulfill({ response, json: data });
     });
     await page.goto(incidentUrl); await visible(page, "#detail-content");
-    assert.equal(await page.locator("#admin-nav").isVisible(), false);
+    assert.equal(await page.locator('[data-settings-link="users"]').isVisible(), false);
+    assert.equal(await page.locator('[data-settings-link="connections"]').isVisible(), false);
+    assert.equal(await page.locator('[data-settings-link="audit"]').isVisible(), false);
     assert.equal(await page.locator("#operator-controls").isVisible(), false);
     assert.equal(await page.locator("#human-diagnosis-actions").isVisible(), false);
     await visible(page, "#viewer-state-note"); await layout(page, "viewer-320");
+    for (const section of ["users", "connections", "audit"]) {
+      await page.goto(`${base}/ui/?view=admin&section=${section}`); await visible(page, "#results-panel");
+      assert.equal(await page.locator("#admin-dashboard").isVisible(), false);
+    }
+    const viewerAdminRequests = [];
+    const captureViewerRequest = request => {
+      if (request.url().includes("/api/v1/admin/")) viewerAdminRequests.push(request.url());
+    };
+    page.on("request", captureViewerRequest);
+    await page.goto(`${base}/ui/?view=admin&section=reports`); await visible(page, "#report-schedule-panel");
+    await page.waitForLoadState("networkidle");
+    page.off("request", captureViewerRequest);
+    assert.deepEqual(viewerAdminRequests, []);
+    assert.equal(await page.locator("#report-schedule-form").isVisible(), false);
+    assert.equal(await page.locator("#report-manual-run-form").isVisible(), false);
+    assert.equal(await page.locator('[data-settings-link="reports"]').getAttribute("aria-current"), "page");
+    assert.equal(await page.locator('[data-settings-link="users"]').isVisible(), false);
+    await layout(page, "report-settings-viewer-320");
     await page.locator("#disconnect-button").click(); await visible(page, "#auth-form");
     assert.deepEqual(errors, []);
     assert.deepEqual(violations, []);

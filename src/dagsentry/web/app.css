@@ -41,6 +41,21 @@ dialog.modal .modal-dialog {
   white-space: normal;
 }
 
+.settings-navigation > summary {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+
+.settings-navigation > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-navigation[open] > summary .icon {
+  transform: rotate(180deg);
+}
+
 .auth-copy h1 {
   font-size: clamp(1.5rem, 3.5vw, 3rem);
 }
@@ -403,27 +418,26 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
-.incident-summary-help {
+.native-accordion {
+  --tblr-accordion-btn-padding-y: 0.5rem;
   font-size: 0.8125rem;
 }
 
-.incident-summary-help summary {
+.native-accordion summary {
   cursor: pointer;
+  list-style: none;
 }
 
-.incident-primary-filters {
-  display: grid;
-  grid-template-columns: minmax(140px, 1fr) minmax(180px, 2fr) auto;
-  align-items: end;
-  gap: 12px;
+.native-accordion summary::-webkit-details-marker {
+  display: none;
 }
 
-#filter-form .filter-actions {
-  margin: 0;
+.native-accordion details[open] .accordion-button-toggle {
+  transform: rotate(-180deg);
 }
 
-#filter-form .advanced-filters .filter-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.filter-panel .native-accordion {
+  --tblr-accordion-padding-x: 1rem;
 }
 
 .metric-card {
@@ -456,32 +470,16 @@ main {
   gap: 12px;
 }
 
-.diagnosis-filter-grid,
 .report-filter-grid {
   grid-template-columns: repeat(6, minmax(130px, 1fr));
 }
 
-.basic-filter-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.advanced-filters {
-  margin-top: 12px;
-}
-
-.advanced-filters > summary,
-.disclosure-panel > summary,
-.settings-section > summary {
+.disclosure-panel > summary {
   cursor: pointer;
 }
 
-.advanced-filters[open] > summary,
 .disclosure-panel[open] > summary {
   margin-bottom: 16px;
-}
-
-.settings-section > summary {
-  padding: 18px;
 }
 
 .incident-error-summary {
@@ -1981,7 +1979,8 @@ main {
 }
 
 #admin-dashboard .dashboard-heading > div:first-child {
-  flex: 1 1 520px;
+  flex: 1;
+  min-width: 0;
 }
 
 .connection-form {
@@ -2136,18 +2135,6 @@ main {
 
   #incident-dashboard .heading-copy {
     font-size: 0.8125rem;
-  }
-
-  .incident-primary-filters {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  #filter-form .filter-actions {
-    grid-column: 1 / -1;
-  }
-
-  #filter-form .advanced-filters .filter-grid {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   #current-diagnosis-content > .diagnosis-facts {

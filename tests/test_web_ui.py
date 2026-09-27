@@ -40,7 +40,7 @@ def test_web_ui_serves_dashboard_with_browser_security_headers(
 
     script = request(create_app(settings, session_factory), "GET", "/ui/app.js")
     assert script.headers["cache-control"] == "no-store"
-    assert 'src="/ui/app.js?v=20260927-summary2"' in response.text
+    assert 'src="/ui/app.js?v=20260927-report-settings1"' in response.text
 
 
 def test_auth_title_remains_exactly_two_lines_in_both_languages(
@@ -317,8 +317,8 @@ def test_page_descriptions_use_matching_english_and_korean_operational_copy(
         "Search AI, Rule, and operator-authored diagnosis records with their Incident and Error Signature context.": (
             "AI, 규칙 및 운영자 작성 진단 기록을 인시던트와 오류 시그니처 맥락과 함께 검색합니다."
         ),
-        "Manage users, external connections, and administration history.": (
-            "사용자, 외부 연결, 관리자 변경 이력을 관리합니다."
+        "Manage user accounts, roles, and sessions.": (
+            "사용자 계정, 권한 및 세션을 관리합니다."
         ),
     }
     for english, korean in descriptions.items():
@@ -436,7 +436,8 @@ def test_filter_and_managed_connection_controls_share_an_explicit_height(
     shell = request(app, "GET", "/ui/")
     stylesheet = request(app, "GET", "/ui/app.css")
 
-    assert shell.text.count('class="filter-panel card card-body uniform-control-height"') == 5
+    assert shell.text.count('class="filter-panel card uniform-control-height"') == 3
+    assert shell.text.count('class="filter-panel card card-body uniform-control-height"') == 2
     assert 'class="connection-form card card-body uniform-control-height"' in shell.text
     assert "--control-height: 38px" in stylesheet.text
     assert ".uniform-control-height input," in stylesheet.text
@@ -648,7 +649,12 @@ def test_admin_user_management_ui_is_role_gated_and_uses_write_only_password_fie
     stylesheet = request(app, "GET", "/ui/app.css")
     script = request(app, "GET", "/ui/app.js")
 
-    assert 'id="admin-nav" class="nav-link" href="/ui/?view=admin" hidden' in shell.text
+    assert 'id="admin-navigation" class="settings-navigation" hidden' in shell.text
+    assert '<summary id="admin-nav" class="nav-link">' in shell.text
+    for section in ("users", "connections", "reports", "audit"):
+        assert f'data-settings-link="{section}"' in shell.text
+        assert f'href="/ui/?view=admin&amp;section={section}"' in shell.text
+        assert f'data-settings-page="{section}"' in shell.text
     assert 'id="admin-nav" data-i18n-fixed' not in shell.text
     assert 'id="admin-dashboard"' in shell.text
     assert 'id="admin-create-form"' in shell.text

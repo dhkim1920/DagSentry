@@ -26,12 +26,18 @@ const KOREAN_TRANSLATIONS = Object.freeze({
   "Settings": "설정",
   "Find an incident, review its cause, and decide the next action.": "장애를 찾고 원인을 확인한 뒤 다음 조치를 결정합니다.",
   "Find recurring failures with the same error pattern.": "같은 오류 패턴으로 반복되는 실패를 확인합니다.",
-  "Manage users, external connections, and administration history.": "사용자, 외부 연결, 관리자 변경 이력을 관리합니다.",
+  "User management": "사용자 관리",
+  "Report settings": "리포트 설정",
+  "Manage report delivery schedules and review recent runs.": "리포트 발송 스케줄을 관리하고 최근 실행 기록을 확인합니다.",
+  "Manage user accounts, roles, and sessions.": "사용자 계정, 권한 및 세션을 관리합니다.",
+  "Configure and test Airflow, Ollama, and Slack connections.": "Airflow, Ollama, Slack 연결을 설정하고 테스트합니다.",
+  "Review administrator changes to users and external connections.": "사용자와 외부 연결에 대한 관리자 변경 이력을 확인합니다.",
   "Review daily failures, recommended actions, and report delivery.": "일별 장애와 권장 조치, 리포트 전송 결과를 확인합니다.",
   "Error summary": "오류 요약",
   "Error summary unavailable": "오류 요약 없음",
   "Matching incidents includes the selected status. Open and Acknowledged totals use the same environment, DAG and task filters, regardless of the selected status.": "검색 결과는 현재 상태 필터를 적용한 건수입니다. 대응 대기·조사 중은 상태 필터와 관계없이 같은 환경·DAG·태스크 조건으로 집계합니다.",
   "More filters and sorting": "상세 필터 및 정렬",
+  "More filters": "상세 필터",
   "About these counts": "집계 기준",
   Refresh: "새로고침",
   RETRYABLE: "재시도 가능",
@@ -42,7 +48,6 @@ const KOREAN_TRANSLATIONS = Object.freeze({
   "No failures in this period.": "이 기간에는 실패가 없습니다.",
   "Point to a day or use the arrow keys to inspect its failure count.": "날짜 위에 포인터를 올리거나 방향키로 일별 실패 횟수를 확인하세요.",
   "Loading trend…": "발생 추이를 불러오는 중…",
-  "Report delivery settings": "리포트 발송 설정",
   "Automatic diagnosis for the latest failure": "최신 실패의 자동 진단",
   "No validated diagnosis is available for the latest failure. Review its task log or earlier attempts in the history.": "최신 실패의 유효한 진단이 아직 없습니다. 태스크 로그 또는 이전 실패 이력을 확인하세요.",
   "Evidence and diagnosis details": "근거 및 진단 상세",
@@ -146,7 +151,8 @@ const KOREAN_TRANSLATIONS = Object.freeze({
   Role: "역할",
   "Temporary password": "임시 비밀번호",
   "Create user": "사용자 생성",
-  "Loading user administration…": "사용자 관리를 불러오는 중…",
+  "Loading settings…": "설정을 불러오는 중…",
+  "Unable to load settings": "설정을 불러올 수 없습니다",
   "User list": "사용자 목록",
   "Last login": "마지막 로그인",
   "Administrator audit history": "관리자 감사 이력",
@@ -767,7 +773,8 @@ const elements = {
   signaturesNav: document.querySelector("#signatures-nav"),
   diagnosesNav: document.querySelector("#diagnoses-nav"),
   reportsNav: document.querySelector("#reports-nav"),
-  adminNav: document.querySelector("#admin-nav"),
+  adminNavigation: document.querySelector("#admin-navigation"),
+  adminLinks: document.querySelectorAll("[data-settings-link]"),
   dashboard: document.querySelector("#incident-dashboard"),
   disconnect: document.querySelector("#disconnect-button"),
   sessionStatus: document.querySelector("#session-status"),
@@ -988,6 +995,9 @@ const elements = {
   reportIncidentFields: document.querySelector("#report-incident-fields"),
   reportClassificationFields: document.querySelector("#report-classification-fields"),
   adminDashboard: document.querySelector("#admin-dashboard"),
+  adminDashboardTitle: document.querySelector("#admin-dashboard-title"),
+  adminDashboardDescription: document.querySelector("#admin-dashboard-description"),
+  adminPages: document.querySelectorAll("[data-settings-page]"),
   adminCreateForm: document.querySelector("#admin-create-form"),
   adminUserTotal: document.querySelector("#admin-user-total"),
   adminConnectionTotal: document.querySelector("#admin-connection-total"),
@@ -1049,6 +1059,7 @@ let reportNotificationConnections = [];
 let currentUser = null;
 let passwordResetUser = null;
 let editingConnection = null;
+let adminLoadSequence = 0;
 let sidebarCollapsed = window.matchMedia("(max-width: 680px)").matches;
 
 function applySidebarState() {
@@ -1125,7 +1136,7 @@ function showAuth(message = "") {
   elements.reportDashboard.hidden = true;
   elements.reportDetail.hidden = true;
   elements.adminDashboard.hidden = true;
-  elements.adminNav.hidden = true;
+  elements.adminNavigation.hidden = true;
   elements.authPanel.hidden = false;
   elements.authForm.hidden = false;
   elements.changePasswordForm.hidden = true;
@@ -1158,7 +1169,7 @@ function showPasswordChange() {
   elements.reportDashboard.hidden = true;
   elements.reportDetail.hidden = true;
   elements.adminDashboard.hidden = true;
-  elements.adminNav.hidden = true;
+  elements.adminNavigation.hidden = true;
   elements.authPanel.hidden = false;
   elements.authForm.hidden = true;
   elements.changePasswordForm.hidden = false;
@@ -1199,18 +1210,24 @@ function showConnectedView(view) {
   elements.reportDashboard.hidden = view !== "reports";
   elements.reportDetail.hidden = view !== "report-detail";
   elements.adminDashboard.hidden = !adminView;
-  elements.adminNav.hidden = session.role !== "admin";
+  elements.adminNavigation.hidden = false;
   elements.incidentsNav.classList.toggle("active", incidentView);
   elements.signaturesNav.classList.toggle("active", signatureView);
   elements.diagnosesNav.classList.toggle("active", diagnosisView);
   elements.reportsNav.classList.toggle("active", reportView);
-  elements.adminNav.classList.toggle("active", adminView);
+  for (const link of elements.adminLinks) {
+    link.parentElement.hidden = session.role !== "admin" && link.dataset.settingsLink !== "reports";
+    const active = adminView && link.dataset.settingsLink === adminPageFromUrl();
+    link.classList.toggle("active", active);
+    if (active) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+  if (adminView) elements.adminNavigation.open = true;
   for (const [nav, active] of [
     [elements.incidentsNav, incidentView],
     [elements.signaturesNav, signatureView],
     [elements.diagnosesNav, diagnosisView],
     [elements.reportsNav, reportView],
-    [elements.adminNav, adminView],
   ]) {
     if (active) {
       nav.setAttribute("aria-current", "page");
@@ -1285,6 +1302,7 @@ function setDiagnosisFiltersFromUrl() {
     }
     control.value = params.get(control.name) ?? defaults[control.name] ?? "";
   }
+  revealAdvancedFilters(elements.diagnosisFilterForm);
   currentDiagnosisOffset = Number.parseInt(params.get("offset") || "0", 10);
   if (!Number.isFinite(currentDiagnosisOffset) || currentDiagnosisOffset < 0) {
     currentDiagnosisOffset = 0;
@@ -3336,6 +3354,7 @@ function renderReportSchedules(schedules, runs, schedulerStatus) {
   }
   const isAdmin = currentUser?.role === "ADMIN";
   elements.reportScheduleForm.hidden = !isAdmin;
+  elements.reportManualRunForm.hidden = true;
   if (isAdmin) {
     const selected = schedules.find((schedule) => schedule.id === currentReportSchedule?.id)
       || schedules[0]
@@ -3407,11 +3426,13 @@ async function loadReportSchedules() {
       renderNotificationConnections();
     }
     renderReportSchedules(schedules.items, runs.items, schedulerStatus);
+    return true;
   } catch (error) {
     elements.reportScheduleError.textContent = error instanceof Error
       ? error.message
       : "Daily Report 스케줄을 불러오지 못했습니다.";
     elements.reportScheduleError.hidden = false;
+    return false;
   }
 }
 
@@ -3588,7 +3609,6 @@ async function loadReports() {
     }
     renderReportPage(await response.json());
     void loadReportSummary();
-    void loadReportSchedules();
     return true;
   } catch (error) {
     elements.reportResults.hidden = true;
@@ -4222,36 +4242,74 @@ function renderAdminAudit(events) {
   }
 }
 
+function adminPageFromUrl() {
+  const section = new URLSearchParams(window.location.search).get("section");
+  return ["users", "connections", "reports", "audit"].includes(section) ? section : "users";
+}
+
+function showAdminPage(section) {
+  const [title, description] = {
+    users: ["User management", "Manage user accounts, roles, and sessions."],
+    connections: ["External connections", "Configure and test Airflow, Ollama, and Slack connections."],
+    reports: ["Report settings", "Manage report delivery schedules and review recent runs."],
+    audit: ["Administrator audit history", "Review administrator changes to users and external connections."],
+  }[section];
+  elements.adminDashboardTitle.textContent = title;
+  elements.adminDashboardDescription.textContent = description;
+  document.title = `${translatedText("DagSentry — Settings")} · ${translatedText(title)}`;
+  for (const page of elements.adminPages) {
+    page.hidden = page.dataset.settingsPage !== section;
+  }
+  elements.adminUserTotal.closest(".metric-card").hidden = section !== "users";
+  elements.adminConnectionTotal.closest(".metric-card").hidden = section !== "connections";
+}
+
 async function loadAdminDashboard(showLoading = true) {
+  const section = adminPageFromUrl();
+  const sequence = ++adminLoadSequence;
   if (showLoading) {
+    showAdminPage(section);
+    elements.adminFeedback.hidden = true;
     elements.adminLoading.hidden = false;
     elements.adminContent.hidden = true;
   }
   elements.adminError.hidden = true;
   try {
-    const [usersResponse, connectionsResponse, auditResponse] = await Promise.all([
-      adminApiRequest("/api/v1/admin/users?limit=200"),
-      adminApiRequest("/api/v1/admin/connections?limit=200"),
-      adminApiRequest("/api/v1/admin/audit-events?limit=100"),
-    ]);
-    if (!usersResponse || !connectionsResponse || !auditResponse) {
-      return false;
+    if (section === "reports") {
+      const loaded = await loadReportSchedules();
+      if (sequence !== adminLoadSequence) return false;
+      elements.adminContent.hidden = false;
+      return loaded;
     }
-    const users = await usersResponse.json();
-    const connections = await connectionsResponse.json();
-    const audit = await auditResponse.json();
-    elements.adminUserTotal.textContent = String(users.total);
-    elements.adminConnectionTotal.textContent = String(connections.total);
-    renderAdminUsers(users.items);
-    renderAdminConnections(connections.items);
-    renderAdminAudit(audit.items);
+    let response;
+    if (section === "connections") {
+      response = await adminApiRequest("/api/v1/admin/connections?limit=200");
+    } else if (section === "audit") {
+      response = await adminApiRequest("/api/v1/admin/audit-events?limit=100");
+    } else {
+      response = await adminApiRequest("/api/v1/admin/users?limit=200");
+    }
+    if (!response) return false;
+    const payload = await response.json();
+    if (sequence !== adminLoadSequence) return false;
+    if (section === "connections") {
+      elements.adminConnectionTotal.textContent = String(payload.total);
+      renderAdminConnections(payload.items);
+    } else if (section === "audit") {
+      renderAdminAudit(payload.items);
+    } else {
+      elements.adminUserTotal.textContent = String(payload.total);
+      renderAdminUsers(payload.items);
+    }
     elements.adminContent.hidden = false;
     return true;
   } catch (error) {
-    showAdminError(error instanceof Error ? error.message : "Unable to load user administration");
+    if (sequence === adminLoadSequence) {
+      showAdminError(error instanceof Error ? error.message : "Unable to load settings");
+    }
     return false;
   } finally {
-    elements.adminLoading.hidden = true;
+    if (sequence === adminLoadSequence) elements.adminLoading.hidden = true;
   }
 }
 
@@ -4296,7 +4354,8 @@ async function loadCurrentView() {
     showConnectedView("reports");
     return loadReports();
   }
-  if (params.get("view") === "admin" && storedSession().role === "admin") {
+  if (params.get("view") === "admin"
+    && (storedSession().role === "admin" || adminPageFromUrl() === "reports")) {
     showConnectedView("admin");
     return loadAdminDashboard();
   }
@@ -4564,6 +4623,7 @@ elements.diagnosisFilterForm.addEventListener("submit", async (event) => {
 
 elements.clearDiagnosisFilters.addEventListener("click", async () => {
   elements.diagnosisFilterForm.reset();
+  revealAdvancedFilters(elements.diagnosisFilterForm);
   currentDiagnosisOffset = 0;
   await loadDiagnoses();
 });

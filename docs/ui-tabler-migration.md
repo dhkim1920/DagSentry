@@ -133,6 +133,72 @@ styles were removed. The 36 web UI tests and Chromium checks at
 1440/768/390/320px passed; before/after artifacts, including empty and fixture
 reports, are under `/private/tmp/dagsentry-summary-pages/browser/`.
 
+The incident count-scope disclosure uses Tabler's `accordion`, `accordion-item`,
+`accordion-button`, `accordion-button-toggle` and `accordion-body` styling. Native
+`details`/`summary` still handles expansion and keyboard semantics; scoped CSS
+removes the browser marker and reflects the open state on the decorative chevron.
+No Bootstrap Collapse JavaScript or new third-party assets are introduced.
+The 36 web UI tests passed, with dedicated Chromium checks for Enter/Space,
+pointer interaction, focus visibility, unchanged counts and Korean/English at
+1440/768/390/320px. Screenshots are in `/private/tmp/dagsentry-counts-accordion/`.
+
+## Search form follow-up
+
+Incident response, Error patterns and Diagnosis History share Tabler's card,
+responsive row/column, input-icon, button and accordion components. Two primary
+conditions and Search/Clear remain visible; additional conditions use a native
+details disclosure styled with the shipped Tabler accordion classes. Environment
+on Error patterns and dates on Diagnosis History move into that disclosure.
+All filter controls, labels, values and request contracts are preserved. URL
+conditions automatically open the relevant disclosure, and Clear resets it.
+The magnifier and chevron are simple project-authored SVG geometry; no additional
+third-party assets or JavaScript dependencies were added.
+
+The 36 web UI tests and Chromium runner passed. Browser coverage includes
+keyboard expansion, label focus, submission, reload and clearing of relocated
+conditions, plus expanded forms at 1440/768/390/320px without page overflow.
+Before/after and expanded-form screenshots are under
+`/private/tmp/dagsentry-filter-forms/browser/`. Only Chromium was exercised.
+
+## Settings navigation follow-up
+
+Settings now contains a nested sidebar menu for User management, External
+connections and Administrator audit history. Each has a bookmarkable URL using
+`view=admin&section=users|connections|audit`; the original `view=admin` URL and
+unknown section values open User management. Native details/summary handles
+menu expansion; Tabler nav links style the children and the active page has
+`aria-current="page"`. Each page displays and requests only its own data.
+Late responses from an earlier settings page cannot replace the current result.
+
+Existing forms, action handlers, authentication, CSRF headers and backend API
+contracts remain unchanged. User management, connections and audit are restricted
+to administrators; their direct links retain the existing non-admin fallback. Browser history,
+reloads and language changes preserve the selected page. The old mobile header
+flex basis was corrected to avoid a large blank area above the content.
+
+Browser checks cover each page at 1440/768/390/320px, keyboard menu expansion,
+active links, isolated API requests, reload/back/forward, password-reset dialog,
+connection help and viewer restrictions. Before/after screenshots are in
+`/private/tmp/dagsentry-settings-pages/browser/`. Request-selection, fallback,
+failure and stale-response cases are covered by the JavaScript behavior tests.
+The final Chromium runner passed, as did 55 tests across the web UI, admin user,
+admin connection and authentication suites. Form-control IDs and attributes were
+also compared with the prior markup and preserved. No real administrative writes
+were made during browser verification; only Chromium was exercised.
+
+Report settings now lives at `view=admin&section=reports` under the same menu.
+The schedule form, scheduler status, notification target, recent runs and manual
+run action moved together, keeping their control IDs and request contracts.
+Daily Reports now loads only report data and summary counts. Existing schedule
+read access is preserved for non-admin users: their Settings menu contains only
+Report settings, with no editing or manual-run controls and no admin API requests.
+
+The 44 web UI, daily-report and schedule API tests passed. Chromium verified
+navigation/reload/history, 1440/768/390/320px layouts and viewer read access.
+Schedule updates and manual-run submissions were intercepted with failure
+responses to check payloads, revision and CSRF headers without changing data or
+scheduling a report. Screenshots are in `/private/tmp/dagsentry-report-settings/browser/`.
+
 ## Signature trend chart follow-up
 
 The 7/30-day signature detail graph now uses Tabler Core 1.6.0's actual Sparkline
