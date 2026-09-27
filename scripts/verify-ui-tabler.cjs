@@ -149,6 +149,7 @@ async function login(page) {
       await page.unroute("**/ui/**");
     }
     await fs.writeFile(path.join(output, "content-positions.json"), JSON.stringify(positions, null, 2));
+    await require("./verify-ui-trend.cjs")(page, signatureUrl, layout);
     // Details route, filters, ordering, browser back/forward and preferences survive reload.
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`${base}/ui/?environment=${encodeURIComponent(incident.environment)}`);

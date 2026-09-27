@@ -7,8 +7,9 @@
     <meta name="description" content="DagSentry incident operations dashboard">
     <title>DagSentry — Incident operations</title>
     <link rel="stylesheet" href="/ui/vendor/tabler-1.6.0/tabler.min.css">
-    <link rel="stylesheet" href="/ui/app.css?v=20260927-hierarchy1">
-    <script src="/ui/app.js?v=20260927-hierarchy1" defer></script>
+    <link rel="stylesheet" href="/ui/app.css?v=20260927-summary2">
+    <script src="/ui/vendor/tabler-1.6.0/tabler-sparkline.min.js" defer></script>
+    <script src="/ui/app.js?v=20260927-summary2" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -134,22 +135,24 @@
           </div>
         </div>
 
-        <div class="incident-summary" aria-label="Incident summary" aria-describedby="incident-summary-scope">
-          <div aria-live="polite">
-            <span>Matching incidents</span>
-            <strong id="incident-total">—</strong>
-          </div>
-          <div aria-live="polite">
-            <span>Open</span>
-            <strong id="incident-open-total">—</strong>
-          </div>
-          <div aria-live="polite">
-            <span>Acknowledged</span>
-            <strong id="incident-acknowledged-total">—</strong>
-          </div>
+        <div class="incident-summary" role="group" aria-label="Incident summary" aria-describedby="incident-summary-scope">
+          <dl class="summary-stats card mb-0">
+            <div class="card-body p-2 p-sm-3" aria-live="polite" aria-atomic="true">
+              <dt><span class="badge bg-secondary-lt">Matching incidents</span></dt>
+              <dd id="incident-total" class="h2 mb-0 mt-1">—</dd>
+            </div>
+            <div class="card-body p-2 p-sm-3 border-start" aria-live="polite" aria-atomic="true">
+              <dt><span class="badge bg-red-lt">Open</span></dt>
+              <dd id="incident-open-total" class="h2 mb-0 mt-1">—</dd>
+            </div>
+            <div class="card-body p-2 p-sm-3 border-start" aria-live="polite" aria-atomic="true">
+              <dt><span class="badge bg-yellow-lt">Acknowledged</span></dt>
+              <dd id="incident-acknowledged-total" class="h2 mb-0 mt-1">—</dd>
+            </div>
+          </dl>
           <details class="incident-summary-help">
             <summary>About these counts</summary>
-            <p id="incident-summary-scope" class="heading-copy text-secondary">Status totals use the same environment, DAG and task filters, regardless of the selected status.</p>
+            <p id="incident-summary-scope" class="heading-copy text-secondary">Matching incidents includes the selected status. Open and Acknowledged totals use the same environment, DAG and task filters, regardless of the selected status.</p>
           </details>
         </div>
 
@@ -387,24 +390,24 @@
           </div>
         </div>
 
-        <div class="summary-strip card summary-strip-four" aria-label="Diagnosis summary">
-          <div class="stat-card card-body" aria-live="polite">
-            <span>Total Diagnoses</span>
-            <strong id="diagnosis-total">—</strong>
+        <dl class="summary-stats summary-stats-four card mb-0" aria-label="Diagnosis summary">
+          <div class="card-body p-2 p-sm-3" aria-live="polite" aria-atomic="true">
+            <dt><span class="badge bg-secondary-lt">Total Diagnoses</span></dt>
+            <dd id="diagnosis-total" class="h2 mb-0 mt-1">—</dd>
           </div>
-          <div class="stat-card card-body stat-passed" aria-live="polite">
-            <span>AI</span>
-            <strong id="diagnosis-passed-total">—</strong>
+          <div class="card-body p-2 p-sm-3" aria-live="polite" aria-atomic="true">
+            <dt><span class="badge bg-blue-lt">AI</span></dt>
+            <dd id="diagnosis-passed-total" class="h2 mb-0 mt-1">—</dd>
           </div>
-          <div class="stat-card card-body stat-reused" aria-live="polite">
-            <span>Rule</span>
-            <strong id="diagnosis-reused-total">—</strong>
+          <div class="card-body p-2 p-sm-3" aria-live="polite" aria-atomic="true">
+            <dt><span class="badge bg-yellow-lt">Rule</span></dt>
+            <dd id="diagnosis-reused-total" class="h2 mb-0 mt-1">—</dd>
           </div>
-          <div class="stat-card card-body stat-rejected" aria-live="polite">
-            <span>Operator</span>
-            <strong id="diagnosis-rejected-total">—</strong>
+          <div class="card-body p-2 p-sm-3" aria-live="polite" aria-atomic="true">
+            <dt><span class="badge bg-purple-lt">Operator</span></dt>
+            <dd id="diagnosis-rejected-total" class="h2 mb-0 mt-1">—</dd>
           </div>
-        </div>
+        </dl>
 
         <form id="diagnosis-filter-form" class="filter-panel card card-body uniform-control-height" aria-label="Diagnosis History filters">
           <div class="filter-grid diagnosis-filter-grid">
@@ -489,24 +492,24 @@
           </div>
         </div>
 
-        <div class="summary-strip card summary-strip-four" aria-label="Daily Report summary">
-          <div class="stat-card card-body" aria-live="polite">
-            <span>Total Reports</span>
-            <strong id="report-total">—</strong>
+        <dl class="summary-stats summary-stats-four card mb-0" aria-label="Daily Report summary">
+          <div class="card-body p-2 p-sm-3" aria-live="polite" aria-atomic="true">
+            <dt><span class="badge bg-secondary-lt">Total Reports</span></dt>
+            <dd id="report-total" class="h2 mb-0 mt-1">—</dd>
           </div>
-          <div class="stat-card card-body stat-passed" aria-live="polite">
-            <span>Delivered</span>
-            <strong id="report-delivered-total">—</strong>
+          <div class="card-body p-2 p-sm-3" aria-live="polite" aria-atomic="true">
+            <dt><span class="badge bg-green-lt">Delivered</span></dt>
+            <dd id="report-delivered-total" class="h2 mb-0 mt-1">—</dd>
           </div>
-          <div class="stat-card card-body stat-rejected" aria-live="polite">
-            <span>Failed</span>
-            <strong id="report-failed-total">—</strong>
+          <div class="card-body p-2 p-sm-3" aria-live="polite" aria-atomic="true">
+            <dt><span class="badge bg-red-lt">Failed</span></dt>
+            <dd id="report-failed-total" class="h2 mb-0 mt-1">—</dd>
           </div>
-          <div class="stat-card card-body stat-reused" aria-live="polite">
-            <span>AI-assisted</span>
-            <strong id="report-ai-total">—</strong>
+          <div class="card-body p-2 p-sm-3" aria-live="polite" aria-atomic="true">
+            <dt><span class="badge bg-blue-lt">AI-assisted</span></dt>
+            <dd id="report-ai-total" class="h2 mb-0 mt-1">—</dd>
           </div>
-        </div>
+        </dl>
 
         <details id="report-schedule-panel" class="context-panel card card-body report-schedule-panel disclosure-panel" aria-labelledby="report-schedule-title">
           <summary>Report delivery settings</summary>
@@ -852,21 +855,35 @@
                 <div class="section-heading">
                   <div>
                     <h2 id="signature-trend-title" class="card-title">Occurrence trend</h2>
+                    <p class="text-secondary mb-0">Daily failures · UTC</p>
                   </div>
                   <div class="trend-controls">
                     <div class="segmented-control btn-group" aria-label="Trend range">
                       <button id="signature-trend-7" type="button" aria-pressed="true" class="btn btn-outline-secondary btn-sm">7 days</button>
                       <button id="signature-trend-30" type="button" aria-pressed="false" class="btn btn-outline-secondary btn-sm">30 days</button>
                     </div>
-                    <p id="signature-trend-range" class="results-range"></p>
                   </div>
                 </div>
-                <ol
-                  id="signature-trend"
-                  class="trend-chart"
-                  tabindex="0"
-                  aria-labelledby="signature-trend-title signature-trend-range"
-                ></ol>
+                <div class="trend-summary">
+                  <div class="legend">
+                    <span class="legend-dot bg-primary" aria-hidden="true"></span>
+                    <span>Failures in period</span>
+                    <strong id="signature-trend-total" class="legend-value">—</strong>
+                  </div>
+                  <p id="signature-trend-range" class="results-range"></p>
+                </div>
+                <div id="signature-trend" class="trend-chart" role="group" aria-labelledby="signature-trend-title signature-trend-range" aria-busy="false">
+                  <div id="signature-trend-y-axis" class="trend-y-axis" aria-hidden="true"></div>
+                  <div class="trend-plot">
+                    <div class="trend-grid" aria-hidden="true"><span></span><span></span><span></span></div>
+                    <div id="signature-trend-sparkline" class="sparkline text-primary" aria-hidden="true"></div>
+                    <div id="signature-trend-points" class="trend-points" role="group" aria-label="Daily failures"></div>
+                  </div>
+                  <div id="signature-trend-dates" class="trend-dates" aria-hidden="true"></div>
+                </div>
+                <p id="signature-trend-empty" class="text-secondary" hidden>No failures in this period.</p>
+                <p id="signature-trend-readout" class="trend-readout text-secondary" role="status">Point to a day or use the arrow keys to inspect its failure count.</p>
+                <div id="signature-trend-error" class="alert alert-danger" role="alert" hidden></div>
               </section>
 
               <section class="results-panel card occurrence-panel" aria-labelledby="signature-occurrences-title">

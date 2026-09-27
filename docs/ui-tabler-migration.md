@@ -16,9 +16,11 @@ frontend server, Node production dependency or CDN was added.
 - `src/dagsentry/web/app.css`: removes the former component skin and custom
   type scale. Retains application grids, evidence/history/trend layouts,
   responsive rules and keyboard focus. Native `<dialog>` continues to provide
-  modal behavior; Tabler JavaScript/Bootstrap/Popper are not loaded.
+  modal behavior. Only Tabler's Sparkline component and its required internal
+  Bootstrap utilities are loaded; the full bundles and Popper are not loaded.
 - `src/dagsentry/web/vendor/tabler-1.6.0/`: pinned official CSS and full Tabler,
-  Bootstrap and Normalize MIT notices. See `THIRD_PARTY_NOTICES.md` for exact
+  Bootstrap, Normalize and esbuild MIT notices, plus the official Sparkline subset.
+  See `THIRD_PARTY_NOTICES.md` for exact
   sources, hashes, scope and license review.
 - `pyproject.toml`: includes third-party notices in the wheel. The existing source
   distribution also includes notices, CSS and license files.
@@ -50,7 +52,7 @@ local demo data at 1440×1000 and 390×844. The browser runner also checks 768px
 - Node syntax and behavior tests: passed; includes status/source/validation badge
   semantics and removal of stale status colors.
 - Packaging: built sdist and wheel, inspected each for the pinned CSS, all three
-  full licenses and third-party notices; no Node/Playwright runtime included.
+  original licenses and third-party notices; no Node/Playwright runtime included.
 - Browser: login/logout, lists/details, persisted language/timezone, filters and
   sort in URLs, detail/back/browser history, pagination, native modal keyboard
   handling, CSRF/expected-status request fields, loading/empty/failure displays,
@@ -106,6 +108,56 @@ history, URL-restored environment filters, keyboard disclosures, table semantics
 modals, permissions, loading/empty/error states and long untrusted text. Operator
 and rejected diagnosis scenarios use response fixtures, without database writes.
 Only Chromium was exercised; the browser/accessibility limitations above remain.
+
+## Incident summary component follow-up
+
+The three inline totals now use a compact Tabler card with three statistic
+columns, native `card-body` spacing, status badges and larger numeric values.
+The columns remain side by side on narrow screens. Existing count element IDs,
+queries and live announcements are preserved. Korean "Matching incidents" is
+now "검색 결과"; the count-scope disclosure explicitly distinguishes the selected
+status count from the independently filtered Open/Acknowledged totals.
+
+Web UI tests: 36 passed. The existing Chromium runner passed, and dedicated
+before/after screenshots checked Korean/English at 1440/390/320px, keyboard
+access to count scope, and first-viewport list visibility. Artifacts are under
+`/private/tmp/dagsentry-summary/`. Long English labels wrap at narrow widths.
+
+Diagnosis History and Daily Reports reuse the same `summary-stats` card rules.
+Their four metrics use four columns on desktop and a 2×2 grid at 680px and below;
+the three incident metrics retain their existing single row. Diagnosis badges
+describe AI/Rule/Operator provenance (blue/yellow/purple), while report badges
+distinguish Delivered/Failed/AI-assisted (green/red/blue). All count IDs, source
+queries, filters and live announcements remain intact. The replaced stat-strip
+styles were removed. The 36 web UI tests and Chromium checks at
+1440/768/390/320px passed; before/after artifacts, including empty and fixture
+reports, are under `/private/tmp/dagsentry-summary-pages/browser/`.
+
+## Signature trend chart follow-up
+
+The 7/30-day signature detail graph now uses Tabler Core 1.6.0's actual Sparkline
+SVG bar renderer. Its unmodified TypeScript source and eight required internal
+modules are compiled into a 15,987-byte bundle. Exact source hashes, build options
+and repeatable instructions are in `vendor/tabler-1.6.0/SPARKLINE_BUILD.md`; a
+second build was checked byte-for-byte against the shipped file. The existing
+Tabler stylesheet supplies Sparkline and Legend styling. There is no ApexCharts
+dependency, full framework bundle, CDN request or production build step.
+
+DagSentry adds integer count axes, grid lines, UTC date labels, a period total and
+accessible daily inspection around the official renderer. All 30 days fit the
+chart without horizontal scrolling. Bar heights preserve exact count ratios;
+the former rounding to ten height levels is removed. Zero-count days retain a
+keyboard/pointer inspection target without appearing as positive bars. The daily
+targets have one tab stop, Left/Right movement and Home/End navigation. On touch,
+tapping a day updates the same text readout. Loading is marked busy and a failed
+range request preserves the prior chart and selected period with a local error.
+
+The backend query contract is unchanged: zero-filled UTC days ending at the
+signature's last observed date. Browser fixtures cover 7/30 days, zero failures,
+large counts with a 10,000:1 ratio, loading/failure/recovery, SVG heights, keyboard
+inspection, non-overlapping dates and 1440/768/390/320px widths. These checks live
+in `scripts/verify-ui-trend.cjs`, called by the existing browser runner. Review
+screenshots are local in `/private/tmp/dagsentry-trend/`; they are not packaged.
 
 ## Re-run browser checks
 

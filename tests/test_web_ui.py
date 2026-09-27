@@ -40,7 +40,7 @@ def test_web_ui_serves_dashboard_with_browser_security_headers(
 
     script = request(create_app(settings, session_factory), "GET", "/ui/app.js")
     assert script.headers["cache-control"] == "no-store"
-    assert 'src="/ui/app.js?v=20260927-hierarchy1"' in response.text
+    assert 'src="/ui/app.js?v=20260927-summary2"' in response.text
 
 
 def test_auth_title_remains_exactly_two_lines_in_both_languages(
@@ -176,7 +176,7 @@ def test_web_ui_supports_persisted_korean_and_english_language_switching(
     assert "localStorage.getItem(LANGUAGE_STORAGE_KEY)" in script.text
     assert "localStorage.setItem(LANGUAGE_STORAGE_KEY" in script.text
     assert "document.documentElement.lang = currentLanguage" in script.text
-    assert '"Matching incidents": "일치하는 인시던트"' in script.text
+    assert '"Matching incidents": "검색 결과"' in script.text
     assert "#language-select" in stylesheet.text
 
 
@@ -600,9 +600,7 @@ def test_operator_diagnosis_history_uses_latest_open_timeline_layout(
     assert 'definitionItem("생성 시각"' not in renderer
     assert ".human-diagnosis-history li summary" in stylesheet.text
     assert "#incident-diagnoses {" in stylesheet.text
-    assert shell.text.index('id="incident-diagnoses"') < shell.text.index(
-        'id="operator-controls"'
-    )
+    assert shell.text.index('id="incident-diagnoses"') < shell.text.index('id="operator-controls"')
     assert ".human-diagnosis-revision-fields" in stylesheet.text
     assert "width: 100%" in stylesheet.text
     assert "justify-content: flex-start" in stylesheet.text
@@ -743,7 +741,10 @@ def test_error_signature_list_is_compact_and_preserves_signature_distinction(
     )
     assert 'signature.normalized_message || "No normalized message"' in script.text
     assert "[signature.exception_class, signature.vendor_error_code].filter(Boolean)" in script.text
-    assert "sparkline" not in shell.text + script.text
+    signature_list = shell.text.split('id="signature-dashboard"')[1].split(
+        'id="diagnosis-dashboard"'
+    )[0]
+    assert "sparkline" not in signature_list
 
 
 def test_error_signature_detail_prioritizes_occurrences_and_verified_diagnosis(
@@ -799,9 +800,10 @@ def test_error_signature_detail_prioritizes_occurrences_and_verified_diagnosis(
             "function renderSignatureOccurrences"
         )
     ]
-    assert (
-        "elements.signatureTrend.scrollLeft = elements.signatureTrend.scrollWidth" in render_trend
-    )
+    assert "new window.TablerSparkline" in render_trend
+    assert "scrollLeft" not in render_trend
+    assert 'type: "bar"' in render_trend
+    assert 'point.addEventListener("keydown"' in render_trend
     assert (
         "grid-template-columns: minmax(0, 1fr)"
         in stylesheet.text[
@@ -815,10 +817,11 @@ def test_error_signature_detail_prioritizes_occurrences_and_verified_diagnosis(
     ]
     assert "min-width: 0" in trend_panel
     trend_chart = stylesheet.text[
-        stylesheet.text.index(".trend-chart {") : stylesheet.text.index(".trend-chart li {")
+        stylesheet.text.index(".trend-chart {") : stylesheet.text.index(".trend-y-axis,")
     ]
     assert "width: 100%" in trend_chart
-    assert "overflow-x: auto" in trend_chart
+    assert "grid-template-columns: auto minmax(0, 1fr)" in trend_chart
+    assert "min-width: 0" in trend_chart
 
 
 def test_error_signature_detail_removes_decorative_kickers_and_uses_clear_labels(

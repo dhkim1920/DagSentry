@@ -48,8 +48,15 @@ def test_tabler_is_exact_self_hosted_release_with_no_remote_runtime_assets(
         assert "style" not in attrs
         assert not any(key.startswith("on") for key in attrs)
     scripts = [attrs for tag, attrs in ShellParser(shell).nodes if tag == "script"]
-    assert len(scripts) == 1
-    assert (scripts[0]["src"] or "").startswith("/ui/app.js?")
+    assert len(scripts) == 2
+    assert scripts[0]["src"] == "/ui/vendor/tabler-1.6.0/tabler-sparkline.min.js"
+    assert (scripts[1]["src"] or "").startswith("/ui/app.js?")
+    assert all("defer" in script for script in scripts)
+    sparkline = request(app, "GET", scripts[0]["src"])
+    assert sparkline.status_code == 200
+    assert hashlib.sha256(sparkline.content).hexdigest() == (
+        "2a669f7e37de3f400d6d9aafcf0933466bf498a0103488d38a409ed0f4eac539"
+    )
 
 
 def test_tabler_license_notices_are_served_with_packaged_assets(
@@ -60,6 +67,7 @@ def test_tabler_license_notices_are_served_with_packaged_assets(
         ("tabler", "The Tabler Authors"),
         ("bootstrap", "The Bootstrap Authors"),
         ("normalize", "Nicolas Gallagher and Jonathan Neal"),
+        ("esbuild", "Evan Wallace"),
     ]:
         response = request(app, "GET", f"/ui/vendor/tabler-1.6.0/LICENSE.{name}")
         assert response.status_code == 200

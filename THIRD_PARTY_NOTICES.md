@@ -20,11 +20,12 @@ shipped with its web UI; Python dependencies retain their respective licenses.
 - Full license: `vendor/tabler-1.6.0/LICENSE.tabler`.
 - License source: https://github.com/tabler/tabler/blob/18023036af414cc3c9820dd516937ee486281c48/LICENSE
 
-Only the core stylesheet is redistributed. Its embedded SVG control glyphs
+The core stylesheet and the Sparkline subset described below are redistributed.
+The stylesheet's embedded SVG control glyphs
 (select/check/radio/close/navigation indicators) are part of that stylesheet and
 covered by its Tabler/Bootstrap provenance. No standalone Tabler Icons package,
 icon font, web font, photo, illustration, demo page, paid/Pro asset, ApexCharts,
-plugin, source map, or third-party JavaScript is included. System fonts are
+plugin, source map, or unrelated third-party JavaScript is included. System fonts are
 selected by CSS and are not redistributed. The CSS has no external imports,
 font-face declarations, or network asset URLs; its image URLs are embedded data.
 
@@ -41,8 +42,10 @@ a separate upstream Bootstrap release number is not asserted.
 - License copied from the same Tabler source snapshot:
   https://github.com/tabler/tabler/blob/18023036af414cc3c9820dd516937ee486281c48/core/js/src/bootstrap/LICENSE
 
-Bootstrap JavaScript and Popper are not shipped. Existing DagSentry JavaScript
-continues to handle navigation, forms and native HTML dialogs.
+Only the eight Bootstrap-derived internal modules needed by Sparkline are
+compiled into its subset bundle (see the source inventory below). Popper and
+other Bootstrap components are not shipped. DagSentry JavaScript continues to
+handle navigation, forms and native HTML dialogs.
 
 ## Normalize.css-derived reset (MIT)
 
@@ -57,15 +60,29 @@ stylesheet; the standalone Normalize.css stylesheet is not included.
 - The license was taken from upstream 8.0.1; the actual derived code is pinned
   to Tabler's source snapshot, not represented as an unmodified 8.0.1 copy.
 
+## Tabler Sparkline subset and build helpers
+
+- Component: Tabler Core **1.6.0**, same official artifact and source commit above.
+- Included file: `vendor/tabler-1.6.0/tabler-sparkline.min.js` (15,987 bytes).
+- SHA-256: `2a669f7e37de3f400d6d9aafcf0933466bf498a0103488d38a409ed0f4eac539`.
+- Built from unmodified `js/src/sparkline.ts` and eight required Bootstrap-derived
+  internal modules, all covered by the existing Tabler/Bootstrap MIT notices.
+- Build tool: esbuild **0.25.12**, https://github.com/evanw/esbuild/tree/v0.25.12.
+  No esbuild binary is shipped. Its generated JavaScript helpers are covered by
+  MIT, Copyright (c) 2020 Evan Wallace; full text: `vendor/tabler-1.6.0/LICENSE.esbuild`,
+  read directly from the pinned npm package's `LICENSE.md`.
+- Exact source inventory, hashes and rebuild instructions:
+  `vendor/tabler-1.6.0/SPARKLINE_BUILD.md`.
+
 ## License review and distribution
 
-All three included license texts were read. Their MIT grants permit use,
+All four included license texts were read. Their MIT grants permit use,
 modification, distribution, sublicensing and selling copies, including commercial
 use and source redistribution, subject to retaining the copyright and permission
 notices. Their warranty/liability disclaimers are preserved in the full texts.
 There is no requirement in these MIT licenses to publish DagSentry's own source.
 
-These notices and all three license files are included in both the source archive
+These notices and all four license files are included in both the source archive
 and Python wheel. In an installed package this document is located at
 `dagsentry/web/THIRD_PARTY_NOTICES.md`; asset/license paths above are relative to
 that directory. In the source tree they are under `src/dagsentry/web/`.

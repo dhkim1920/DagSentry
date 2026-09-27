@@ -30,12 +30,18 @@ const KOREAN_TRANSLATIONS = Object.freeze({
   "Review daily failures, recommended actions, and report delivery.": "일별 장애와 권장 조치, 리포트 전송 결과를 확인합니다.",
   "Error summary": "오류 요약",
   "Error summary unavailable": "오류 요약 없음",
-  "Status totals use the same environment, DAG and task filters, regardless of the selected status.": "대응 대기·조사 중 건수는 선택한 상태와 무관하게 같은 환경·DAG·태스크 조건으로 집계합니다.",
+  "Matching incidents includes the selected status. Open and Acknowledged totals use the same environment, DAG and task filters, regardless of the selected status.": "검색 결과는 현재 상태 필터를 적용한 건수입니다. 대응 대기·조사 중은 상태 필터와 관계없이 같은 환경·DAG·태스크 조건으로 집계합니다.",
   "More filters and sorting": "상세 필터 및 정렬",
   "About these counts": "집계 기준",
   Refresh: "새로고침",
   RETRYABLE: "재시도 가능",
   NOT_RETRYABLE: "재시도 불가",
+  "Daily failures · UTC": "일별 실패 횟수 · UTC 기준",
+  "Daily failures": "일별 실패 횟수",
+  "Failures in period": "기간 내 실패",
+  "No failures in this period.": "이 기간에는 실패가 없습니다.",
+  "Point to a day or use the arrow keys to inspect its failure count.": "날짜 위에 포인터를 올리거나 방향키로 일별 실패 횟수를 확인하세요.",
+  "Loading trend…": "발생 추이를 불러오는 중…",
   "Report delivery settings": "리포트 발송 설정",
   "Automatic diagnosis for the latest failure": "최신 실패의 자동 진단",
   "No validated diagnosis is available for the latest failure. Review its task log or earlier attempts in the history.": "최신 실패의 유효한 진단이 아직 없습니다. 태스크 로그 또는 이전 실패 이력을 확인하세요.",
@@ -159,7 +165,7 @@ const KOREAN_TRANSLATIONS = Object.freeze({
   Enable: "활성화",
   "Revoke sessions": "세션 폐기",
   "Live operational queue": "실시간 운영 대기열",
-  "Matching incidents": "일치하는 인시던트",
+  "Matching incidents": "검색 결과",
   "Incident filters": "인시던트 필터",
   Status: "상태",
   "All statuses": "모든 상태",
@@ -862,6 +868,14 @@ const elements = {
   signatureLatestDiagnosis: document.querySelector("#signature-latest-diagnosis"),
   signatureOperatorDiagnoses: document.querySelector("#signature-operator-diagnoses"),
   signatureTrend: document.querySelector("#signature-trend"),
+  signatureTrendSparkline: document.querySelector("#signature-trend-sparkline"),
+  signatureTrendYAxis: document.querySelector("#signature-trend-y-axis"),
+  signatureTrendDates: document.querySelector("#signature-trend-dates"),
+  signatureTrendPoints: document.querySelector("#signature-trend-points"),
+  signatureTrendTotal: document.querySelector("#signature-trend-total"),
+  signatureTrendReadout: document.querySelector("#signature-trend-readout"),
+  signatureTrendEmpty: document.querySelector("#signature-trend-empty"),
+  signatureTrendError: document.querySelector("#signature-trend-error"),
   signatureTrendRange: document.querySelector("#signature-trend-range"),
   signatureTrend7: document.querySelector("#signature-trend-7"),
   signatureTrend30: document.querySelector("#signature-trend-30"),
@@ -1797,31 +1811,55 @@ function updateSignatureTrendControls() {
 }
 
 function renderSignatureTrend(payload) {
-  elements.signatureTrend.replaceChildren();
-  elements.signatureTrendRange.textContent = `${payload.date_from} – ${payload.date_to}`;
   const maximum = Math.max(0, ...payload.items.map((item) => item.failure_count));
-  for (const item of payload.items) {
-    const level = item.failure_count === 0
-      ? 0
-      : Math.max(1, Math.ceil((item.failure_count / maximum) * 10));
-    const bucket = document.createElement("li");
-    bucket.setAttribute(
-      "aria-label",
-      `${item.date}: ${item.failure_count} Failure${item.failure_count === 1 ? "" : "s"}`,
-    );
-    const bar = document.createElement("span");
-    bar.className = `trend-bar trend-level-${level}`;
-    bar.setAttribute("aria-hidden", "true");
-    bucket.append(
-      textElement("span", String(item.failure_count), "trend-count"),
-      bar,
-      textElement("time", item.date.slice(5), "trend-date"),
-    );
-    elements.signatureTrend.append(bucket);
-  }
-  requestAnimationFrame(() => {
-    elements.signatureTrend.scrollLeft = elements.signatureTrend.scrollWidth;
+  const step = 10 ** Math.floor(Math.log10(maximum || 1));
+  const ceiling = Math.max(2, Math.ceil(maximum / (2 * step)) * 2 * step);
+  elements.signatureTrendRange.textContent = `${payload.date_from} – ${payload.date_to}`;
+  elements.signatureTrendTotal.textContent = String(payload.items.reduce((sum, item) => sum + item.failure_count, 0));
+  elements.signatureTrendEmpty.hidden = maximum !== 0;
+  elements.signatureTrendReadout.textContent = translatedText("Point to a day or use the arrow keys to inspect its failure count.");
+  elements.signatureTrendYAxis.replaceChildren(...[ceiling, ceiling / 2, 0].map(value => textElement("span", String(value))));
+  elements.signatureTrendDates.replaceChildren();
+  elements.signatureTrendPoints.replaceChildren();
+  window.TablerSparkline.getInstance(elements.signatureTrendSparkline)?.dispose();
+  new window.TablerSparkline(elements.signatureTrendSparkline, {
+    type: "bar", values: payload.items.map(item => item.failure_count),
+    width: 700, height: 180, min: 0, max: ceiling,
+    barGap: payload.items.length <= 7 ? 48 : 10, barRadius: 2, animation: 0,
   });
+  const last = payload.items.length - 1;
+  const ticks = new Set([0, Math.round(last / 4), Math.round(last / 2), Math.round(last * 3 / 4), last]);
+  for (const [index, item] of payload.items.entries()) {
+    const date = textElement("time", "");
+    date.dateTime = item.date;
+    if (payload.items.length <= 7 || ticks.has(index)) {
+      date.textContent = item.date.slice(5);
+    }
+    if (payload.items.length <= 7 && index !== 0 && index !== 3 && index !== last) {
+      date.className = "trend-date-intermediate";
+    }
+    elements.signatureTrendDates.append(date);
+    const label = `${item.date} · ${item.failure_count} ${translatedText("Failures")}`;
+    const point = textElement("button", "", "trend-point btn");
+    point.type = "button";
+    point.tabIndex = index === last ? 0 : -1;
+    point.setAttribute("aria-label", label);
+    const inspect = () => { elements.signatureTrendReadout.textContent = label; };
+    point.addEventListener("pointerenter", inspect);
+    point.addEventListener("focus", () => {
+      for (const button of elements.signatureTrendPoints.children) button.tabIndex = -1;
+      point.tabIndex = 0;
+      inspect();
+    });
+    point.addEventListener("click", () => { point.focus(); inspect(); });
+    point.addEventListener("keydown", event => {
+      const next = { ArrowLeft: index - 1, ArrowRight: index + 1, Home: 0, End: last }[event.key];
+      if (next === undefined) return;
+      event.preventDefault();
+      elements.signatureTrendPoints.children[Math.max(0, Math.min(last, next))].focus();
+    });
+    elements.signatureTrendPoints.append(point);
+  }
 }
 
 function renderSignatureOccurrences(payload) {
@@ -3058,6 +3096,7 @@ async function loadSignatureDetail(signatureId) {
   elements.signatureDetailBack.href = signatureDetailBackHref();
   elements.signatureDetailLoading.hidden = false;
   elements.signatureDetailError.hidden = true;
+  elements.signatureTrendError.hidden = true;
   elements.signatureDetailContent.hidden = true;
   try {
     const response = await fetch(`/api/v1/error-signatures/${encodeURIComponent(signatureId)}`, {
@@ -3119,8 +3158,10 @@ async function refreshSignatureTrend(days) {
   if (!currentSignatureId || !currentSignature) {
     return;
   }
-  currentSignatureTrendDays = days;
-  updateSignatureTrendControls();
+  elements.signatureTrendError.hidden = true;
+  elements.signatureTrend.setAttribute("aria-busy", "true");
+  const previousReadout = elements.signatureTrendReadout.textContent;
+  elements.signatureTrendReadout.textContent = translatedText("Loading trend…");
   elements.signatureTrend7.disabled = true;
   elements.signatureTrend30.disabled = true;
   try {
@@ -3139,12 +3180,16 @@ async function refreshSignatureTrend(days) {
       throw new Error(detail);
     }
     renderSignatureTrend(await response.json());
+    currentSignatureTrendDays = days;
+    updateSignatureTrendControls();
   } catch (error) {
-    elements.signatureDetailError.textContent = error instanceof Error
+    elements.signatureTrendReadout.textContent = previousReadout;
+    elements.signatureTrendError.textContent = error instanceof Error
       ? error.message
       : "Unable to load Error Signature trend";
-    elements.signatureDetailError.hidden = false;
+    elements.signatureTrendError.hidden = false;
   } finally {
+    elements.signatureTrend.setAttribute("aria-busy", "false");
     elements.signatureTrend7.disabled = false;
     elements.signatureTrend30.disabled = false;
   }
