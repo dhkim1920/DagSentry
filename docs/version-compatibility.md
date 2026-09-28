@@ -19,11 +19,11 @@ version.
 | DagSentry application | `0.3.x` development line | API, Worker, scheduled jobs, Airflow package, and Migration must come from the same build. Mixed-version processes are not tested. |
 | Python | `3.11`, `3.12` | Both versions run lint, type checks, Migration, unit, and PostgreSQL tests in CI. Python `<=3.10` and `>=3.13` are unsupported. |
 | PostgreSQL | `17` | CI and the production Compose manifest use PostgreSQL 17. SQLite is used for bounded unit tests only and is not a production database. |
-| Airflow package | Declared `>=3.1.8,<4` | CI targets exact 3.1.8 and 3.3.1 on Python 3.11, including default lazy listener discovery. Both package suites passed locally; running-server E2E remains separate. Airflow 4 is unsupported. |
+| Airflow package | Declared `>=3.1.8,<4` | CI targets exact 3.1.8 and 3.3.1 on Python 3.11, including default lazy listener discovery. These are configured test targets; check the deployed commit's CI result rather than assuming it passed. Running-server E2E remains separate. Airflow 4 is unsupported. |
 | Production deployment | Linux container, Docker Compose v2.20+ | One Linux host is supported. Kubernetes, multi-host orchestration, and non-container production installs are not compatibility targets. |
-| New database install | Alembic `base -> 0015` | CI applies `upgrade head`, runs the complete PostgreSQL suite, and verifies that `0015` is the single head. Future heads replace `0015` in this row. |
+| New database install | Alembic `base -> 0020` | CI applies `upgrade head`, runs the complete PostgreSQL suite, and checks the migration graph and upgrade preservation. The current single head is `0020` (`0020_daily_report_v2.py`); update this row when adding a migration. |
 | Previous-minor database upgrade | `0.2.x` schema revision `0008 -> 0.3.x head` | CI loads representative v0.2 Failure, Diagnosis, Notification, and Incident data, upgrades it, and verifies preservation. v0.2 is an upgrade source, not a supported running binary. |
-| Packaged Web UI browsers | Not yet certified | Static accessibility contracts are automated, but the Chromium, Firefox, and Safari manual matrix has not yet been completed. |
+| Packaged Web UI browsers | Chromium regression target; cross-browser certification incomplete | `frontend-browser` runs the packaged UI against a seeded demo with Playwright 1.58.2 / Chromium on PRs and pushes to `main`. Firefox, Safari, real devices and external Provider E2E remain separate verification work. Check the workflow result for the deployed commit. |
 
 The Airflow package range is intentionally described as declared rather than claiming that every
 patch release has been run. A failure at either CI boundary blocks a DagSentry release. Supporting a

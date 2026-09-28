@@ -18,6 +18,7 @@ def test_web_ui_diagnosis_selection_and_filter_navigation() -> None:
             "--test",
             str(Path(__file__).with_name("web_ui_behavior.cjs")),
             str(Path(__file__).with_name("web_ui_modules.cjs")),
+            str(Path(__file__).with_name("web_ui_request_races.cjs")),
         ],
         capture_output=True,
         text=True,

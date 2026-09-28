@@ -55,3 +55,39 @@ export function generateUuid() {
   const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, "0"));
   return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
 }
+
+export class ApiError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+export async function apiRequest(url, options = {}) {
+  const headers = new Headers(authHeaders());
+  new Headers(options.headers).forEach((value, name) => headers.set(name, value));
+  options.signal?.throwIfAborted();
+  const response = await fetch(url, { ...options, headers });
+  options.signal?.throwIfAborted();
+  if (!response.ok) {
+    const detail = await errorDetail(response);
+    options.signal?.throwIfAborted();
+    throw new ApiError(response.status, detail);
+  }
+  return response;
+}
+
+export async function apiJson(url, options = {}) {
+  const response = await apiRequest(url, options);
+  if (response.status === 204) return null;
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    options.signal?.throwIfAborted();
+    throw new ApiError(response.status, "Unable to parse server response.");
+  }
+  options.signal?.throwIfAborted();
+  return payload;
+}

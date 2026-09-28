@@ -108,3 +108,60 @@ jobs:
 
       - name: Build and verify production Compose deployment
         run: bash scripts/verify-production-compose.sh
+
+  frontend-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      UV_PYTHON: "3.11"
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+
+      - name: Install Node for browser tests only
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: Install project and test-only Chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/dagsentry-ui-check/browsers
+        run: |
+          uv sync --locked
+          npm install --prefix "$RUNNER_TEMP/dagsentry-ui-check" --no-save --ignore-scripts playwright@1.58.2
+          "$RUNNER_TEMP/dagsentry-ui-check/node_modules/.bin/playwright" install --with-deps chromium --only-shell
+
+      - name: Test modules and UI contracts
+        run: uv run pytest tests/test_web_ui.py tests/test_web_ui_behavior.py tests/test_web_ui_tabler.py -q
+
+      - name: Verify Chromium against an isolated demo database
+        env:
+          NODE_PATH: ${{ runner.temp }}/dagsentry-ui-check/node_modules
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/dagsentry-ui-check/browsers
+          DAGSENTRY_UI_SCREENSHOTS: ${{ runner.temp }}/frontend-browser/screenshots
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/frontend-data" "$RUNNER_TEMP/frontend-browser"
+          TMPDIR="$RUNNER_TEMP/frontend-data" .venv/bin/python -u scripts/run-ui-demo.py > "$RUNNER_TEMP/frontend-browser/demo.log" 2>&1 &
+          demo_pid=$!
+          trap 'kill "$demo_pid" 2>/dev/null || true; wait "$demo_pid" 2>/dev/null || true' EXIT
+          for _ in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:8000/health/live >/dev/null; then break; fi
+            if ! kill -0 "$demo_pid" 2>/dev/null; then cat "$RUNNER_TEMP/frontend-browser/demo.log"; exit 1; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8000/health/live >/dev/null
+          node scripts/verify-ui-tabler.cjs
+
+      - name: Preserve screenshots and demo logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: frontend-browser
+          path: ${{ runner.temp }}/frontend-browser
+          retention-days: 7
+          if-no-files-found: ignore

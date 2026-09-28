@@ -145,11 +145,11 @@ def test_web_ui_assets_are_packaged_and_use_authenticated_incident_api(
     script = asset_source(app, "/ui/app.js")
 
     assert "sessionStorage" not in script
-    assert "fetch(`/api/v1/incidents?" in script
-    assert "fetch(`/api/v1/incidents/${encodeURIComponent(incidentId)}`" in script
-    assert 'fetch("/api/v1/auth/login"' in script
-    assert 'fetch("/api/v1/auth/logout"' in script
-    assert 'fetch("/api/v1/auth/me"' in script
+    assert "apiJson(`/api/v1/incidents?" in script
+    assert "apiJson(`/api/v1/incidents/${encodeURIComponent(incidentId)}`" in script
+    assert 'apiJson("/api/v1/auth/login"' in script
+    assert 'apiRequest("/api/v1/auth/logout"' in script
+    assert 'apiJson("/api/v1/auth/me"' in script
     assert "X-CSRF-Token" in script
     assert "X-DagSentry-Viewer-Token" not in script
     assert "X-DagSentry-Operator-Token" not in script
@@ -259,13 +259,13 @@ def test_daily_report_ui_exposes_list_detail_filters_and_authenticated_api(
         "report-schedule-runs",
     ]:
         assert f'id="{element_id}"' in shell.text
-    assert "fetch(`/api/v1/daily-reports?" in script
-    assert "fetch(`/api/v1/daily-reports/${encodeURIComponent(reportId)}`" in script
+    assert "apiJson(`/api/v1/daily-reports?" in script
+    assert "apiJson(`/api/v1/daily-reports/${encodeURIComponent(reportId)}`" in script
     assert 'params.set("view", "reports")' in script
     assert 'elements.reportFilterForm.addEventListener("submit"' in script
-    assert 'fetch("/api/v1/daily-report-schedules"' in script
-    assert 'fetch("/api/v1/daily-report-schedules/status"' in script
-    assert 'fetch("/api/v1/admin/connections?limit=100"' in script
+    assert 'apiJson("/api/v1/daily-report-schedules"' in script
+    assert 'apiJson("/api/v1/daily-report-schedules/status"' in script
+    assert 'apiJson("/api/v1/admin/connections?limit=100"' in script
     assert '"/api/v1/admin/daily-report-schedules"' in script
     assert "리포트 스케줄 설정" in shell.text
     assert "자동 리포트" in shell.text
@@ -551,7 +551,7 @@ def test_web_ui_transition_request_uses_optimistic_status_without_browser_actor(
     assert 'method: "PATCH"' in script
     assert "expected_status: state.currentIncidentStatus" in script
     assert "body.actor" not in script
-    assert "response.status === 409" in script
+    assert "error.status === 409" in script
     assert "TERMINAL_OPERATOR_ACTIONS" in script
     assert "state.currentUser.email" in script
     assert "lastTransition.actor === state.currentUser.email" in script
@@ -575,7 +575,7 @@ def test_operator_diagnosis_history_uses_latest_open_timeline_layout(
     stylesheet = asset_source(app, "/ui/app.css")
 
     renderer = script[
-        script.index("async function renderHumanDiagnosisHistory()") : script.index(
+        script.index("async function renderHumanDiagnosisHistory(request)") : script.index(
             "function openHumanDiagnosisDialog()"
         )
     ]
@@ -648,7 +648,7 @@ def test_admin_user_management_ui_is_role_gated_and_uses_write_only_password_fie
     assert 'id="change-password-form"' in shell.text
     assert 'storedSession().role === "admin"' in script
     assert "state.currentUser.must_change_password" in script
-    assert 'fetch("/api/v1/auth/change-password"' in script
+    assert 'apiRequest("/api/v1/auth/change-password"' in script
     assert 'adminApiRequest("/api/v1/admin/users?limit=200")' in script
     assert 'adminApiRequest("/api/v1/admin/audit-events?limit=100")' in script
     assert "/reset-password`" in script
@@ -708,8 +708,8 @@ def test_web_ui_includes_authenticated_error_signature_list_and_detail_views(
     assert 'id="signature-dashboard"' in shell.text
     assert 'id="signature-detail"' in shell.text
     assert 'id="signature-filter-form"' in shell.text
-    assert "fetch(`/api/v1/error-signatures?" in script
-    assert "fetch(`/api/v1/error-signatures/${encodeURIComponent(signatureId)}`" in script
+    assert "apiJson(`/api/v1/error-signatures?" in script
+    assert "apiJson(`/api/v1/error-signatures/${encodeURIComponent(signatureId)}`" in script
     assert "}/occurrences?${occurrenceParams.toString()}`" in script
     assert "}/trend?${trendParams.toString()}`" in script
 
@@ -861,8 +861,8 @@ def test_web_ui_includes_authenticated_diagnosis_history_and_detail_views(
     assert 'id="diagnosis-dashboard"' in shell.text
     assert 'id="diagnosis-detail"' in shell.text
     assert 'id="diagnosis-filter-form"' in shell.text
-    assert "fetch(`/api/v1/diagnoses?" in script
-    assert "fetch(`/api/v1/diagnoses/${encodeURIComponent(diagnosisId)}`" in script
+    assert "apiJson(`/api/v1/diagnoses?" in script
+    assert "apiJson(`/api/v1/diagnoses/${encodeURIComponent(diagnosisId)}`" in script
 
 
 def test_diagnosis_history_prioritizes_source_validation_and_signature_context(

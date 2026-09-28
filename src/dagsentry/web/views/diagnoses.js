@@ -1,10 +1,10 @@
+import { beginViewRequest } from "../core/requests.js";
 import { contextLink, appendCell, shortId, formatTimestamp, timestampBlock, safeHttpUrl, textElement, definitionItem, copyDefinitionItem } from "../core/dom.js";
 import { elements } from "../core/elements.js";
 import { DIAGNOSIS_PAGE_SIZE } from "../core/constants.js";
 import { state } from "../core/state.js";
-import { clearSession } from "../core/session.js";
-import { authHeaders, errorDetail } from "../core/api.js";
-import { showAuth } from "../core/auth.js";
+import { apiJson } from "../core/api.js";
+import { handleApiError } from "../core/auth.js";
 import { revealAdvancedFilters, diagnosisQueryFromFilters, updateDiagnosisUrl, diagnosisDetailBackHref, diagnosisHref } from "../core/router.js";
 import { sourceBadge, validationBadge, diagnosisHistorySourceBadge, diagnosisHistoryStatusBadge } from "../components/badges.js";
 import { renderEvidence, renderActions } from "../components/diagnosis.js";
@@ -63,18 +63,15 @@ function renderDiagnosisPage(payload) {
   elements.diagnosisNext.disabled = state.currentDiagnosisOffset + DIAGNOSIS_PAGE_SIZE >= payload.total;
 }
 
-async function fetchDiagnosisTotal(query = "") {
+async function fetchDiagnosisTotal(query, request) {
   const suffix = query ? `&${query}` : "";
-  const response = await fetch(`/api/v1/diagnoses/history?limit=1&offset=0${suffix}`, {
-    headers: authHeaders(),
+  const response = await apiJson(`/api/v1/diagnoses/history?limit=1&offset=0${suffix}`, {
+    signal: request.signal,
   });
-  if (!response.ok) {
-    return null;
-  }
-  return (await response.json()).total;
+  return response.total;
 }
 
-async function loadDiagnosisSummary() {
+async function loadDiagnosisSummary(request) {
   const summaries = [
     [elements.diagnosisTotal, ""],
     [elements.diagnosisPassedTotal, "source_type=AI"],
@@ -85,8 +82,12 @@ async function loadDiagnosisSummary() {
     element.textContent = "—";
   }
   const results = await Promise.allSettled(
-    summaries.map(([, query]) => fetchDiagnosisTotal(query)),
+    summaries.map(([, query]) => fetchDiagnosisTotal(query, request)),
   );
+  if (!request.isCurrent()) return;
+  for (const result of results) {
+    if (result.status === "rejected" && handleApiError(result.reason)) return;
+  }
   for (const [index, result] of results.entries()) {
     const total = result.status === "fulfilled" ? result.value : null;
     summaries[index][0].textContent = total === null ? "—" : String(total);
@@ -306,7 +307,7 @@ function renderSimilarDiagnoses(selectedDiagnosisId, items) {
   }
 }
 
-async function loadSimilarDiagnoses(diagnosis) {
+async function loadSimilarDiagnoses(diagnosis, request) {
   elements.diagnosisSimilarList.replaceChildren(
     textElement("p", "Loading Similar Diagnosis…", "aside-empty"),
   );
@@ -326,14 +327,13 @@ async function loadSimilarDiagnoses(diagnosis) {
     offset: "0",
   });
   try {
-    const response = await fetch(`/api/v1/diagnoses?${params.toString()}`, {
-      headers: authHeaders(),
+    const response = await apiJson(`/api/v1/diagnoses?${params.toString()}`, {
+      signal: request.signal,
     });
-    if (!response.ok) {
-      throw new Error(await errorDetail(response));
-    }
-    renderSimilarDiagnoses(diagnosis.id, (await response.json()).items);
-  } catch {
+    if (!request.isCurrent()) return;
+    renderSimilarDiagnoses(diagnosis.id, response.items);
+  } catch (error) {
+    if (!request.isCurrent() || handleApiError(error)) return;
     elements.diagnosisSimilarList.replaceChildren(textElement(
       "p",
       "Unable to load Similar Diagnosis.",
@@ -343,27 +343,21 @@ async function loadSimilarDiagnoses(diagnosis) {
 }
 
 export async function loadDiagnoses() {
+  const request = beginViewRequest();
   setDiagnosisLoading(true);
   elements.diagnosisError.hidden = true;
   const params = diagnosisQueryFromFilters();
   updateDiagnosisUrl(params);
   try {
-    const response = await fetch(`/api/v1/diagnoses/history?${params.toString()}`, {
-      headers: authHeaders(),
+    const response = await apiJson(`/api/v1/diagnoses/history?${params.toString()}`, {
+      signal: request.signal,
     });
-    if (!response.ok) {
-      const detail = await errorDetail(response);
-      if (response.status === 401 || response.status === 503) {
-        clearSession();
-        showAuth(detail);
-        return false;
-      }
-      throw new Error(detail);
-    }
-    renderDiagnosisPage(await response.json());
-    void loadDiagnosisSummary();
+    if (!request.isCurrent()) return false;
+    renderDiagnosisPage(response);
+    void loadDiagnosisSummary(request);
     return true;
   } catch (error) {
+    if (!request.isCurrent() || handleApiError(error)) return false;
     elements.diagnosisResults.hidden = true;
     elements.diagnosisEmpty.hidden = true;
     elements.diagnosisError.textContent = error instanceof Error
@@ -372,42 +366,40 @@ export async function loadDiagnoses() {
     elements.diagnosisError.hidden = false;
     return false;
   } finally {
-    setDiagnosisLoading(false);
+    if (request.isCurrent()) {
+      setDiagnosisLoading(false);
+    }
   }
 }
 
 export async function loadDiagnosisDetail(diagnosisId) {
+  const request = beginViewRequest();
   state.currentDiagnosisId = diagnosisId;
   elements.diagnosisDetailBack.href = diagnosisDetailBackHref();
   elements.diagnosisDetailLoading.hidden = false;
   elements.diagnosisDetailError.hidden = true;
   elements.diagnosisDetailContent.hidden = true;
   try {
-    const response = await fetch(`/api/v1/diagnoses/${encodeURIComponent(diagnosisId)}`, {
-      headers: authHeaders(),
+    const response = await apiJson(`/api/v1/diagnoses/${encodeURIComponent(diagnosisId)}`, {
+      signal: request.signal,
     });
-    if (!response.ok) {
-      const detail = await errorDetail(response);
-      if (response.status === 401 || response.status === 503) {
-        clearSession();
-        showAuth(detail);
-        return false;
-      }
-      throw new Error(detail);
-    }
-    const diagnosis = await response.json();
+    if (!request.isCurrent()) return false;
+    const diagnosis = response;
     renderDiagnosisDetail(diagnosis);
     elements.diagnosisDetailContent.hidden = false;
-    void loadSimilarDiagnoses(diagnosis);
+    void loadSimilarDiagnoses(diagnosis, request);
     return true;
   } catch (error) {
+    if (!request.isCurrent() || handleApiError(error)) return false;
     elements.diagnosisDetailError.textContent = error instanceof Error
       ? error.message
       : "Unable to load Diagnosis detail";
     elements.diagnosisDetailError.hidden = false;
     return false;
   } finally {
-    elements.diagnosisDetailLoading.hidden = true;
+    if (request.isCurrent()) {
+      elements.diagnosisDetailLoading.hidden = true;
+    }
   }
 }
 

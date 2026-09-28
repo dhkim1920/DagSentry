@@ -11,7 +11,17 @@ const source = fs.readdirSync(web, { recursive: true })
 
 // Execute the shipped functions without bootstrapping a browser session or network requests.
 function runtime(names, globals = {}) {
-  const context = vm.createContext({ URLSearchParams, ...globals });
+  let sequence = 0;
+  const context = vm.createContext({
+    URLSearchParams,
+    beginViewRequest: () => {
+      const current = ++sequence;
+      return { isCurrent: () => current === sequence, signal: undefined };
+    },
+    handleApiError: () => false,
+    ...globals,
+  });
+  context.apiJson = async (...args) => (await (globals.fetch || globals.adminApiRequest)(...args)).json();
   context.state = context;
   for (const name of [...new Set(["offsetFromUrl", "restoreFilters", "filterQuery", "replaceFilterUrl", ...names])]) {
     const match = source.match(new RegExp(`(?:async )?function ${name}\\([^]*?^}`, "m"));
@@ -142,7 +152,7 @@ test("status totals use the submitted environment, DAG and task, independently o
     status: "RESOLVED", sort: "failure_count", order: "asc", limit: "20", offset: "40",
   });
   const original = submitted.toString();
-  await context.loadIncidentSummary(submitted);
+  await context.loadIncidentSummary(submitted, context.beginViewRequest());
   assert.equal(requests.length, 2);
   for (const request of requests) {
     assert.equal(request.get("environment"), "production");
@@ -157,7 +167,7 @@ test("status totals use the submitted environment, DAG and task, independently o
   assert.equal(elements.acknowledgedTotal.textContent, "2");
 
   requests.length = 0;
-  await context.loadIncidentSummary(new URLSearchParams());
+  await context.loadIncidentSummary(new URLSearchParams(), context.beginViewRequest());
   assert.ok(requests.every((request) => !request.has("environment") && !request.has("dag_id") && !request.has("task_id")));
 });
 
@@ -274,14 +284,13 @@ function adminRuntime(request) {
   const rendered = [];
   const context = runtime(["adminPageFromUrl", "loadAdminDashboard"], {
     window: { location: { search: "?view=admin" } },
-    adminLoadSequence: 0,
     elements: {
       adminLoading: { hidden: true }, adminContent: { hidden: true },
       adminFeedback: { hidden: false }, adminError: { hidden: true },
       adminUserTotal: {}, adminConnectionTotal: {},
     },
     showAdminPage() {},
-    adminApiRequest: request,
+    adminApiRequest: async (...args) => (await request(...args)).json(),
     renderAdminUsers: items => rendered.push(["users", items]),
     renderAdminConnections: items => rendered.push(["connections", items]),
     renderAdminAudit: items => rendered.push(["audit", items]),

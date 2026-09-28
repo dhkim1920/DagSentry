@@ -9,7 +9,7 @@ const web = path.resolve(__dirname, "../src/dagsentry/web");
 async function modules() {
   const forms = new Map();
   const context = vm.createContext({
-    URLSearchParams,
+    URLSearchParams, AbortController, Headers,
     localStorage: { getItem: () => null },
     navigator: { language: "en" },
     window: { location: { search: "" }, matchMedia: () => ({ matches: false }) },
@@ -35,6 +35,13 @@ async function modules() {
   const entry = load(path.join(web, "app.js"));
   // Link the real entry point, including every named import. Do not bootstrap UI/network.
   await entry.link((specifier, referencing) => load(path.resolve(path.dirname(referencing.identifier), specifier)));
+  function checkCycles(module, ancestors = []) {
+    assert.ok(!ancestors.includes(module.identifier), `Import cycle: ${[...ancestors, module.identifier].join(" -> ")}`);
+    for (const specifier of module.dependencySpecifiers) {
+      checkCycles(cache.get(path.resolve(path.dirname(module.identifier), specifier)), [...ancestors, module.identifier]);
+    }
+  }
+  checkCycles(entry);
   const router = cache.get(path.join(web, "core/router.js"));
   await router.evaluate();
   return { context, router: router.namespace, state: cache.get(path.join(web, "core/state.js")).namespace.state, elements: cache.get(path.join(web, "core/elements.js")).namespace.elements };

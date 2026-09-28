@@ -20,7 +20,7 @@ flowchart LR
 - **Track recurring failures:** group Error Signatures, review Incident history, and record operator decisions.
 - **Run a small stack:** a Python API serves the Tabler UI with native ES modules; no Node runtime or frontend build is required.
 
-[Install DagSentry](docs/v0.1-installation.md) · [Operator manual](docs/user-manual.md) · [한국어 문서](docs/README.ko.md)
+[Install DagSentry](docs/installation.md) · [Operator manual](docs/user-manual.md) · [한국어 문서](docs/README.ko.md)
 
 **Incident response** — find active failures and review their latest activity.
 
@@ -37,7 +37,7 @@ live Airflow failures or a live model evaluation. See [screenshot reproduction](
 
 ### Getting started and operations
 
-- [Installation](docs/v0.1-installation.md)
+- [Installation](docs/installation.md)
 - [Operations](docs/operations.md)
 - [Production deployment](docs/production-deployment.md)
 - [Backup and recovery](docs/backup-recovery.md)
@@ -139,7 +139,7 @@ uv run pytest
 Run the complete verification, including Airflow compatibility and PostgreSQL integration:
 
 ```shell
-bash scripts/verify-v01.sh
+bash scripts/verify.sh
 ```
 
 Run the PostgreSQL integration tests against the local container:

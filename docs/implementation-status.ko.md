@@ -5,4 +5,4 @@
 현재 HEAD의 구현 상태표가 아닙니다.
 
 현재 기능과 사용 방법은 [문서 인덱스](README.ko.md), [Web UI](web-ui.md),
-[설치](v0.1-installation.md), [운영](operations.md)을 참조하세요.
+[설치](installation.md), [운영](operations.md)을 참조하세요.

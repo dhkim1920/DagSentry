@@ -1,12 +1,12 @@
+import { beginViewRequest, beginTrendRequest } from "../core/requests.js";
 import { humanRetryLabel, humanClassificationLabel, applyStatusColor, sourceBadge } from "../components/badges.js";
 import { contextLink, appendCell, shortId, formatTimestamp, timestampBlock, textElement, definitionItem, copyDefinitionItem } from "../core/dom.js";
 import { elements } from "../core/elements.js";
 import { SIGNATURE_PAGE_SIZE, OCCURRENCE_PAGE_SIZE } from "../core/constants.js";
 import { state } from "../core/state.js";
 import { translatedText } from "../core/i18n.js";
-import { clearSession } from "../core/session.js";
-import { authHeaders, errorDetail } from "../core/api.js";
-import { showAuth } from "../core/auth.js";
+import { apiJson } from "../core/api.js";
+import { handleApiError } from "../core/auth.js";
 import { revealAdvancedFilters, signatureQueryFromFilters, updateSignatureUrl, signatureDetailBackHref, occurrenceQueryFromUrl, diagnosisHref } from "../core/router.js";
 
 function setSignatureLoading(isLoading) {
@@ -320,26 +320,20 @@ function renderSignatureOccurrences(payload) {
 }
 
 export async function loadSignatures() {
+  const request = beginViewRequest();
   setSignatureLoading(true);
   elements.signatureError.hidden = true;
   const params = signatureQueryFromFilters();
   updateSignatureUrl(params);
   try {
-    const response = await fetch(`/api/v1/error-signatures?${params.toString()}`, {
-      headers: authHeaders(),
+    const response = await apiJson(`/api/v1/error-signatures?${params.toString()}`, {
+      signal: request.signal,
     });
-    if (!response.ok) {
-      const detail = await errorDetail(response);
-      if (response.status === 401 || response.status === 503) {
-        clearSession();
-        showAuth(detail);
-        return false;
-      }
-      throw new Error(detail);
-    }
-    renderSignaturePage(await response.json());
+    if (!request.isCurrent()) return false;
+    renderSignaturePage(response);
     return true;
   } catch (error) {
+    if (!request.isCurrent() || handleApiError(error)) return false;
     elements.signatureResults.hidden = true;
     elements.signatureEmpty.hidden = true;
     elements.signatureError.textContent = error instanceof Error
@@ -348,77 +342,70 @@ export async function loadSignatures() {
     elements.signatureError.hidden = false;
     return false;
   } finally {
-    setSignatureLoading(false);
+    if (request.isCurrent()) {
+      setSignatureLoading(false);
+    }
   }
 }
 
 export async function loadSignatureDetail(signatureId) {
+  const request = beginViewRequest();
   if (state.currentSignatureId !== signatureId) {
     state.currentSignatureTrendDays = 7;
   }
   state.currentSignatureId = signatureId;
+  state.currentSignature = null;
+  elements.signatureTrend7.disabled = false;
+  elements.signatureTrend30.disabled = false;
+  elements.signatureTrend.setAttribute("aria-busy", "false");
   elements.signatureDetailBack.href = signatureDetailBackHref();
   elements.signatureDetailLoading.hidden = false;
   elements.signatureDetailError.hidden = true;
   elements.signatureTrendError.hidden = true;
   elements.signatureDetailContent.hidden = true;
   try {
-    const response = await fetch(`/api/v1/error-signatures/${encodeURIComponent(signatureId)}`, {
-      headers: authHeaders(),
+    const response = await apiJson(`/api/v1/error-signatures/${encodeURIComponent(signatureId)}`, {
+      signal: request.signal,
     });
-    if (!response.ok) {
-      const detail = await errorDetail(response);
-      if (response.status === 401 || response.status === 503) {
-        clearSession();
-        showAuth(detail);
-        return false;
-      }
-      throw new Error(detail);
-    }
-    const signature = await response.json();
+    if (!request.isCurrent()) return false;
+    const signature = response;
     state.currentSignature = signature;
     updateSignatureTrendControls();
     const occurrenceParams = occurrenceQueryFromUrl();
     const trendParams = trendQueryForSignature(signature);
     const [occurrenceResponse, trendResponse] = await Promise.all([
-      fetch(
+      apiJson(
         `/api/v1/error-signatures/${encodeURIComponent(signatureId)}/occurrences?${occurrenceParams.toString()}`,
-        { headers: authHeaders() },
+        { signal: request.signal },
       ),
-      fetch(
+      apiJson(
         `/api/v1/error-signatures/${encodeURIComponent(signatureId)}/trend?${trendParams.toString()}`,
-        { headers: authHeaders() },
+        { signal: request.signal },
       ),
     ]);
-    for (const relatedResponse of [occurrenceResponse, trendResponse]) {
-      if (!relatedResponse.ok) {
-        const detail = await errorDetail(relatedResponse);
-        if (relatedResponse.status === 401 || relatedResponse.status === 503) {
-          clearSession();
-          showAuth(detail);
-          return false;
-        }
-        throw new Error(detail);
-      }
-    }
+    if (!request.isCurrent()) return false;
 
     renderSignatureIdentity(signature);
-    renderSignatureOccurrences(await occurrenceResponse.json());
-    renderSignatureTrend(await trendResponse.json());
+    renderSignatureOccurrences(occurrenceResponse);
+    renderSignatureTrend(trendResponse);
     elements.signatureDetailContent.hidden = false;
     return true;
   } catch (error) {
+    if (!request.isCurrent() || handleApiError(error)) return false;
     elements.signatureDetailError.textContent = error instanceof Error
       ? error.message
       : "Unable to load Error Signature detail";
     elements.signatureDetailError.hidden = false;
     return false;
   } finally {
-    elements.signatureDetailLoading.hidden = true;
+    if (request.isCurrent()) {
+      elements.signatureDetailLoading.hidden = true;
+    }
   }
 }
 
 async function refreshSignatureTrend(days) {
+  const request = beginTrendRequest();
   if (!state.currentSignatureId || !state.currentSignature) {
     return;
   }
@@ -430,32 +417,27 @@ async function refreshSignatureTrend(days) {
   elements.signatureTrend30.disabled = true;
   try {
     const trendParams = trendQueryForSignature(state.currentSignature, days);
-    const response = await fetch(
+    const response = await apiJson(
       `/api/v1/error-signatures/${encodeURIComponent(state.currentSignatureId)}/trend?${trendParams.toString()}`,
-      { headers: authHeaders() },
+      { signal: request.signal },
     );
-    if (!response.ok) {
-      const detail = await errorDetail(response);
-      if (response.status === 401 || response.status === 503) {
-        clearSession();
-        showAuth(detail);
-        return;
-      }
-      throw new Error(detail);
-    }
-    renderSignatureTrend(await response.json());
+    if (!request.isCurrent()) return false;
+    renderSignatureTrend(response);
     state.currentSignatureTrendDays = days;
     updateSignatureTrendControls();
   } catch (error) {
+    if (!request.isCurrent() || handleApiError(error)) return false;
     elements.signatureTrendReadout.textContent = previousReadout;
     elements.signatureTrendError.textContent = error instanceof Error
       ? error.message
       : "Unable to load Error Signature trend";
     elements.signatureTrendError.hidden = false;
   } finally {
-    elements.signatureTrend.setAttribute("aria-busy", "false");
-    elements.signatureTrend7.disabled = false;
-    elements.signatureTrend30.disabled = false;
+    if (request.isCurrent()) {
+      elements.signatureTrend.setAttribute("aria-busy", "false");
+      elements.signatureTrend7.disabled = false;
+      elements.signatureTrend30.disabled = false;
+    }
   }
 }
 

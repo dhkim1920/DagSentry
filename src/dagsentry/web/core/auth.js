@@ -1,10 +1,11 @@
+import { cancelViewRequests } from "./requests.js";
 import { elements } from "./elements.js";
 import { resetConnectionForm } from "../components/connection-form.js";
 import { state } from "./state.js";
 import { setSidebarVisibility } from "./sidebar.js";
 import { translatedText } from "./i18n.js";
 import { clearSession } from "./session.js";
-import { authHeaders, errorDetail } from "./api.js";
+import { apiRequest, apiJson, ApiError } from "./api.js";
 
 function setAuthLoading(isLoading) {
   elements.authLoading.hidden = !isLoading;
@@ -15,10 +16,14 @@ function setAuthLoading(isLoading) {
 }
 
 export function showAuth(message = "") {
+  cancelViewRequests();
   setAuthLoading(false);
   setSidebarVisibility(false);
   if (elements.transitionDialog.open) {
     elements.transitionDialog.close();
+  }
+  if (elements.humanDiagnosisDialog.open) {
+    elements.humanDiagnosisDialog.close();
   }
   if (elements.passwordResetDialog.open) {
     elements.passwordResetDialog.close();
@@ -54,6 +59,7 @@ export function showAuth(message = "") {
 }
 
 export function showPasswordChange() {
+  cancelViewRequests();
   if (!state.currentUser) {
     showAuth();
     return;
@@ -81,21 +87,15 @@ export function showPasswordChange() {
 
 export async function restoreSession(loadCurrentView) {
   try {
-    const response = await fetch("/api/v1/auth/me");
-    if (!response.ok) {
-      clearSession();
-      showAuth();
-      return;
-    }
-    state.currentUser = await response.json();
+    state.currentUser = await apiJson("/api/v1/auth/me");
     if (state.currentUser.must_change_password) {
       showPasswordChange();
       return;
     }
     await loadCurrentView();
-  } catch {
+  } catch (error) {
     clearSession();
-    showAuth("Unable to reach DagSentry.");
+    showAuth(error instanceof ApiError && error.status === 401 ? "" : "Unable to reach DagSentry.");
   } finally {
     elements.sessionLoading.hidden = true;
   }
@@ -113,16 +113,11 @@ export function bindAuthEvents(loadCurrentView) {
     elements.authError.hidden = true;
     setAuthLoading(true);
     try {
-      const response = await fetch("/api/v1/auth/login", {
+      const payload = await apiJson("/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      if (!response.ok) {
-        showAuth(await errorDetail(response));
-        return;
-      }
-      const payload = await response.json();
       state.currentUser = payload.user;
       elements.accessPassword.value = "";
       if (state.currentUser.must_change_password) {
@@ -130,8 +125,8 @@ export function bindAuthEvents(loadCurrentView) {
         return;
       }
       await loadCurrentView();
-    } catch {
-      showAuth("Unable to reach DagSentry.");
+    } catch (error) {
+      showAuth(error instanceof ApiError ? error.message : "Unable to reach DagSentry.");
     } finally {
       setAuthLoading(false);
     }
@@ -148,35 +143,31 @@ export function bindAuthEvents(loadCurrentView) {
     }
     elements.changePasswordError.hidden = true;
     try {
-      const response = await fetch("/api/v1/auth/change-password", {
+      await apiRequest("/api/v1/auth/change-password", {
         method: "POST",
         headers: {
-          ...authHeaders(),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
       });
-      if (!response.ok) {
-        elements.changePasswordError.textContent = await errorDetail(response);
-        elements.changePasswordError.hidden = false;
-        return;
-      }
       clearSession();
       showAuth(translatedText("Password changed. Sign in again."));
-    } catch {
-      elements.changePasswordError.textContent = translatedText("Unable to reach DagSentry.");
+    } catch (error) {
+      elements.changePasswordError.textContent = error instanceof ApiError
+        ? error.message : translatedText("Unable to reach DagSentry.");
       elements.changePasswordError.hidden = false;
     }
   });
 
   elements.disconnect.addEventListener("click", async () => {
-    const response = await fetch("/api/v1/auth/logout", {
-      method: "POST",
-      headers: authHeaders(),
-    });
-    if (!response.ok && response.status !== 401) {
-      elements.sessionStatus.textContent = await errorDetail(response);
-      return;
+    cancelViewRequests();
+    try {
+      await apiRequest("/api/v1/auth/logout", { method: "POST" });
+    } catch (error) {
+      if (!(error instanceof ApiError && error.status === 401)) {
+        elements.sessionStatus.textContent = error instanceof Error ? error.message : "Unable to sign out.";
+        return;
+      }
     }
     clearSession();
     elements.rows.replaceChildren();
@@ -190,4 +181,15 @@ export function bindAuthEvents(loadCurrentView) {
     resetConnectionForm();
     showAuth();
   });
+}
+
+// Transport errors stay in the current view; only 401 invalidates the session.
+export function handleApiError(error) {
+  if (error?.name === "AbortError") return true;
+  if (error instanceof ApiError && error.status === 401) {
+    clearSession();
+    showAuth(error.message);
+    return true;
+  }
+  return false;
 }

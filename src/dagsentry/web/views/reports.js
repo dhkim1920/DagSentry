@@ -1,10 +1,10 @@
+import { beginViewRequest, currentViewRequest } from "../core/requests.js";
 import { contextLink, appendCell, formatTimestamp, formatDateTime, timezoneLabel, timestampBlock, textElement, definitionItem } from "../core/dom.js";
 import { elements } from "../core/elements.js";
 import { REPORT_PAGE_SIZE } from "../core/constants.js";
 import { state } from "../core/state.js";
-import { clearSession } from "../core/session.js";
-import { authHeaders, errorDetail } from "../core/api.js";
-import { showAuth } from "../core/auth.js";
+import { apiJson } from "../core/api.js";
+import { handleApiError } from "../core/auth.js";
 import { reportQueryFromFilters, updateReportUrl, reportDetailBackHref, reportHref } from "../core/router.js";
 import { applyStatusColor } from "../components/badges.js";
 
@@ -160,27 +160,24 @@ function renderReportSchedules(schedules, runs, schedulerStatus) {
   elements.reportScheduleRuns.append(details);
 }
 
-export async function loadReportSchedules() {
+export async function loadReportSchedules(request = beginViewRequest()) {
   elements.reportScheduleError.hidden = true;
   try {
     const requests = [
-      fetch("/api/v1/daily-report-schedules", { headers: authHeaders() }),
-      fetch("/api/v1/daily-report-schedules/runs?limit=5", { headers: authHeaders() }),
-      fetch("/api/v1/daily-report-schedules/status", { headers: authHeaders() }),
+      apiJson("/api/v1/daily-report-schedules", { signal: request.signal }),
+      apiJson("/api/v1/daily-report-schedules/runs?limit=5", { signal: request.signal }),
+      apiJson("/api/v1/daily-report-schedules/status", { signal: request.signal }),
     ];
     if (state.currentUser?.role === "ADMIN") {
-      requests.push(fetch("/api/v1/admin/connections?limit=100", { headers: authHeaders() }));
+      requests.push(apiJson("/api/v1/admin/connections?limit=100", { signal: request.signal }));
     }
     const responses = await Promise.all(requests);
-    if (responses.some((response) => !response.ok)) {
-      const response = responses.find((item) => !item.ok);
-      throw new Error(await errorDetail(response));
-    }
-    const schedules = await responses[0].json();
-    const runs = await responses[1].json();
-    const schedulerStatus = await responses[2].json();
+    if (!request.isCurrent()) return false;
+    const schedules = responses[0];
+    const runs = responses[1];
+    const schedulerStatus = responses[2];
     if (responses[3]) {
-      const connections = await responses[3].json();
+      const connections = responses[3];
       state.reportNotificationConnections = connections.items.filter((connection) => (
         connection.purpose === "NOTIFICATION" && connection.enabled
       ));
@@ -189,6 +186,7 @@ export async function loadReportSchedules() {
     renderReportSchedules(schedules.items, runs.items, schedulerStatus);
     return true;
   } catch (error) {
+    if (!request.isCurrent() || handleApiError(error)) return false;
     elements.reportScheduleError.textContent = error instanceof Error
       ? error.message
       : "Daily Report 스케줄을 불러오지 못했습니다.";
@@ -198,6 +196,7 @@ export async function loadReportSchedules() {
 }
 
 async function saveReportSchedule() {
+  const request = currentViewRequest();
   const body = {
     display_name: elements.reportScheduleName.value.trim(),
     report_title: elements.reportScheduleTitle.value.trim(),
@@ -215,24 +214,24 @@ async function saveReportSchedule() {
   elements.reportScheduleSave.disabled = true;
   elements.reportScheduleError.hidden = true;
   try {
-    const response = await fetch(
+    const response = await apiJson(
       scheduleId
         ? `/api/v1/admin/daily-report-schedules/${encodeURIComponent(scheduleId)}`
         : "/api/v1/admin/daily-report-schedules",
       {
+        signal: request.signal,
         method: scheduleId ? "PUT" : "POST",
-        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       },
     );
-    if (!response.ok) {
-      throw new Error(await errorDetail(response));
-    }
-    state.currentReportSchedule = await response.json();
+    if (!request.isCurrent()) return;
+    state.currentReportSchedule = response;
     elements.reportScheduleFeedback.textContent = "설정을 저장했습니다. 스케줄러가 다음 동기화 때 적용합니다.";
     elements.reportScheduleFeedback.hidden = false;
     await loadReportSchedules();
   } catch (error) {
+    if (!request.isCurrent() || handleApiError(error)) return;
     elements.reportScheduleError.textContent = error instanceof Error
       ? error.message
       : "Daily Report 스케줄을 저장하지 못했습니다.";
@@ -243,27 +242,28 @@ async function saveReportSchedule() {
 }
 
 async function requestManualReportRun() {
+  const request = currentViewRequest();
   if (!state.currentReportSchedule) {
     return;
   }
   elements.reportManualRun.disabled = true;
   elements.reportScheduleError.hidden = true;
   try {
-    const response = await fetch(
+    await apiJson(
       `/api/v1/admin/daily-report-schedules/${encodeURIComponent(state.currentReportSchedule.id)}/runs`,
       {
+        signal: request.signal,
         method: "POST",
-        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ report_date: elements.reportManualDate.value }),
       },
     );
-    if (!response.ok) {
-      throw new Error(await errorDetail(response));
-    }
+    if (!request.isCurrent()) return;
     elements.reportScheduleFeedback.textContent = "Daily Report 실행을 스케줄러에 요청했습니다.";
     elements.reportScheduleFeedback.hidden = false;
     await loadReportSchedules();
   } catch (error) {
+    if (!request.isCurrent() || handleApiError(error)) return;
     elements.reportScheduleError.textContent = error instanceof Error
       ? error.message
       : "Daily Report 실행을 요청하지 못했습니다.";
@@ -313,18 +313,15 @@ function setReportLoading(isLoading) {
     || state.currentReportOffset + REPORT_PAGE_SIZE >= state.currentReportTotal;
 }
 
-async function fetchReportTotal(query = "") {
+async function fetchReportTotal(query, request) {
   const suffix = query ? `&${query}` : "";
-  const response = await fetch(`/api/v1/daily-reports?limit=1&offset=0${suffix}`, {
-    headers: authHeaders(),
+  const response = await apiJson(`/api/v1/daily-reports?limit=1&offset=0${suffix}`, {
+    signal: request.signal,
   });
-  if (!response.ok) {
-    return null;
-  }
-  return (await response.json()).total;
+  return response.total;
 }
 
-async function loadReportSummary() {
+async function loadReportSummary(request) {
   const summaries = [
     [elements.reportTotal, ""],
     [elements.reportDeliveredTotal, "status=DELIVERED"],
@@ -335,8 +332,12 @@ async function loadReportSummary() {
     element.textContent = "—";
   }
   const results = await Promise.allSettled(
-    summaries.map(([, query]) => fetchReportTotal(query)),
+    summaries.map(([, query]) => fetchReportTotal(query, request)),
   );
+  if (!request.isCurrent()) return;
+  for (const result of results) {
+    if (result.status === "rejected" && handleApiError(result.reason)) return;
+  }
   for (const [index, result] of results.entries()) {
     const total = result.status === "fulfilled" ? result.value : null;
     summaries[index][0].textContent = total === null ? "—" : String(total);
@@ -344,27 +345,21 @@ async function loadReportSummary() {
 }
 
 export async function loadReports() {
+  const request = beginViewRequest();
   setReportLoading(true);
   elements.reportError.hidden = true;
   const params = reportQueryFromFilters();
   updateReportUrl(params);
   try {
-    const response = await fetch(`/api/v1/daily-reports?${params.toString()}`, {
-      headers: authHeaders(),
+    const response = await apiJson(`/api/v1/daily-reports?${params.toString()}`, {
+      signal: request.signal,
     });
-    if (!response.ok) {
-      const detail = await errorDetail(response);
-      if (response.status === 401 || response.status === 503) {
-        clearSession();
-        showAuth(detail);
-        return false;
-      }
-      throw new Error(detail);
-    }
-    renderReportPage(await response.json());
-    void loadReportSummary();
+    if (!request.isCurrent()) return false;
+    renderReportPage(response);
+    void loadReportSummary(request);
     return true;
   } catch (error) {
+    if (!request.isCurrent() || handleApiError(error)) return false;
     elements.reportResults.hidden = true;
     elements.reportEmpty.hidden = true;
     elements.reportError.textContent = error instanceof Error
@@ -373,7 +368,9 @@ export async function loadReports() {
     elements.reportError.hidden = false;
     return false;
   } finally {
-    setReportLoading(false);
+    if (request.isCurrent()) {
+      setReportLoading(false);
+    }
   }
 }
 
@@ -457,35 +454,31 @@ function renderReportDetail(report) {
 }
 
 export async function loadReportDetail(reportId) {
+  const request = beginViewRequest();
   state.currentReportId = reportId;
   elements.reportDetailBack.href = reportDetailBackHref();
   elements.reportDetailLoading.hidden = false;
   elements.reportDetailError.hidden = true;
   elements.reportDetailContent.hidden = true;
   try {
-    const response = await fetch(`/api/v1/daily-reports/${encodeURIComponent(reportId)}`, {
-      headers: authHeaders(),
+    const response = await apiJson(`/api/v1/daily-reports/${encodeURIComponent(reportId)}`, {
+      signal: request.signal,
     });
-    if (!response.ok) {
-      const detail = await errorDetail(response);
-      if (response.status === 401 || response.status === 503) {
-        clearSession();
-        showAuth(detail);
-        return false;
-      }
-      throw new Error(detail);
-    }
-    renderReportDetail(await response.json());
+    if (!request.isCurrent()) return false;
+    renderReportDetail(response);
     elements.reportDetailContent.hidden = false;
     return true;
   } catch (error) {
+    if (!request.isCurrent() || handleApiError(error)) return false;
     elements.reportDetailError.textContent = error instanceof Error
       ? error.message
       : "Unable to load Daily Report detail";
     elements.reportDetailError.hidden = false;
     return false;
   } finally {
-    elements.reportDetailLoading.hidden = true;
+    if (request.isCurrent()) {
+      elements.reportDetailLoading.hidden = true;
+    }
   }
 }
 

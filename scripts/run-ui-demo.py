@@ -116,6 +116,7 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_DEMO_HOST,
         help="server bind address; use 0.0.0.0 for access from the local network",
     )
+    parser.add_argument("--port", type=int, default=DEMO_PORT, help="server port")
     parser.add_argument(
         "--with-scheduler",
         action="store_true",
@@ -484,14 +485,14 @@ def main() -> None:
         ensure_demo_schema(DEMO_DATABASE_PATH)
 
     url_host = "127.0.0.1" if args.host == "0.0.0.0" else args.host
-    url = f"http://{url_host}:{DEMO_PORT}/ui/"
+    url = f"http://{url_host}:{args.port}/ui/"
     print("DagSentry UI demo")
     print(f"  URL:      {url}")
     print(f"  Email:    {DEMO_EMAIL}")
     print(f"  Password: {DEMO_PASSWORD}")
     print(f"  Database: {DEMO_DATABASE_PATH}")
     if args.host == "0.0.0.0":
-        print(f"  LAN:      http://<this-machine-ip>:{DEMO_PORT}/ui/")
+        print(f"  LAN:      http://<this-machine-ip>:{args.port}/ui/")
     print("  Reset:    uv run python scripts/run-ui-demo.py --reset")
 
     settings = Settings(database_url=database_url(DEMO_DATABASE_PATH), environment="demo")
@@ -511,7 +512,7 @@ def main() -> None:
         scheduler_thread.start()
         print("  Scheduler: Daily Report scheduler enabled")
     try:
-        uvicorn.run(application, host=args.host, port=DEMO_PORT, log_config=None)
+        uvicorn.run(application, host=args.host, port=args.port, log_config=None)
     finally:
         if scheduler is not None:
             scheduler.shutdown()

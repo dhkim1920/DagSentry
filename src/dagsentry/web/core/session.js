@@ -1,3 +1,4 @@
+import { cancelViewRequests } from "./requests.js";
 import { state } from "./state.js";
 
 export function storedSession() {
@@ -9,5 +10,6 @@ export function storedSession() {
 }
 
 export function clearSession() {
+  cancelViewRequests();
   state.currentUser = null;
 }

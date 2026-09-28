@@ -1,10 +1,10 @@
+import { beginViewRequest, currentViewRequest } from "../core/requests.js";
 import { elements } from "../core/elements.js";
 import { MANAGED_CONNECTION_PROVIDERS, configureConnectionForm, resetConnectionForm, editManagedConnection, managedConnectionRequestBody } from "../components/connection-form.js";
 import { state } from "../core/state.js";
 import { translatedText } from "../core/i18n.js";
-import { clearSession } from "../core/session.js";
-import { authHeaders, errorDetail, generateUuid } from "../core/api.js";
-import { showAuth } from "../core/auth.js";
+import { apiJson, generateUuid } from "../core/api.js";
+import { handleApiError } from "../core/auth.js";
 import { adminPageFromUrl } from "../core/router.js";
 import { appendCell, formatTimestamp, timestampBlock, textElement } from "../core/dom.js";
 import { applyStatusColor } from "../components/badges.js";
@@ -24,17 +24,13 @@ function showAdminFeedback(message) {
 }
 
 async function adminApiRequest(url, options = {}) {
-  const headers = { ...authHeaders(), ...(options.headers || {}) };
-  const response = await fetch(url, { ...options, headers });
-  if (response.status === 401) {
-    clearSession();
-    showAuth(await errorDetail(response));
-    return null;
+  const request = currentViewRequest();
+  try {
+    return await apiJson(url, { ...options, signal: request.signal });
+  } catch (error) {
+    if (!request.isCurrent() || handleApiError(error)) return null;
+    throw error;
   }
-  if (!response.ok) {
-    throw new Error(await errorDetail(response));
-  }
-  return response;
 }
 
 function adminActionButton(label, action, className = "btn btn-outline-secondary") {
@@ -69,7 +65,7 @@ async function revokeManagedUserSessions(user) {
       { method: "POST" },
     );
     if (response) {
-      const result = await response.json();
+      const result = response;
       showAdminFeedback(`Revoked ${result.sessions_revoked} session(s) for ${user.email}.`);
       await loadAdminDashboard(false);
     }
@@ -158,7 +154,7 @@ async function testManagedConnection(connection) {
       { method: "POST" },
     );
     if (response) {
-      const result = await response.json();
+      const result = response;
       const detail = result.error_category ? ` · ${result.error_category}` : "";
       showAdminFeedback(`Connection test ${result.status}${detail}.`);
       await loadAdminDashboard(false);
@@ -283,7 +279,7 @@ function showAdminPage(section) {
 
 export async function loadAdminDashboard(showLoading = true) {
   const section = adminPageFromUrl();
-  const sequence = ++state.adminLoadSequence;
+  const request = beginViewRequest();
   if (showLoading) {
     showAdminPage(section);
     elements.adminFeedback.hidden = true;
@@ -293,8 +289,8 @@ export async function loadAdminDashboard(showLoading = true) {
   elements.adminError.hidden = true;
   try {
     if (section === "reports") {
-      const loaded = await loadReportSchedules();
-      if (sequence !== state.adminLoadSequence) return false;
+      const loaded = await loadReportSchedules(request);
+      if (!request.isCurrent()) return false;
       elements.adminContent.hidden = false;
       return loaded;
     }
@@ -307,8 +303,8 @@ export async function loadAdminDashboard(showLoading = true) {
       response = await adminApiRequest("/api/v1/admin/users?limit=200");
     }
     if (!response) return false;
-    const payload = await response.json();
-    if (sequence !== state.adminLoadSequence) return false;
+    const payload = response;
+    if (!request.isCurrent()) return false;
     if (section === "connections") {
       elements.adminConnectionTotal.textContent = String(payload.total);
       renderAdminConnections(payload.items);
@@ -321,12 +317,12 @@ export async function loadAdminDashboard(showLoading = true) {
     elements.adminContent.hidden = false;
     return true;
   } catch (error) {
-    if (sequence === state.adminLoadSequence) {
+    if (request.isCurrent()) {
       showAdminError(error instanceof Error ? error.message : "Unable to load settings");
     }
     return false;
   } finally {
-    if (sequence === state.adminLoadSequence) elements.adminLoading.hidden = true;
+    if (request.isCurrent()) elements.adminLoading.hidden = true;
   }
 }
 
@@ -342,7 +338,7 @@ export function bindAdminEvents() {
         body: JSON.stringify(body),
       });
       if (response) {
-        const user = await response.json();
+        const user = response;
         elements.adminCreateForm.reset();
         showAdminFeedback(`Created ${user.email}.`);
         await loadAdminDashboard(false);
@@ -369,7 +365,7 @@ export function bindAdminEvents() {
         },
       );
       if (response) {
-        const saved = await response.json();
+        const saved = response;
         resetConnectionForm();
         showAdminFeedback(`Saved ${saved.display_name}.`);
         await loadAdminDashboard(false);

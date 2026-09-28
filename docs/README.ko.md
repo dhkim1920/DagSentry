@@ -7,7 +7,7 @@
 
 ## 시작과 운영
 
-- [v0.1 설치](v0.1-installation.ko.md)
+- [설치](installation.ko.md)
 - [운영](operations.ko.md)
 - [운영 배포](production-deployment.ko.md)
 - [백업·복원](backup-recovery.ko.md)

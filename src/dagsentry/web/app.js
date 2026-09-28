@@ -1,6 +1,7 @@
 import { elements } from "./core/elements.js";
 import { resetConnectionForm } from "./components/connection-form.js";
-import { bindIncidentsEvents } from "./views/incidents.js";
+import { bindListEvents } from "./views/incidents/list.js";
+import { bindIncidentDetailEvents } from "./views/incidents/detail.js";
 import { LANGUAGE_STORAGE_KEY, TIMEZONE_STORAGE_KEY } from "./core/constants.js";
 import { state } from "./core/state.js";
 import { applySidebarState, setSidebarVisibility } from "./core/sidebar.js";
@@ -38,7 +39,8 @@ function bindAppEvents() {
   });
 }
 
-bindIncidentsEvents();
+bindListEvents();
+bindIncidentDetailEvents();
 bindAdminEvents();
 bindAuthEvents(loadCurrentView);
 bindNavigationEvents();

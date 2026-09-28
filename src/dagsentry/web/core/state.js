@@ -34,4 +34,3 @@ state.reportNotificationConnections = [];
 state.currentUser = null;
 state.passwordResetUser = null;
 state.editingConnection = null;
-state.adminLoadSequence = 0;

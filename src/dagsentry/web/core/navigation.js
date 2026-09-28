@@ -1,5 +1,7 @@
+import { cancelViewRequests } from "./requests.js";
 import { elements } from "./elements.js";
-import { loadIncidents, loadIncidentDetail } from "../views/incidents.js";
+import { loadIncidents } from "../views/incidents/list.js";
+import { loadIncidentDetail } from "../views/incidents/detail.js";
 import { state } from "./state.js";
 import { sidebarMedia, sidebarCollapsed, applySidebarState, setSidebarCollapsed } from "./sidebar.js";
 import { storedSession } from "./session.js";
@@ -12,6 +14,7 @@ import { loadReports, loadReportDetail } from "../views/reports.js";
 import { loadAdminDashboard } from "../views/admin.js";
 
 export async function loadCurrentView() {
+  cancelViewRequests();
   if (state.currentUser?.must_change_password) {
     showPasswordChange();
     return false;

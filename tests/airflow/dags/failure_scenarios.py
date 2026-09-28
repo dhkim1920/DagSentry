@@ -1,4 +1,4 @@
-"""Manual Airflow 3 DAG used by the v0.1 collection smoke workflow."""
+"""Manual Airflow 3 DAG used by the collection smoke workflow."""
 
 from __future__ import annotations
 
@@ -8,11 +8,11 @@ from airflow.sdk import dag, get_current_context, task
 
 
 @dag(
-    dag_id="dagsentry_v01_failure_scenarios",
+    dag_id="dagsentry_failure_scenarios",
     schedule=None,
     start_date=datetime(2026, 1, 1, tzinfo=UTC),
     catchup=False,
-    tags=["dagsentry", "v0.1-smoke"],
+    tags=["dagsentry", "collection-smoke"],
 )
 def failure_scenarios() -> None:
     @task(retries=1)
