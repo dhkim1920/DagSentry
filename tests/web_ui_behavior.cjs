@@ -4,12 +4,16 @@ const path = require("node:path");
 const vm = require("node:vm");
 const { test } = require("node:test");
 
-const source = fs.readFileSync(path.join(__dirname, "../src/dagsentry/web/app.js"), "utf8");
+const web = path.join(__dirname, "../src/dagsentry/web");
+const source = fs.readdirSync(web, { recursive: true })
+  .filter(name => name.endsWith(".js") && !name.startsWith("vendor/"))
+  .map(name => fs.readFileSync(path.join(web, name), "utf8")).join("\n");
 
 // Execute the shipped functions without bootstrapping a browser session or network requests.
 function runtime(names, globals = {}) {
   const context = vm.createContext({ URLSearchParams, ...globals });
-  for (const name of names) {
+  context.state = context;
+  for (const name of [...new Set(["offsetFromUrl", "restoreFilters", "filterQuery", "replaceFilterUrl", ...names])]) {
     const match = source.match(new RegExp(`(?:async )?function ${name}\\([^]*?^}`, "m"));
     assert.ok(match, `Missing function ${name}`);
     vm.runInContext(match[0], context);

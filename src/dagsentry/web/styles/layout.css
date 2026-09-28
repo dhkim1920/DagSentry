@@ -1,0 +1,595 @@
+/* Tabler owns component skins. These rules arrange DagSentry operational views. */
+:root {
+  --control-height: 38px;
+}
+
+/* Keep native dialog focus trapping and Escape handling with Tabler's modal shell. */
+dialog.modal[open] {
+  display: block;
+  inset: 0;
+  width: min(600px, calc(100% - 32px));
+  height: fit-content;
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow-y: auto;
+}
+
+dialog.modal .modal-dialog {
+  max-width: none;
+  margin: 0;
+}
+
+.modal-body {
+  display: grid;
+  gap: 12px;
+}
+
+.modal-title,
+.modal-header .card-title {
+  margin: 0;
+}
+
+.primary-nav .nav-link {
+  white-space: normal;
+}
+
+.settings-navigation > summary {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+
+.settings-navigation > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-navigation[open] > summary::after {
+  transform: rotate(135deg);
+}
+
+.auth-copy h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3.5vw, 3rem);
+  line-height: 1.25;
+}
+
+.task-identity,
+.signature-identity {
+  min-width: 160px;
+  max-width: 360px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.detail-view,
+.detail-content,
+.detail-layout,
+.field-group,
+.card,
+.card-body {
+  min-width: 0;
+}
+
+.detail-view p,
+.detail-view dd,
+.detail-view li,
+.detail-view h1 {
+  overflow-wrap: anywhere;
+}
+
+.detail-status-line,
+.page-header-actions,
+.results-heading,
+.transition-heading,
+.report-manual-run-form {
+  flex-wrap: wrap;
+}
+
+.toggle-switch {
+  flex: 0 0 auto;
+  min-width: 44px;
+  margin: 0;
+}
+
+.uniform-control-height .form-check-input {
+  height: 1.25rem;
+  padding: 0;
+}
+
+.human-diagnosis-panel,
+.human-diagnosis-panel dt,
+.human-diagnosis-panel .history-count,
+.human-diagnosis-panel .btn,
+.human-diagnosis-panel h2 {
+  font-family: var(--tblr-font-sans-serif);
+}
+
+.diagnosis-card.is-effective {
+  border-left: 3px solid var(--tblr-success);
+}
+
+.diagnosis-card.is-rejected {
+  border-left: 3px solid var(--tblr-danger);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  outline-offset: 3px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--tblr-primary);
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 20;
+  top: 8px;
+  left: 8px;
+  padding: 8px 12px;
+  transform: translateY(-150%);
+  border-radius: 6px;
+  background: var(--tblr-primary);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.site-header {
+  position: sticky;
+  z-index: 10;
+  top: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  min-height: 58px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--tblr-border-color);
+}
+
+.header-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-toggle {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 1px solid var(--tblr-primary);
+  border-radius: 50%;
+}
+
+.brand-mark span {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--tblr-primary);
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--tblr-sidebar-width) minmax(0, 1fr);
+  min-height: calc(100vh - 58px);
+}
+
+body.sidebar-hidden .app-shell {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.site-sidebar.navbar.navbar-vertical {
+  top: 58px;
+  z-index: 9;
+  padding-block: 12px;
+}
+
+.site-sidebar .primary-nav {
+  align-items: stretch;
+  width: 100%;
+}
+
+.site-sidebar .navbar-nav {
+  width: 100%;
+}
+
+@media (min-width: 992px) {
+  .site-sidebar {
+    grid-column: 1;
+  }
+
+  .app-shell > main {
+    grid-column: 2;
+  }
+
+  body.sidebar-hidden .app-shell > main {
+    grid-column: 1;
+  }
+
+  /* Native settings disclosure follows Tabler's folded-hover state. */
+  html[data-bs-sidebar='folded-hover'] .site-sidebar:not(:hover):not(:has(:focus-visible)) .settings-navigation > ul {
+    display: none;
+  }
+}
+
+.nav-label {
+  display: block;
+  line-height: 1.25;
+}
+
+.nav-link.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+#language-select,
+#timezone-select {
+  width: auto;
+  min-width: 88px;
+  padding: 7px 30px 7px 10px;
+}
+
+#timezone-select {
+  min-width: 128px;
+}
+
+.session-status {
+  color: var(--tblr-secondary-color);
+}
+
+main {
+  width: min(1440px, 100%);
+  min-width: 0;
+  min-height: calc(100vh - 58px);
+  margin: 0 auto;
+  padding: 28px 24px 56px;
+}
+
+.auth-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 1fr);
+  align-items: center;
+  gap: clamp(32px, 6vw, 80px);
+  max-width: 1080px;
+  margin-inline: auto;
+  min-height: 62vh;
+  padding: 36px 0;
+}
+
+.eyebrow,
+.card-kicker,
+.table-kicker {
+  margin: 0 0 14px;
+  color: var(--tblr-primary);
+}
+
+.auth-title-line {
+  display: block;
+  white-space: nowrap;
+}
+
+.auth-card {
+  display: grid;
+  gap: 20px;
+}
+
+.auth-loading-overlay {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 60%);
+}
+
+.auth-loading-card {
+  display: grid;
+  min-width: 150px;
+  justify-items: center;
+  gap: 12px;
+}
+
+.auth-loading-spinner {
+  width: 42px;
+  height: 42px;
+  border-width: 3px;
+}
+
+.dashboard {
+  display: grid;
+  gap: 18px;
+}
+
+.dashboard-heading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 0 2px;
+}
+
+.heading-copy {
+  max-width: 620px;
+  margin: 6px 0 0;
+  color: var(--tblr-secondary-color);
+}
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-result-count {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.page-result-count span {
+  color: var(--tblr-secondary-color);
+}
+
+.page-result-total {
+  color: var(--tblr-primary);
+}
+
+.incident-summary {
+  display: grid;
+  gap: 6px;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.summary-stats-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.summary-stats-four > .card-body + .card-body {
+  border-inline-start: 1px solid var(--tblr-border-color);
+}
+
+@media (max-width: 680px) {
+  .summary-stats-four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summary-stats-four > .card-body:nth-child(3) {
+    border-inline-start: 0;
+  }
+
+  .summary-stats-four > .card-body:nth-child(n + 3) {
+    border-top: 1px solid var(--tblr-border-color);
+  }
+}
+
+.summary-stats .card-body {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-width: 0;
+}
+
+.summary-stats .badge {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.summary-stats dd {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.native-accordion {
+  --tblr-accordion-btn-padding-y: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.native-accordion summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.native-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.native-accordion details[open] .accordion-button-toggle {
+  transform: rotate(-180deg);
+}
+
+.filter-panel .native-accordion {
+  --tblr-accordion-padding-x: 1rem;
+}
+
+.metric-card {
+  min-width: 210px;
+  padding: 18px 20px;
+  border-top: 1px solid var(--tblr-border-color);
+  border-bottom: 1px solid var(--tblr-border-color);
+}
+
+.metric-card span {
+  display: block;
+  color: var(--tblr-secondary-color);
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 4px;
+}
+
+.uniform-control-height input,
+.uniform-control-height select {
+  height: var(--control-height);
+  padding: 6px 12px;
+  line-height: 1.25;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.report-filter-grid {
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
+}
+
+.disclosure-panel > summary {
+  cursor: pointer;
+}
+
+.disclosure-panel[open] > summary {
+  margin-bottom: 16px;
+}
+
+.incident-error-summary {
+  min-width: 220px;
+  max-width: 360px;
+  overflow-wrap: anywhere;
+}
+
+.incident-cell-label {
+  display: none;
+}
+
+.incident-error-summary > strong,
+.incident-error-summary > span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.incident-detail-main,
+#incident-diagnoses {
+  display: grid;
+  gap: 16px;
+}
+
+#incident-detail .detail-header {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#incident-detail .incident-metrics {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#incident-detail .incident-metrics div {
+  padding-left: 0;
+  border-left: 0;
+}
+
+#human-diagnosis-panel > summary {
+  display: list-item;
+  cursor: pointer;
+}
+
+#human-diagnosis-panel:not([open]) > summary {
+  margin-bottom: 0;
+}
+
+#incident-detail .human-diagnosis-panel,
+#incident-detail .human-diagnosis-history {
+  margin-top: 0;
+}
+
+.incident-detail-main .operator-actions {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+#current-diagnosis-content {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+#current-diagnosis-content > .heading-copy,
+#current-diagnosis-content > .diagnosis-root-cause {
+  margin: 0;
+}
+
+.field-group {
+  display: grid;
+  gap: 6px;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--tblr-secondary-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+    *::before,
+    *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+  }
+
+  .brand-mark span,
+  .status-badge::before {
+    background: CanvasText;
+  }
+}
+
+.empty-state {
+  padding: 58px 28px;
+  text-align: center;
+}

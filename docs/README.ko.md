@@ -1,6 +1,6 @@
 # DagSentry 한국어 문서 색인
 
-[T00–T16 구현·검증 현황](implementation-status.ko.md)
+[T00–T16 개발 이력 (과거 기록)](development-history.ko.md)
 
 이 디렉터리의 `*.ko.md`는 영문 원문과 나란히 유지하는 한국어 문서입니다. 한국어 중심으로 작성된
 문서는 원문을 바로 참조합니다.

@@ -1,5 +1,7 @@
 # Web UI
 
+빌드 없는 ES Module 구조와 파일별 책임·검증 방법은 [프론트엔드 구조](frontend-architecture.md)를 참조하세요.
+
 DagSentry Web UI는 운영자가 Incident, Error Signature, Diagnosis, Notification delivery, Managed Connection을
 안전하게 살펴보고 권한이 있는 상태 전이를 수행하는 interface입니다. Viewer는 읽기만, Operator는 허용된 Incident
 전이, Admin은 사용자와 Managed Connection 관리를 수행합니다. 브라우저 session은 HttpOnly cookie와 CSRF 보호를

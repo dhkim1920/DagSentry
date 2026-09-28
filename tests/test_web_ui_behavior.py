@@ -12,7 +12,13 @@ def test_web_ui_diagnosis_selection_and_filter_navigation() -> None:
     if node is None:
         pytest.skip("Node.js is required for Web UI behavior tests")
     result = subprocess.run(
-        [node, "--test", str(Path(__file__).with_name("web_ui_behavior.cjs"))],
+        [
+            node,
+            "--experimental-vm-modules",
+            "--test",
+            str(Path(__file__).with_name("web_ui_behavior.cjs")),
+            str(Path(__file__).with_name("web_ui_modules.cjs")),
+        ],
         capture_output=True,
         text=True,
         check=False,

@@ -51,7 +51,8 @@ def test_tabler_is_exact_self_hosted_release_with_no_remote_runtime_assets(
     assert len(scripts) == 2
     assert scripts[0]["src"] == "/ui/vendor/tabler-1.6.0/tabler-sparkline.min.js"
     assert (scripts[1]["src"] or "").startswith("/ui/app.js?")
-    assert all("defer" in script for script in scripts)
+    assert "defer" in scripts[0]
+    assert scripts[1]["type"] == "module"
     sparkline = request(app, "GET", scripts[0]["src"])
     assert sparkline.status_code == 200
     assert hashlib.sha256(sparkline.content).hexdigest() == (
@@ -84,7 +85,7 @@ def test_tabler_controls_preserve_dom_hooks_labels_and_native_dialogs() -> None:
     nodes = ShellParser(source).nodes
     ids = [attrs["id"] for _, attrs in nodes if "id" in attrs]
     assert len(ids) == len(set(ids)), "Duplicate event/label targets"
-    script = (WEB / "app.js").read_text()
+    script = "\n".join(file.read_text() for file in WEB.rglob("*.js") if "vendor" not in file.parts)
     for target in re.findall(r'document.querySelector\("#([\w-]+)"\)', script):
         assert target in ids, f"Missing JavaScript target: {target}"
     labels = {attrs["for"] for tag, attrs in nodes if tag == "label" and "for" in attrs}

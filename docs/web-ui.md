@@ -1,5 +1,7 @@
 # Web UI
 
+Frontend ownership, module boundaries, and verification are documented in [Frontend architecture](frontend-architecture.md).
+
 DagSentry serves its dependency-free Web UI from the API process. Open `/` to redirect to `/ui/`.
 No Node runtime or separate frontend build is required, and the HTML, CSS, and JavaScript assets are
 included in the Python wheel.

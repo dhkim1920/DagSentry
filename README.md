@@ -1,6 +1,37 @@
 # DagSentry
 
-DagSentry is an Airflow 3 failure intelligence and incident management service.
+**Airflow 3 Failure Intelligence & Incident Management**
+
+Evidence-validated Airflow failure diagnosis. DagSentry collects and masks failed Task logs,
+produces rule-based or AI diagnoses, and connects recurring failures to Incidents your team can
+investigate and resolve. AI evidence is checked against the exact sanitized log excerpt before a
+diagnosis can become effective; validation is a consistency check, not proof of the root cause.
+
+```mermaid
+flowchart LR
+    A[Airflow Failure] --> B[Log collection & masking]
+    B --> C[Rule / AI Diagnosis]
+    C --> D[Evidence Validation]
+    D --> E[Incident Correlation]
+    E --> F[Slack / Teams / Discord / Webhook / SMTP]
+```
+
+- **Trace the evidence:** inspect cited log lines, validation results, and recommended actions.
+- **Track recurring failures:** group Error Signatures, review Incident history, and record operator decisions.
+- **Run a small stack:** a Python API serves the Tabler UI with native ES modules; no Node runtime or frontend build is required.
+
+[Install DagSentry](docs/v0.1-installation.md) · [Operator manual](docs/user-manual.md) · [한국어 문서](docs/README.ko.md)
+
+**Incident response** — find active failures and review their latest activity.
+
+![DagSentry Incident dashboard with status, error summaries, and DAG / Task context](docs/images/incidents.png)
+
+**Diagnosis evidence** — inspect the cause alongside cited, sanitized log lines and recommended actions.
+
+![DagSentry Diagnosis detail showing evidence line IDs, validation status, and recommended actions](docs/images/diagnosis-evidence.png)
+
+Screenshots use seeded demo data in the Korean UI; English is also available. They do not represent
+live Airflow failures or a live model evaluation. See [screenshot reproduction](docs/frontend-architecture.md#verification).
 
 ## Documentation
 
@@ -13,7 +44,7 @@ DagSentry is an Airflow 3 failure intelligence and incident management service.
 - [Version compatibility](docs/version-compatibility.md)
 - [Production security checklist](docs/security-checklist.md)
 - [한국어 문서](docs/README.ko.md)
-- [Implementation and verification status (T00–T16)](docs/implementation-status.ko.md)
+- [Development history (T00–T16; historical verification records)](docs/development-history.ko.md)
 
 ### Core and Airflow
 
