@@ -40,4 +40,10 @@ dagsentry-worker-jobs requeue
 
 Prometheus scrape, metric 의미, dashboard, alert threshold는 [metrics](metrics.md)를 참조합니다.
 
+로컬에서는 `uv run dagsentry-api --with-scheduler`로 API와 스케줄러를 함께 시작합니다.
+별도 자식 프로세스가 같은 환경 변수·`.env`를 읽으며 로그를 현재 터미널에 출력합니다.
+Ctrl+C/SIGTERM에서 둘 다 정상 종료를 요청하고 최대 5분 후 남은 프로세스를 강제 종료합니다.
+한쪽의 조기 종료는 나머지 종료와 명령의 실패 상태로 이어집니다. DB·Worker·migration은 기존처럼
+별도로 준비합니다. 운영 Compose는 기존 API·scheduler 서비스 분리 구성을 사용합니다.
+
 영문 원문: [Operations](operations.md)

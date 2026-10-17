@@ -10,11 +10,17 @@ cp .env.example .env
 docker compose up -d postgres
 uv run alembic upgrade head
 uv run dagsentry-admin users bootstrap --email admin@example.com --display-name Admin
-uv run dagsentry-api
+uv run dagsentry-api --with-scheduler
 ```
 
 The copied `.env` contains example-only PostgreSQL values. For the isolated local demo database,
 use `docker compose -f compose.yaml -f compose.demo.yaml up -d postgres`.
+
+The `--with-scheduler` option starts the API and scheduler as separate child processes using the
+same environment and `.env`. Ctrl+C or SIGTERM stops both. A child exiting unexpectedly stops the
+other and returns a nonzero exit status. Apply migrations before starting; the launcher does not
+apply them. To start only the API, omit the option. `uv run dagsentry-scheduler` remains available
+for independent execution.
 
 In a second shell, start the Worker after configuring Airflow API and Webhook credentials:
 

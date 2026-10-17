@@ -19,7 +19,7 @@ Azure OpenAI v1, Anthropic Messages, AWS Bedrock Converse, Ollama Chat이 이를
 
 ## 구현 추가
 
-`tests.contracts.llm.LLMProviderContract`를 상속한 테스트 클래스를 만들고 `make_provider`,
+`dagsentry.extensions.testing.llm.LLMProviderContract`를 상속한 테스트 클래스를 만들고 `make_provider`,
 `extract_request_context`, `assert_structured_output_requested`를 구현합니다. 상속 테스트는 성공,
 메타데이터, 일시 실패, 재시도 소진, 영구 실패, 잘못된 출력/필드/enum/confidence를 검사합니다.
 
@@ -28,3 +28,5 @@ uv run pytest tests/test_ollama_provider.py
 ```
 
 영문 원문: [LLM Provider contract](llm-provider-contract.md)
+
+Public API, compatibility and external examples: [Provider extension API v1](provider-extension-api.md).

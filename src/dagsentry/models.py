@@ -172,7 +172,7 @@ class ManagedConnectionRecord(Base):
             "(purpose = 'LLM' AND provider IN "
             "('OLLAMA', 'OPENAI', 'AZURE_OPENAI', 'ANTHROPIC', 'BEDROCK')) OR "
             "(purpose = 'NOTIFICATION' AND provider IN "
-            "('WEBHOOK', 'SLACK', 'TEAMS', 'DISCORD'))",
+            "('WEBHOOK', 'SLACK', 'TEAMS', 'DISCORD', 'SMTP'))",
             name="ck_managed_connections_provider_purpose",
         ),
         UniqueConstraint(

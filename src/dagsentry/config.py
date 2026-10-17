@@ -113,6 +113,7 @@ class Settings(BaseSettings):
     scheduler_poll_interval_seconds: float = Field(default=5.0, gt=0)
     scheduler_heartbeat_interval_seconds: float = Field(default=10.0, gt=0)
     scheduler_offline_after_seconds: float = Field(default=30.0, gt=0)
+    scheduler_stale_run_timeout_seconds: float = Field(default=900.0, gt=0)
     log_max_input_chars: int = Field(default=1_048_576, ge=1)
     log_excerpt_max_lines: int = Field(default=80, ge=1)
     log_excerpt_max_chars: int = Field(default=16_000, ge=1)

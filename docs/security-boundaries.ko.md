@@ -1,13 +1,13 @@
 # 인증 경계
 
 DagSentry는 네트워크 경계마다 독립적인 scope의 credential을 사용합니다. credential은 환경 설정 또는 플랫폼
-identity chain에서 오며 DagSentry table에 영속화하지 않습니다.
+identity chain 또는 암호화한 Managed Connection에서 옵니다. DB에는 인증 암호문만 저장합니다.
 
 Inbound에서 Airflow Listener/retry callback/Reconciler는 `X-DagSentry-Token`으로 Failure Ingest만 호출합니다.
 Viewer는 `X-DagSentry-Viewer-Token`으로 조회만, Operator는 `X-DagSentry-Operator-Token`과
 `DAGSENTRY_OPERATOR_API_IDENTITY`로 조회와 Incident 전이를 수행합니다. `/health/live`, `/health/ready`,
 `/metrics`는 인증하지 않으므로 network 제한이 필수입니다. Ingest, Viewer, Operator token은 모두 달라야 하며
-Viewer/Operator 설정이 없으면 anonymous access가 아니라 query API를 비활성화합니다.
+Viewer/Operator 설정이 없으면 사용자별 세션 인증이 필요하며 anonymous access는 허용하지 않습니다.
 
 Outbound에서 Worker/Reconciler/Recovery Checker는 최소 필요한 Airflow Public API 읽기 권한의 Bearer token을,
 LLM Worker는 Provider API key 또는 Bedrock IAM role을, local Ollama에는 private `/api/chat` 접근을 사용합니다.
@@ -18,3 +18,6 @@ authenticated reverse proxy 뒤에 둡니다. log, exception, metric, 저장 pay
 body를 넣지 않습니다.
 
 영문 원문: [Authentication boundaries](security-boundaries.md)
+
+Viewer/Operator 공유 토큰은 0.3에서 deprecated, 0.4까지 지원, 0.5부터 제거 가능으로 공지합니다.
+새 사용자는 세션 인증을 사용하며 전환 절차는 [릴리스 안내](release-notes.md)를 따릅니다.

@@ -6,8 +6,8 @@ environment settings. The default fallback list is empty for existing installati
 sequential, stops at the first success, and uses one delivery record (`teams>smtp`) and the same
 delivery key. If all providers fail, the primary error controls retry behavior. Failures log only
 provider names and error categories. Daily Report and Recovery retries accept an existing record
-when its provider is a member of the configured chain. Database connections retain their existing
-Slack-only notification scope.
+when its provider is a member of the configured chain. Database connections support every built-in
+Notification Provider as a single target.
 
 DagSentry's reusable contract suite verifies the behavior shared by HTTP Notification Providers
 without adding vendor branches to Diagnosis or Incident Core. The Webhook, Slack, Teams, and
@@ -31,7 +31,7 @@ outside the shared contract. Each adapter verifies those details in its concrete
 
 ## Adding an implementation
 
-Create a test class derived from `tests.contracts.notification.NotificationProviderContract`.
+Create a test class derived from `dagsentry.extensions.testing.notification.NotificationProviderContract`.
 Implement two hooks:
 
 - `make_provider`: construct the adapter with two attempts, the supplied mock HTTP handler, and the
@@ -47,3 +47,5 @@ uv run pytest tests/test_webhook_provider.py
 
 Provider-specific configuration validation and credential-masking tests remain beside the concrete
 adapter tests.
+
+Public API, compatibility and external examples: [Provider extension API v1](provider-extension-api.md).

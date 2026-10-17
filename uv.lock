@@ -627,6 +627,10 @@ airflow = [
     { name = "apache-airflow" },
 ]
 
+provider-tests = [
+    { name = "pytest" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "mypy" },
@@ -646,10 +650,11 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28,<1" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4" },
     { name = "pydantic-settings", specifier = ">=2.10,<3" },
+    { name = "pytest", marker = "extra == 'provider-tests'", specifier = ">=8.4,<10" },
     { name = "sqlalchemy", specifier = ">=2.0,<3" },
     { name = "uvicorn", specifier = ">=0.35,<1" },
 ]
-provides-extras = ["airflow"]
+provides-extras = ["provider-tests", "airflow"]
 
 [package.metadata.requires-dev]
 dev = [

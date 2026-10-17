@@ -1152,14 +1152,22 @@
                   <select id="connection-provider" name="provider" class="form-select">
                     <option value="AIRFLOW">Airflow</option>
                     <option value="OLLAMA">Ollama</option>
+                    <option value="OPENAI">OpenAI</option>
+                    <option value="AZURE_OPENAI">Azure OpenAI</option>
+                    <option value="ANTHROPIC">Anthropic</option>
+                    <option value="BEDROCK">AWS Bedrock</option>
                     <option value="SLACK">Slack</option>
+                    <option value="WEBHOOK">Webhook</option>
+                    <option value="TEAMS">Microsoft Teams</option>
+                    <option value="DISCORD">Discord</option>
+                    <option value="SMTP">SMTP</option>
                   </select>
                 </div>
                 <div class="field-group">
                   <label for="connection-display-name" class="form-label">Display name</label>
                   <input id="connection-display-name" name="display_name" maxlength="250" required class="form-control">
                 </div>
-                <div class="field-group">
+                <div id="connection-api-url-group" class="field-group">
                   <label for="connection-api-base-url" class="form-label">API base URL</label>
                   <input id="connection-api-base-url" name="api_base_url" type="url" required class="form-control">
                 </div>
@@ -1198,6 +1206,7 @@
                   >
                 </div>
               </div>
+              <div id="connection-extra-fields" class="connection-form-grid"></div>
               <div class="filter-actions">
                 <button id="connection-cancel-edit" class="btn btn-outline-secondary" type="button" hidden>Cancel edit</button>
                 <button id="connection-save" class="btn btn-primary" type="submit">Create connection</button>

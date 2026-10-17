@@ -56,13 +56,29 @@ fallback chain is configured. Provider failures preserve the rule report.
 
 ## APScheduler automation
 
-Run `dagsentry-scheduler` as a separate long-running process. Daily execution settings are stored in
+Run `dagsentry-scheduler` as a separate long-running process, or start it alongside the API with
+`uv run dagsentry-api --with-scheduler`. The latter keeps both services in separate processes and
+stops both on Ctrl+C/SIGTERM; migrations must already be applied. Daily execution settings are stored in
 DagSentry and managed from the Daily Reports UI; the scheduler polls those settings and registers
 one daily job per enabled environment. New UI schedules default to `09:00 Asia/Seoul`.
 
 The execution timezone defines both the firing time and the completed local day being reported.
 CLI uses DAGSENTRY_REPORT_TIMEZONE (default Asia/Seoul). Scheduler reuses its session factory.
 Stored reports are not recalculated when diagnoses finish later or schedule timezones change.
+
+At startup and on each poll, the scheduler requeues interrupted `RUNNING` executions older than
+`DAGSENTRY_SCHEDULER_STALE_RUN_TIMEOUT_SECONDS` (default `900` seconds). This includes both scheduled
+and manual runs, and also consumes scheduled runs left `CLAIMED` before a crash. On PostgreSQL,
+executions hold a row lock until their result is recorded; recovery skips those locks so a live,
+long-running execution is not reclaimed. SQLite does not provide this concurrent-execution guarantee.
+No schema migration is required. When deploying over an older scheduler, stop the old process before
+starting this version: older executions do not hold the recovery-protection lock.
+
+Recovery reuses the original run and report date. A stored `DELIVERED` report is not sent again;
+other retries retain the report's delivery key. A receiver must honor that key to deduplicate a send
+accepted just before a crash prevented its delivery transaction from committing. Terminal `FAILED`
+runs still require an explicit manual rerun. Unqueued occurrences missed during downtime are not
+automatically backfilled. One queued run's failure does not prevent the remaining queue from running.
 
 Migration 0020 preserves v1 UTC periods and adds empty top_failures. An empty migrated list does
 not mean no failures. Non-UTC reports prevent downgrade to v1: restore a backup and matching image.

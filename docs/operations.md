@@ -23,7 +23,25 @@ uv run dagsentry-recovery-checker
 uv run dagsentry-scheduler
 ```
 
-Both processes handle normal termination. The API delegates graceful connection draining to
+For local development, start the API and scheduler from one foreground command:
+
+```shell
+uv run dagsentry-api --with-scheduler
+```
+
+Add `--port 8001` to use another HTTP port; the option applies to the API child only.
+
+The launcher starts one independent API process and one independent scheduler process using the
+same Python environment, current directory and `.env`. It starts neither PostgreSQL nor the Worker,
+and does not run migrations. Logs from both services remain visible in the terminal. Ctrl+C and
+SIGTERM request graceful shutdown of both children, with a shared five-minute drain limit before
+forced termination. If either child exits unexpectedly, the launcher stops the other and returns a
+nonzero status. It does not restart services automatically.
+
+Production Compose already starts API and scheduler as separate services with
+`docker compose -f compose.production.yaml up -d`; retain its existing individual service commands.
+
+The service processes handle normal termination. The API delegates graceful connection draining to
 Uvicorn. The Worker stops claiming new jobs on SIGINT/SIGTERM, finishes the owned job, records its
 result, and exits. A restarted Worker continues pending jobs and does not repeat an already stored
 Diagnosis or delivered Notification.

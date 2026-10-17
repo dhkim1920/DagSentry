@@ -1,21 +1,24 @@
 # Authentication boundaries
 
 DagSentry uses independently scoped credentials at each network boundary. Credentials come
-from environment-backed settings or the platform's identity chain and are never persisted in
-DagSentry tables.
+from environment-backed settings, the platform's identity chain, or encrypted Managed Connections.
+Managed Connection credentials are persisted only as authenticated ciphertext.
 
 ## Inbound to DagSentry
 
 | Caller | Target | Authentication | Scope |
 | --- | --- | --- | --- |
 | Airflow Listener, retry callback, Reconciler | `POST /api/v1/failure-events` | `X-DagSentry-Token` shared secret | Failure ingestion only |
-| Viewer/client | Incident, Signature, Diagnosis query APIs | `X-DagSentry-Viewer-Token` shared secret | Read only |
-| Operator/client | Query and Incident transition APIs | `X-DagSentry-Operator-Token` shared secret mapped to `DAGSENTRY_OPERATOR_API_IDENTITY` | Read and Incident transitions |
+| Named local user/client | UI and protected query/mutation APIs | HttpOnly session cookie; CSRF on mutations | User-specific Viewer, Operator or Admin role |
+| Legacy Viewer/client | Incident, Signature, Diagnosis query APIs | `X-DagSentry-Viewer-Token` shared secret | Read only |
+| Legacy Operator/client | Query and Incident transition APIs | `X-DagSentry-Operator-Token` shared secret mapped to `DAGSENTRY_OPERATOR_API_IDENTITY` | Read and Incident transitions |
 | Health/load balancer | `/health/live`, `/health/ready` | None | Network-restricted health checks |
 | Prometheus | `/metrics` | None | Network-restricted metrics scrape |
 
-The Ingest, Viewer, and Operator tokens must be different. Missing Viewer and Operator
-configuration disables query APIs rather than allowing anonymous access. An Operator token is not
+Legacy Viewer/Operator authentication is deprecated in 0.3, remains supported through 0.4 and can
+be removed from 0.5. See [migration and warnings](release-notes.md). New installations should use
+named users and sessions. The Ingest, Viewer, and Operator tokens must be different. Without configured legacy tokens, query APIs require a valid local user session; no anonymous
+access is granted. An Operator token is not
 usable until `DAGSENTRY_OPERATOR_API_IDENTITY` maps it to a server-controlled audit actor. Request
 bodies cannot override that actor. Token comparison is constant-time. DagSentry does not issue,
 refresh, or centrally manage these tokens.
@@ -26,7 +29,7 @@ refresh, or centrally manage these tokens.
 | --- | --- | --- | --- |
 | Worker, Reconciler, Recovery Checker | Airflow Public REST API | Deployment-supplied Bearer token/JWT | Read Task logs, TaskInstances, and Try history needed by the enabled component |
 | Diagnosis Worker | OpenAI, Azure OpenAI, Anthropic | Provider API key | Structured Diagnosis request only |
-| Diagnosis Worker | AWS Bedrock | Standard AWS credential chain/IAM role | `bedrock:InvokeModel` for the configured model/profile |
+| Diagnosis Worker | AWS Bedrock | AWS credential chain/IAM role (environment source), encrypted explicit keys (database source) | `bedrock:InvokeModel` for the configured model/profile |
 | Diagnosis Worker | local/self-hosted Ollama | No built-in local authentication | Private-network `/api/chat` access |
 | Notification processes | Generic Webhook | Optional Bearer token | POST to the configured endpoint |
 | Notification processes | Slack | Bot token | `chat:write` for the configured channel |

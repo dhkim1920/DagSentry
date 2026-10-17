@@ -21,8 +21,9 @@ from dagsentry.models import (
 )
 from dagsentry.scheduled_reporting import (
     execute_claimed_run,
-    execute_pending_manual_runs,
+    execute_pending_runs,
     queue_scheduled_run,
+    recover_stale_runs,
 )
 
 logger = logging.getLogger(__name__)
@@ -132,7 +133,11 @@ class DailyReportScheduler:
                 and job.id not in active_ids
             ):
                 self._remove_job(job.id)
-        execute_pending_manual_runs(self.session_factory, settings=self.settings)
+        recover_stale_runs(
+            self.session_factory,
+            stale_after_seconds=self.settings.scheduler_stale_run_timeout_seconds,
+        )
+        execute_pending_runs(self.session_factory, settings=self.settings)
 
     def _run_scheduled(self, schedule_id: UUID) -> None:
         """Queue then execute one schedule occurrence through the durable run boundary."""

@@ -24,7 +24,7 @@ Notification Provider가 공유하는 동작을 검증합니다. Webhook, Slack,
 
 ## 구현 추가
 
-`tests.contracts.notification.NotificationProviderContract`를 상속한 테스트 클래스를 만들고 다음 hook을
+`dagsentry.extensions.testing.notification.NotificationProviderContract`를 상속한 테스트 클래스를 만들고 다음 hook을
 구현합니다.
 
 - `make_provider`: 두 번의 시도, 전달받은 mock HTTP handler와 sleep 함수로 어댑터를 구성합니다.
@@ -39,3 +39,5 @@ uv run pytest tests/test_webhook_provider.py
 Provider별 설정 검증과 credential 마스킹 테스트는 구체 어댑터 테스트 옆에 둡니다.
 
 영문 원문: [Notification Provider contract](notification-provider-contract.md)
+
+Public API, compatibility and external examples: [Provider extension API v1](provider-extension-api.md).

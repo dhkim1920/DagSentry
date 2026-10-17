@@ -15,9 +15,6 @@ from dagsentry.config import Settings
 from dagsentry.connection_config import (
     AirflowConnectionConfig,
     AirflowSecretConfig,
-    OllamaConnectionConfig,
-    SlackConnectionConfig,
-    SlackSecretConfig,
 )
 from dagsentry.connection_crypto import (
     ConnectionEncryptionError,
@@ -33,8 +30,10 @@ from dagsentry.providers import (
     create_llm_provider,
     create_notification_provider,
 )
-from dagsentry.providers.ollama import OllamaProvider, OllamaProviderConfig
-from dagsentry.providers.slack import SlackNotificationProvider, SlackProviderConfig
+from dagsentry.providers.managed import (
+    create_managed_llm_provider,
+    create_managed_notification_provider,
+)
 from dagsentry.task_logs import AirflowLogClient, AirflowLogClientConfig, TaskLogFetcher
 
 
@@ -216,30 +215,25 @@ class ConfiguredLLMConnectionResolver:
                         ManagedConnectionRecord.enabled.is_(True),
                     )
                 )
-                if record is None or record.provider != ConnectionProvider.OLLAMA:
-                    raise RuntimeConnectionError("Ollama database configuration is unavailable")
-                config = OllamaConnectionConfig.model_validate(record.non_secret_config)
+                if record is None:
+                    raise RuntimeConnectionError("LLM database configuration is unavailable")
+                provider = create_managed_llm_provider(
+                    record.provider,
+                    dict(record.non_secret_config),
+                    _database_secret(record, self.settings),
+                    prompt_version=self.settings.llm_prompt_version,
+                    http_client=self.ollama_http_client,
+                )
                 connection_id = record.id
                 version = record.version
         except RuntimeConnectionError:
             raise
-        except (SQLAlchemyError, ValidationError, ValueError) as error:
-            raise RuntimeConnectionError("Ollama database configuration is unavailable") from error
+        except (ConnectionEncryptionError, SQLAlchemyError, ValidationError, ValueError) as error:
+            raise RuntimeConnectionError("LLM database configuration is unavailable") from error
 
         return LLMRuntimeConnection(
             source="database",
-            provider=OllamaProvider(
-                OllamaProviderConfig(
-                    model=config.model,
-                    prompt_version=self.settings.llm_prompt_version,
-                    base_url=str(config.api_base_url),
-                    max_output_tokens=config.max_output_tokens,
-                    timeout_seconds=config.timeout_seconds,
-                    max_attempts=config.max_attempts,
-                    retry_backoff_seconds=config.retry_backoff_seconds,
-                ),
-                self.ollama_http_client,
-            ),
+            provider=provider,
             connection_id=connection_id,
             version=version,
         )
@@ -288,30 +282,29 @@ class ConfiguredNotificationConnectionResolver:
                 if connection_id is not None:
                     filters.append(ManagedConnectionRecord.id == connection_id)
                 record = session.scalar(select(ManagedConnectionRecord).where(*filters))
-                if record is None or record.provider != ConnectionProvider.SLACK:
-                    raise RuntimeConnectionError("Slack database configuration is unavailable")
-                config, secret = _database_slack_config(record, self.settings)
+                if record is None:
+                    raise RuntimeConnectionError(
+                        "Notification database configuration is unavailable"
+                    )
+                provider = create_managed_notification_provider(
+                    record.provider,
+                    dict(record.non_secret_config),
+                    _database_secret(record, self.settings),
+                    display_timezone=self.settings.display_timezone,
+                    http_client=self.slack_http_client,
+                )
                 connection_id = record.id
                 version = record.version
         except RuntimeConnectionError:
             raise
         except (ConnectionEncryptionError, SQLAlchemyError, ValidationError, ValueError) as error:
-            raise RuntimeConnectionError("Slack database configuration is unavailable") from error
+            raise RuntimeConnectionError(
+                "Notification database configuration is unavailable"
+            ) from error
 
         return NotificationRuntimeConnection(
             source="database",
-            provider=SlackNotificationProvider(
-                SlackProviderConfig(
-                    bot_token=secret.bot_token.get_secret_value(),
-                    channel=config.channel,
-                    base_url=str(config.api_base_url),
-                    timeout_seconds=config.timeout_seconds,
-                    max_attempts=config.max_attempts,
-                    retry_backoff_seconds=config.retry_backoff_seconds,
-                    trusted_http_hosts=config.trusted_http_hosts,
-                ),
-                self.slack_http_client,
-            ),
+            provider=provider,
             connection_id=connection_id,
             version=version,
         )
@@ -363,18 +356,15 @@ def _database_airflow_snapshot(
     )
 
 
-def _database_slack_config(
+def _database_secret(
     record: ManagedConnectionRecord,
     settings: Settings,
-) -> tuple[SlackConnectionConfig, SlackSecretConfig]:
-    if (
-        record.secret_ciphertext is None
-        or record.secret_nonce is None
-        or record.secret_key_version is None
-    ):
-        raise RuntimeConnectionError("Slack database configuration is unavailable")
-    config = SlackConnectionConfig.model_validate(record.non_secret_config)
-    decrypted = ConnectionSecretCipher.from_settings(settings).decrypt(
+) -> dict[str, str]:
+    if record.secret_ciphertext is None:
+        return {}
+    if record.secret_nonce is None or record.secret_key_version is None:
+        raise RuntimeConnectionError("Connection Secret metadata is incomplete")
+    return ConnectionSecretCipher.from_settings(settings).decrypt(
         EncryptedConnectionSecret(
             record.secret_ciphertext,
             record.secret_nonce,
@@ -385,4 +375,3 @@ def _database_slack_config(
         purpose=record.purpose,
         provider=record.provider,
     )
-    return config, SlackSecretConfig.model_validate(decrypted)

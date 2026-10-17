@@ -69,6 +69,8 @@ live Airflow failures or a live model evaluation. See [screenshot reproduction](
 ### Providers and notifications
 
 - [Provider comparison](docs/provider-comparison.md)
+- [Provider extension API v1](docs/provider-extension-api.md)
+- [Release notes and authentication migration](docs/release-notes.md)
 - [LLM Provider contract](docs/llm-provider-contract.md)
 - [Azure OpenAI](docs/azure-openai-provider.md)
 - [Anthropic](docs/anthropic-provider.md)
@@ -115,11 +117,16 @@ examples only. For the isolated local demo database, use
 
 Replace `DAGSENTRY_INGEST_API_TOKEN` in `.env` before sending Failure Events.
 
-Run the API:
+Run the API and Daily Report scheduler together:
 
 ```shell
-uv run dagsentry-api
+uv run dagsentry-api --with-scheduler
 ```
+
+They run as separate processes using the same environment and `.env`; Ctrl+C stops both.
+If either process exits unexpectedly, the launcher stops the other and exits with a failure status.
+Use `uv run dagsentry-api` for the API alone. The Diagnosis Worker still runs separately.
+Select another HTTP port with `uv run dagsentry-api --with-scheduler --port 8001`.
 
 The process exposes:
 

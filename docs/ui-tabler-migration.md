@@ -288,3 +288,22 @@ The runner accepts only a localhost server and uses the disposable demo account.
 `DAGSENTRY_UI_BASELINE_ASSETS` to a directory containing the prior `index.html`,
 `app.css`, and `app.js`; the runner will also render comparison screenshots using
 those assets without replacing repository files.
+
+## Managed Connection Provider coverage
+
+The connection form now edits Airflow, all five Diagnosis LLM Providers, and all five Notification
+Providers. Provider-specific fields preserve the existing API, encryption, optimistic version and
+write-only Secret contracts. Only Airflow/Ollama/Slack offer a read-only Test action.
+
+`scripts/verify-ui-connections.cjs`, included in the browser runner, checks all eleven creation
+payloads, CSRF, SMTP editing with blank Secret preservation and retained advanced settings,
+unsupported Test-action hiding, Korean labels, and 1440/390/320px layout screenshots. Writes and
+connection-list editing data are browser fixtures; no Provider call or stored connection write is
+made. The complete Chromium runner passed. Screenshots were reviewed locally under
+`/private/tmp/dagsentry-provider-browser/`; Firefox and Safari were not exercised.
+
+Local backend checks passed 692 tests with one external Ollama test skipped, Ruff, formatting and
+mypy. PostgreSQL checks used a fresh isolated local PostgreSQL 16 instance, including fresh install,
+previous-minor upgrade, SMTP vault preservation and downgrade refusal; production's PostgreSQL 17
+CI target was not run remotely in this task. Wheel/sdist builds and 26 external-example contract
+checks against the installed wheel passed, including external mypy with the shipped `py.typed`.

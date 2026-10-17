@@ -24,6 +24,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+provider-tests = ["pytest>=8.4,<10"]
 airflow = ["apache-airflow>=3.1.8,<4"]
 
 [project.urls]

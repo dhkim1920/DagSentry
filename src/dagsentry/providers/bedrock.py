@@ -234,7 +234,11 @@ class BedrockProvider:
         )
 
 
-def _create_client(config: BedrockProviderConfig) -> BedrockRuntimeClient:
+def _create_client(
+    config: BedrockProviderConfig,
+    *,
+    credentials: dict[str, str] | None = None,
+) -> BedrockRuntimeClient:
     return cast(
         BedrockRuntimeClient,
         boto3.client(
@@ -245,6 +249,7 @@ def _create_client(config: BedrockProviderConfig) -> BedrockRuntimeClient:
                 read_timeout=config.timeout_seconds,
                 retries={"total_max_attempts": 1},
             ),
+            **(credentials or {}),
         ),
     )
 

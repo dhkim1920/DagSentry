@@ -87,7 +87,7 @@ class SMTPProviderConfig:
         return (
             "SMTPProviderConfig("
             f"host={self.host!r}, port={self.port!r}, sender={self.sender!r}, "
-            f"recipients={self.recipients!r}, username={self.username!r}, password='**********', "
+            f"recipients={self.recipients!r}, username='**********', password='**********', "
             f"use_starttls={self.use_starttls!r}, use_ssl={self.use_ssl!r}, "
             f"timeout_seconds={self.timeout_seconds!r}, max_attempts={self.max_attempts!r}, "
             f"retry_backoff_seconds={self.retry_backoff_seconds!r})"

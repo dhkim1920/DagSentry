@@ -19,6 +19,9 @@ SESSION_COOKIE_NAME = "dagsentry_session"
 CSRF_COOKIE_NAME = "dagsentry_csrf"
 CSRF_HEADER_NAME = "X-CSRF-Token"
 SAFE_HTTP_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+LEGACY_QUERY_AUTH_DEPRECATION = (
+    "Shared Viewer/Operator tokens deprecated in 0.3; use user sessions; earliest removal 0.5"
+)
 PASSWORD_CHANGE_ALLOWED_PATHS = frozenset(
     {
         "/api/v1/auth/me",
@@ -127,6 +130,7 @@ def authenticate_query_principal(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Operator identity is not configured",
             )
+        request.state.legacy_query_auth = True
         return AuthenticatedPrincipal(UserRole.OPERATOR, operator_identity)
 
     if (
@@ -137,6 +141,7 @@ def authenticate_query_principal(
             viewer_configured.get_secret_value(),
         )
     ):
+        request.state.legacy_query_auth = True
         return AuthenticatedPrincipal(UserRole.VIEWER, None)
 
     if viewer_configured is None and operator_configured is None:

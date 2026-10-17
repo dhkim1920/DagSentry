@@ -24,6 +24,7 @@ class ConnectionProvider(StrEnum):
     SLACK = "SLACK"
     TEAMS = "TEAMS"
     DISCORD = "DISCORD"
+    SMTP = "SMTP"
 
 
 class ConnectionTestStatus(StrEnum):

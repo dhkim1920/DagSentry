@@ -22,7 +22,14 @@ class Element {
   removeAttribute(name) { delete this.attributes[name]; }
   addEventListener(name, callback) { this.listeners[name] = callback; }
   querySelectorAll() { return []; }
-  querySelector() { return new Element(); }
+  querySelector(selector) {
+    const name = selector?.match(/^\[name="(.+)"\]$/)?.[1];
+    if (name) {
+      const find = node => node.name === name ? node : node.children.map(child => typeof child === "object" ? find(child) : null).find(Boolean);
+      return find(this) || null;
+    }
+    return new Element();
+  }
   closest() { return new Element(); }
   reset() {} focus() {} close() { this.open = false; }
 }
@@ -224,4 +231,62 @@ test("API helpers merge CSRF and caller headers, preserve signals and normalize 
   controller.abort();
   context.fetch = () => { throw new Error("must not send an already aborted request"); };
   await assert.rejects(api.apiJson("/api/test", { signal: controller.signal }), { name: "AbortError" });
+});
+
+
+test("connection forms cover every built-in provider and preserve omitted encrypted secrets", async () => {
+  const { get, elements, state } = await runtime();
+  const view = await get("components/connection-form.js");
+  const names = ["AIRFLOW", "OLLAMA", "OPENAI", "AZURE_OPENAI", "ANTHROPIC", "BEDROCK", "SLACK", "WEBHOOK", "TEAMS", "DISCORD", "SMTP"];
+  assert.deepEqual(Object.keys(view.MANAGED_CONNECTION_PROVIDERS).sort(), names.sort());
+  for (const name of names) {
+    elements.connectionProvider.value = name;
+    elements.connectionEnvironment.value = "test";
+    elements.connectionDisplayName.value = "Example";
+    view.configureConnectionForm(true);
+    const provider = view.MANAGED_CONNECTION_PROVIDERS[name];
+    elements.connectionApiBaseUrl.value = provider.apiBaseUrl || "https://azure.example";
+    elements.connectionModel.value = "model";
+    elements.connectionChannel.value = "C123";
+    elements.connectionSecret.value = provider.secretField ? "private-secret" : "";
+    for (const field of provider.extra || []) {
+      const input = elements.connectionExtraFields.querySelector(`[name="${field.key}"]`);
+      if (field.secret || field.required) input.value = field.key === "recipients" ? "one@example.com, two@example.com" : "example";
+      if (field.secret) assert.equal(input.type, "password");
+    }
+    const body = view.managedConnectionRequestBody();
+    assert.equal(body.provider, name);
+    assert.equal(body.purpose, provider.purpose);
+    assert.ok(!JSON.stringify(body.non_secret_config).includes("private-secret"));
+    if (name === "SMTP") {
+      assert.equal(body.non_secret_config.port, 587);
+      assert.equal(body.non_secret_config.use_starttls, true);
+      assert.deepEqual(Array.from(body.non_secret_config.recipients), ["one@example.com", "two@example.com"]);
+      assert.equal(body.secret.username, "example");
+    }
+    if (name === "BEDROCK") {
+      assert.equal(body.non_secret_config.model_id, "model");
+      assert.equal(body.secret.secret_access_key, "example");
+    }
+    if (name === "AZURE_OPENAI") {
+      assert.equal(body.non_secret_config.endpoint, "https://azure.example");
+      assert.ok(!("api_base_url" in body.non_secret_config));
+    }
+    if (["WEBHOOK", "TEAMS", "DISCORD", "SMTP", "BEDROCK"].includes(name)) {
+      assert.ok(!("api_base_url" in body.non_secret_config));
+      assert.equal(elements.connectionApiBaseUrl.required, false);
+    }
+    const connection = { ...body, id: "connection-id", version: 3, secret_configured: true };
+    delete connection.secret;
+    connection.non_secret_config.timeout_seconds = 17;
+    view.editManagedConnection(connection);
+    const updated = view.managedConnectionRequestBody();
+    assert.equal(updated.expected_version, 3);
+    assert.equal(updated.non_secret_config.timeout_seconds, 17);
+    assert.ok(!("secret" in updated), "Blank edit must preserve ciphertext");
+    for (const field of provider.extra || []) {
+      if (field.secret) assert.equal(elements.connectionExtraFields.querySelector(`[name="${field.key}"]`).value, "");
+    }
+    state.editingConnection = null;
+  }
 });

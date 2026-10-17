@@ -216,7 +216,7 @@ def test_ollama_database_source_fails_closed_when_connection_is_missing(
 
     with pytest.raises(
         RuntimeConnectionError,
-        match="Ollama database configuration is unavailable",
+        match="LLM database configuration is unavailable",
     ):
         resolver.resolve("test")
 
@@ -329,7 +329,7 @@ def test_slack_database_source_fails_closed_when_connection_is_missing(
 
     with pytest.raises(
         RuntimeConnectionError,
-        match="Slack database configuration is unavailable",
+        match="Notification database configuration is unavailable",
     ):
         resolver.resolve("test")
 

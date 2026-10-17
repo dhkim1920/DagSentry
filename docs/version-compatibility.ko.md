@@ -22,3 +22,8 @@ minor release는 incompatible change를 포함할 수 있고, deprecation한 `0.
 `0.(N+2)`보다 이르게 제거하지 않습니다. 1.0 이후 지원 public surface 제거는 다음 major에서만 가능합니다.
 
 영문 원문: [Version compatibility and deprecation policy](version-compatibility.md)
+
+공유 Viewer/Operator 헤더와 설정은 0.3에서 deprecated로 공지합니다. 사용자별 세션 인증으로
+전환하며 0.4까지 호환성을 유지하고 0.5부터 제거할 수 있습니다. 시작 로그와 legacy 인증 응답의
+`X-DagSentry-Auth-Deprecation` 헤더로 경고합니다. Airflow 수집 토큰은 대상이 아닙니다.
+Provider 확장은 [공식 API v1](provider-extension-api.md)을 따릅니다.

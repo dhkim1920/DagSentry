@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 from dataclasses import asdict
 from datetime import date, datetime, timedelta
 from uuid import UUID
@@ -12,10 +13,51 @@ from zoneinfo import ZoneInfo
 from dagsentry.config import Settings, get_settings
 from dagsentry.daily_report import DailyReportRunResult, DailyReportService
 from dagsentry.db import SessionFactory, create_session_factory
-from dagsentry.domain.reporting import validate_timezone
+from dagsentry.domain.reporting import DailyReportSummaryProvider, validate_timezone
 from dagsentry.observability import configure_logging
 from dagsentry.providers import create_report_summary_provider
-from dagsentry.runtime_connections import ConfiguredNotificationConnectionResolver
+from dagsentry.providers.anthropic import AnthropicProvider
+from dagsentry.providers.anthropic_report import AnthropicReportSummaryProvider
+from dagsentry.providers.azure_openai import AzureOpenAIProvider
+from dagsentry.providers.bedrock import BedrockProvider
+from dagsentry.providers.bedrock_report import BedrockReportSummaryProvider
+from dagsentry.providers.openai import OpenAIProvider
+from dagsentry.providers.openai_report import OpenAIReportSummaryProvider
+from dagsentry.runtime_connections import (
+    ConfiguredLLMConnectionResolver,
+    ConfiguredNotificationConnectionResolver,
+    RuntimeConnectionError,
+)
+
+logger = logging.getLogger(__name__)
+
+
+def _report_summary_provider(
+    settings: Settings, session_factory: SessionFactory, environment: str
+) -> DailyReportSummaryProvider | None:
+    if settings.llm_config_source == "environment":
+        return create_report_summary_provider(settings)
+    try:
+        provider = (
+            ConfiguredLLMConnectionResolver(
+                settings.model_copy(
+                    update={"llm_prompt_version": settings.daily_report_prompt_version}
+                ),
+                session_factory,
+            )
+            .resolve(environment)
+            .provider
+        )
+    except RuntimeConnectionError:
+        logger.warning("report_summary_connection_unavailable")
+        return None
+    if isinstance(provider, OpenAIProvider) and not isinstance(provider, AzureOpenAIProvider):
+        return OpenAIReportSummaryProvider(provider.config, provider.http_client)
+    if isinstance(provider, AnthropicProvider):
+        return AnthropicReportSummaryProvider(provider.config, provider.http_client)
+    if isinstance(provider, BedrockProvider):
+        return BedrockReportSummaryProvider(provider.config, provider.client)
+    return None
 
 
 def run_daily_report(
@@ -31,9 +73,13 @@ def run_daily_report(
 ) -> DailyReportRunResult:
     """Build configured Providers and execute one report date."""
     report_timezone = validate_timezone(timezone or settings.report_timezone)
-    summary_provider = create_report_summary_provider(settings) if use_ai_summary else None
     session_factory = session_factory or create_session_factory(settings.database_url)
     report_environment = environment or settings.environment
+    summary_provider = (
+        _report_summary_provider(settings, session_factory, report_environment)
+        if use_ai_summary
+        else None
+    )
     notification_provider = (
         ConfiguredNotificationConnectionResolver(
             settings,

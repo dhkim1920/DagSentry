@@ -206,6 +206,33 @@ def test_secret_config_validation_never_echoes_input() -> None:
     assert secret not in str(error.value)
 
 
+def test_smtp_config_rejects_credentials_in_host_and_incomplete_authentication() -> None:
+    config: dict[str, object] = {
+        "host": "smtp.example.com",
+        "sender": "from@example.com",
+        "recipients": ["to@example.com"],
+    }
+    assert (
+        validate_non_secret_config(ConnectionPurpose.NOTIFICATION, ConnectionProvider.SMTP, config)[
+            "port"
+        ]
+        == 587
+    )
+    invalid_configs: list[dict[str, object]] = [
+        {**config, "host": "user:private-password@smtp.example.com"},
+        {**config, "use_starttls": True, "use_ssl": True},
+        {**config, "recipients": []},
+        {**config, "sender": "from@example.com\r\nBcc:other@example.com"},
+    ]
+    for invalid in invalid_configs:
+        with pytest.raises(ConnectionConfigError):
+            validate_non_secret_config(
+                ConnectionPurpose.NOTIFICATION, ConnectionProvider.SMTP, invalid
+            )
+    with pytest.raises(ConnectionConfigError):
+        validate_secret_config(ConnectionProvider.SMTP, {"password": "private-password"})
+
+
 def test_managed_connection_allows_only_one_purpose_per_environment(session: Session) -> None:
     session.add(
         connection_record(

@@ -25,7 +25,7 @@ an exact member of the sanitized excerpt before the Diagnosis can pass or be reu
 
 ## Adding an implementation
 
-Create a test class derived from `tests.contracts.llm.LLMProviderContract` and implement:
+Create a test class derived from `dagsentry.extensions.testing.llm.LLMProviderContract` and implement:
 
 - `make_provider`: translate ordered neutral fake outcomes into the vendor's HTTP or SDK response;
 - `extract_request_context`: recover the serialized Core context from the captured request;
@@ -39,3 +39,5 @@ Run the Ollama implementation:
 ```shell
 uv run pytest tests/test_ollama_provider.py
 ```
+
+Public API, compatibility and external examples: [Provider extension API v1](provider-extension-api.md).

@@ -49,6 +49,62 @@ async def login(client: httpx.AsyncClient) -> None:
     assert response.status_code == 200
 
 
+def test_admin_creates_smtp_connection_without_exposing_authentication(
+    settings: Settings,
+    session_factory: SessionFactory,
+) -> None:
+    bootstrap(session_factory)
+    app = create_app(connection_settings(settings), session_factory)
+    connection_id = uuid4()
+
+    async def exercise() -> None:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="https://test"
+        ) as client:
+            response = await client.post(
+                "/api/v1/auth/login",
+                json={"email": "admin@example.com", "password": ADMIN_PASSWORD},
+            )
+            assert response.status_code == 200
+            response = await client.put(
+                f"/api/v1/admin/connections/{connection_id}",
+                headers=csrf_headers(client),
+                json={
+                    "environment": "test",
+                    "purpose": "NOTIFICATION",
+                    "provider": "SMTP",
+                    "display_name": "SMTP",
+                    "enabled": True,
+                    "non_secret_config": {
+                        "host": "smtp.example.com",
+                        "sender": "from@example.com",
+                        "recipients": ["to@example.com"],
+                    },
+                    "secret": {
+                        "username": "private-smtp-user",
+                        "password": "private-smtp-password",
+                    },
+                },
+            )
+            assert response.status_code == 200
+            assert response.json()["secret_configured"] is True
+            for path in [
+                f"/api/v1/admin/connections/{connection_id}",
+                "/api/v1/admin/connections",
+                "/api/v1/admin/audit-events",
+            ]:
+                response = await client.get(path)
+                assert response.status_code == 200
+                assert "private-smtp-user" not in response.text
+                assert "private-smtp-password" not in response.text
+            response = await client.post(
+                f"/api/v1/admin/connections/{connection_id}/test", headers=csrf_headers(client)
+            )
+            assert response.status_code == 422
+
+    asyncio.run(exercise())
+
+
 def csrf_headers(client: httpx.AsyncClient) -> dict[str, str]:
     token = client.cookies.get(CSRF_COOKIE_NAME)
     assert token is not None

@@ -43,7 +43,7 @@ class WebhookProviderConfig:
     def __repr__(self) -> str:
         token = "'**********'" if self.bearer_token is not None else "None"
         return (
-            f"WebhookProviderConfig(url={self.url!r}, bearer_token={token}, "
+            f"WebhookProviderConfig(url='**********', bearer_token={token}, "
             f"timeout_seconds={self.timeout_seconds!r}, max_attempts={self.max_attempts!r}, "
             f"retry_backoff_seconds={self.retry_backoff_seconds!r})"
         )

@@ -164,6 +164,32 @@ class DiscordConnectionConfig(_RetryConfig):
     """Non-secret Discord delivery limits; the Webhook URL is an encrypted secret."""
 
 
+class SMTPConnectionConfig(_RetryConfig):
+    """SMTP destination and transport settings; authentication is encrypted."""
+
+    host: BoundedName
+    port: int = Field(default=587, ge=1, le=65_535)
+    sender: BoundedName
+    recipients: list[BoundedName] = Field(min_length=1, max_length=100)
+    use_starttls: bool = True
+    use_ssl: bool = False
+
+    @field_validator("host")
+    @classmethod
+    def validate_host(cls, value: str) -> str:
+        if any(character.isspace() or character in "@/?#" for character in value):
+            raise ValueError("SMTP host must be a hostname or IP address")
+        return value
+
+    @model_validator(mode="after")
+    def validate_transport(self) -> SMTPConnectionConfig:
+        if self.use_starttls and self.use_ssl:
+            raise ValueError("SMTP STARTTLS and SSL cannot both be enabled")
+        if any("\r" in value or "\n" in value for value in [self.sender, *self.recipients]):
+            raise ValueError("SMTP addresses cannot contain newlines")
+        return self
+
+
 class _SecretConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -197,6 +223,11 @@ class SlackSecretConfig(_SecretConfig):
     bot_token: SecretValue
 
 
+class SMTPSecretConfig(_SecretConfig):
+    username: SecretValue
+    password: SecretValue
+
+
 class WebhookURLSecretConfig(_SecretConfig):
     webhook_url: SecretValue
 
@@ -218,6 +249,7 @@ _PROVIDER_PURPOSE = {
     ConnectionProvider.SLACK: ConnectionPurpose.NOTIFICATION,
     ConnectionProvider.TEAMS: ConnectionPurpose.NOTIFICATION,
     ConnectionProvider.DISCORD: ConnectionPurpose.NOTIFICATION,
+    ConnectionProvider.SMTP: ConnectionPurpose.NOTIFICATION,
 }
 
 _CONFIG_MODELS: dict[ConnectionProvider, type[BaseModel]] = {
@@ -231,6 +263,7 @@ _CONFIG_MODELS: dict[ConnectionProvider, type[BaseModel]] = {
     ConnectionProvider.SLACK: SlackConnectionConfig,
     ConnectionProvider.TEAMS: TeamsConnectionConfig,
     ConnectionProvider.DISCORD: DiscordConnectionConfig,
+    ConnectionProvider.SMTP: SMTPConnectionConfig,
 }
 
 _SECRET_MODELS: dict[ConnectionProvider, type[_SecretConfig] | None] = {
@@ -244,6 +277,7 @@ _SECRET_MODELS: dict[ConnectionProvider, type[_SecretConfig] | None] = {
     ConnectionProvider.SLACK: SlackSecretConfig,
     ConnectionProvider.TEAMS: WebhookURLSecretConfig,
     ConnectionProvider.DISCORD: WebhookURLSecretConfig,
+    ConnectionProvider.SMTP: SMTPSecretConfig,
 }
 
 

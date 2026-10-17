@@ -50,17 +50,41 @@ Provider-specific non-secret and Secret objects reject unknown fields. Webhook, 
 URLs are Secret fields because their URLs commonly contain authentication signatures or tokens.
 Runtime processes can use enabled environment-specific connections by setting the corresponding
 `DAGSENTRY_AIRFLOW_CONFIG_SOURCE`, `DAGSENTRY_LLM_CONFIG_SOURCE`, or
-`DAGSENTRY_NOTIFICATION_CONFIG_SOURCE` to `database`. Airflow, Ollama, and Slack load immutable
-snapshots for each applicable job or one-shot run and fail closed without falling back to
-environment values. Database-backed selection currently supports Ollama for LLM and Slack for
-Notification; the remaining Providers are separate delivery steps.
+`DAGSENTRY_NOTIFICATION_CONFIG_SOURCE` to `database`. All built-in Providers load immutable
+snapshots for each applicable job/run and fail closed without falling back to environment values.
+Edits apply to the next snapshot. Notification fallback chains remain an environment configuration
+feature; a database connection selects one Provider.
+
+| Provider | Non-secret destination/model fields | Encrypted Secret fields |
+| --- | --- | --- |
+| OpenAI | `api_base_url`, `model`, `trusted_http_hosts` | `api_key` |
+| Azure OpenAI | `endpoint`, `model` (deployment) | `api_key` |
+| Anthropic | `api_base_url`, `model`, `api_version`, `max_output_tokens`, `trusted_http_hosts` | `api_key` |
+| Bedrock | `region`, `model_id`, `max_output_tokens` | `access_key_id`, `secret_access_key`, optional `session_token` |
+| Ollama | `api_base_url`, `model`, `max_output_tokens` | None |
+| Webhook | Retry/timeout limits | `url`, optional `bearer_token` |
+| Slack | `api_base_url`, `channel`, `trusted_http_hosts` | `bot_token` |
+| Teams / Discord | Retry/timeout limits | `webhook_url` |
+| SMTP | `host`, `port`, `sender`, `recipients`, `use_starttls`, `use_ssl` | Optional paired `username`, `password` |
+
+All accept bounded `timeout_seconds`, `max_attempts` and `retry_backoff_seconds`. Bedrock database
+connections use only encrypted credentials, including optional temporary session tokens;
+environment-backed Bedrock keeps the AWS credential chain. SMTP requires revision `0021` and
+permits unauthenticated relays when no Secret is configured. STARTTLS and implicit TLS cannot both
+be enabled. Downgrade to `0020` refuses while SMTP records exist, preserving the vault.
+
+Daily Report AI summaries also follow the selected LLM configuration source. Database-backed
+summary adapters support OpenAI, Anthropic and Bedrock, matching the existing summary feature.
+Unavailable or unsupported optional summaries use the rule report without environment fallback.
 
 ## Admin UI and read-only tests
 
-The Admin destination lists every Managed Connection and supports creation and editing for Airflow,
-Ollama, and Slack. Secret fields are write-only password inputs. Existing values are represented
+The Admin destination lists every Managed Connection and supports creation and editing for every
+built-in Provider. Secret fields are write-only password inputs. Existing values are represented
 only as `•••••• Configured`; leaving the input blank during an edit preserves the existing encrypted
-value. The UI never receives ciphertext, a nonce, a key version, or plaintext Secret material.
+value. Replacing a multi-field Secret requires the complete replacement (both AWS keys or both
+SMTP username and password); updates replace the entire encrypted object. The UI never receives
+ciphertext, a nonce, a key version, or plaintext Secret material.
 
 An Admin can explicitly run these read-only checks for an enabled connection:
 
@@ -70,7 +94,7 @@ An Admin can explicitly run these read-only checks for an enabled connection:
 
 Tests do not follow redirects or retry, and Slack testing never sends a message. OpenAI, Azure
 OpenAI, Anthropic, and Bedrock tests are not exposed because a useful request may be billable.
-Webhook, Teams, and Discord tests are not exposed because their available checks would send a
+Webhook, Teams, Discord, and SMTP tests are not exposed because their available checks would send a
 notification. Provider response bodies and exception messages are discarded. Only `PASSED` or
 `FAILED`, an allowlisted error category, and the UTC test time are returned, persisted, and audited.
 If the connection changes while its external check is running, the stale result is rejected with

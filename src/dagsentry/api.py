@@ -1,5 +1,6 @@
 """DagSentry HTTP API."""
 
+import argparse
 import logging
 from pathlib import Path
 from typing import Any
@@ -33,6 +34,8 @@ from dagsentry.routes.error_signatures import router as error_signatures_router
 from dagsentry.routes.failures import router as failures_router
 from dagsentry.routes.human_diagnoses import router as human_diagnoses_router
 from dagsentry.routes.incidents import router as incidents_router
+from dagsentry.security import LEGACY_QUERY_AUTH_DEPRECATION
+from dagsentry.service_runner import run_api_and_scheduler
 
 logger = logging.getLogger(__name__)
 WEB_ROOT = Path(__file__).with_name("web")
@@ -119,6 +122,11 @@ def create_app(
 ) -> FastAPI:
     """Create the DagSentry API application."""
     runtime_settings = settings or get_settings()
+    if (
+        runtime_settings.viewer_api_token is not None
+        or runtime_settings.operator_api_token is not None
+    ):
+        logger.warning("legacy_query_auth_deprecated: %s", LEGACY_QUERY_AUTH_DEPRECATION)
     application = FastAPI(title="DagSentry", version=__version__)
     application.state.settings = runtime_settings
     application.state.session_factory = session_factory or create_session_factory(
@@ -148,6 +156,8 @@ def create_app(
     @application.middleware("http")
     async def secure_web_ui(request: Request, call_next: Any) -> Any:
         response = await call_next(request)
+        if getattr(request.state, "legacy_query_auth", False):
+            response.headers["X-DagSentry-Auth-Deprecation"] = LEGACY_QUERY_AUTH_DEPRECATION
         if request.url.path == "/ui" or request.url.path.startswith("/ui/"):
             response.headers["Content-Security-Policy"] = WEB_CONTENT_SECURITY_POLICY
             response.headers["Referrer-Policy"] = "no-referrer"
@@ -229,7 +239,19 @@ app = create_app()
 
 
 def main() -> None:
-    """Run the DagSentry API development server."""
+    """Run the API, optionally alongside the separate Daily Report scheduler."""
+    parser = argparse.ArgumentParser(description="Run the DagSentry API")
+    parser.add_argument("--port", type=int, default=8000, help="HTTP port (default: 8000)")
+    parser.add_argument(
+        "--with-scheduler",
+        action="store_true",
+        help="start API and scheduler as separate processes; stop both with Ctrl+C",
+    )
+    arguments = parser.parse_args()
+    if not 1 <= arguments.port <= 65535:
+        parser.error("--port must be between 1 and 65535")
     settings = get_settings()
-    configure_logging("api", settings.log_level)
-    uvicorn.run("dagsentry.api:app", host="0.0.0.0", port=8000, log_config=None)
+    configure_logging("launcher" if arguments.with_scheduler else "api", settings.log_level)
+    if arguments.with_scheduler:
+        raise SystemExit(run_api_and_scheduler(port=arguments.port))
+    uvicorn.run("dagsentry.api:app", host="0.0.0.0", port=arguments.port, log_config=None)

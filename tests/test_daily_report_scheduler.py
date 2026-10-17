@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 import pytest
 from sqlalchemy import func, select
 
+from dagsentry import scheduled_reporting
 from dagsentry.config import Settings
 from dagsentry.daily_report import DailyReportRunResult
 from dagsentry.db import SessionFactory
@@ -15,6 +16,7 @@ from dagsentry.models import (
     DailyReportScheduleRecord,
     DailyReportScheduleRunRecord,
     DailyReportScheduleRunStatus,
+    DailyReportScheduleRunTrigger,
     SchedulerHeartbeatRecord,
 )
 from dagsentry.scheduled_reporting import (
@@ -203,3 +205,127 @@ def test_scheduler_health_rejects_missing_and_stale_heartbeats(
 
     assert stale is False
     assert fresh is True
+
+
+@pytest.mark.parametrize("trigger", list(DailyReportScheduleRunTrigger))
+def test_reconcile_recovers_interrupted_scheduled_and_manual_runs(
+    trigger: DailyReportScheduleRunTrigger,
+    settings: Settings,
+    session_factory: SessionFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    schedule = add_schedule(session_factory)
+    with session_factory.begin() as session:
+        run = DailyReportScheduleRunRecord(
+            schedule_id=schedule.id,
+            environment=schedule.environment,
+            report_date=date(2026, 8, 29),
+            trigger_type=trigger,
+            status=DailyReportScheduleRunStatus.RUNNING,
+            scheduled_for=datetime(2026, 8, 30, 0, 10, tzinfo=UTC),
+            started_at=datetime.now(UTC) - timedelta(seconds=901),
+        )
+        session.add(run)
+        session.flush()
+    calls: list[date] = []
+
+    def run_report(report_date: date, *_: object, **__: object) -> DailyReportRunResult:
+        calls.append(report_date)
+        return DailyReportRunResult(
+            report_id=uuid4(),
+            created=False,
+            ai_summary_used=False,
+            delivered=False,
+            delivery_status=NotificationDeliveryStatus.DELIVERED,
+        )
+
+    monkeypatch.setattr("dagsentry.scheduled_reporting.run_daily_report", run_report)
+    scheduler = DailyReportScheduler(settings, session_factory)
+    scheduler.reconcile()
+    scheduler.reconcile()
+
+    assert calls == [date(2026, 8, 29)]
+    with session_factory() as session:
+        recovered = session.get(DailyReportScheduleRunRecord, run.id)
+        assert recovered is not None
+        assert recovered.status == DailyReportScheduleRunStatus.SUCCEEDED
+        assert recovered.finished_at is not None
+        assert recovered.error_category is None
+
+
+def test_recovery_preserves_recent_running_and_finished_runs(
+    session_factory: SessionFactory,
+) -> None:
+    now = datetime.now(UTC)
+    with session_factory.begin() as session:
+        for status in DailyReportScheduleRunStatus:
+            session.add(
+                DailyReportScheduleRunRecord(
+                    environment="production",
+                    report_date=date(2026, 8, 29),
+                    trigger_type=DailyReportScheduleRunTrigger.MANUAL,
+                    status=status,
+                    scheduled_for=now - timedelta(days=1),
+                    started_at=(
+                        now - timedelta(seconds=899)
+                        if status == DailyReportScheduleRunStatus.RUNNING
+                        else now - timedelta(days=1)
+                    ),
+                )
+            )
+
+    assert (
+        scheduled_reporting.recover_stale_runs(session_factory, stale_after_seconds=900, now=now)
+        == []
+    )
+    with session_factory() as session:
+        statuses = session.scalars(select(DailyReportScheduleRunRecord.status)).all()
+        assert set(statuses) == set(DailyReportScheduleRunStatus)
+
+
+def test_pending_runs_include_scheduled_claims_and_continue_after_failure(
+    settings: Settings,
+    session_factory: SessionFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    schedule = add_schedule(session_factory)
+    now = datetime.now(UTC)
+    scheduled = queue_scheduled_run(
+        session_factory,
+        schedule_id=schedule.id,
+        environment=schedule.environment,
+        scheduled_for=now - timedelta(days=1),
+    )
+    manual = queue_manual_run(
+        session_factory,
+        environment=schedule.environment,
+        report_date=date(2026, 8, 29),
+        requested_by_user_id=uuid4(),
+        requested_at=now,
+    )
+
+    def run_report(report_date: date, *_: object, **__: object) -> DailyReportRunResult:
+        if report_date == scheduled.report_date:
+            raise RuntimeError("notification failed")
+        return DailyReportRunResult(
+            report_id=uuid4(),
+            created=True,
+            ai_summary_used=False,
+            delivered=True,
+            delivery_status=NotificationDeliveryStatus.DELIVERED,
+        )
+
+    monkeypatch.setattr("dagsentry.scheduled_reporting.run_daily_report", run_report)
+    assert scheduled_reporting.execute_pending_runs(session_factory, settings=settings) == [
+        manual.id
+    ]
+    with session_factory() as session:
+        failed = session.get(DailyReportScheduleRunRecord, scheduled.id)
+        succeeded = session.get(DailyReportScheduleRunRecord, manual.id)
+        assert failed is not None and succeeded is not None
+        assert failed.status == DailyReportScheduleRunStatus.FAILED
+        assert failed.error_category == "RuntimeError"
+        assert failed.finished_at is not None
+        assert succeeded.status == DailyReportScheduleRunStatus.SUCCEEDED
+
+    assert scheduled_reporting.execute_pending_runs(session_factory, settings=settings) == []

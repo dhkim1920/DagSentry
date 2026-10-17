@@ -232,7 +232,7 @@ function renderAdminConnections(connections) {
     if (supported) {
       actions.append(adminActionButton("Edit", () => editManagedConnection(connection)));
     }
-    if (supported && connection.enabled) {
+    if (MANAGED_CONNECTION_PROVIDERS[connection.provider]?.testable && connection.enabled) {
       actions.append(adminActionButton("Test", () => testManagedConnection(connection)));
     }
     if (connection.enabled) {
@@ -263,7 +263,7 @@ function renderAdminAudit(events) {
 function showAdminPage(section) {
   const [title, description] = {
     users: ["User management", "Manage user accounts, roles, and sessions."],
-    connections: ["External connections", "Configure and test Airflow, Ollama, and Slack connections."],
+    connections: ["External connections", "Manage Airflow, AI, and notification connections."],
     reports: ["Report settings", "Manage report delivery schedules and review recent runs."],
     audit: ["Administrator audit history", "Review administrator changes to users and external connections."],
   }[section];

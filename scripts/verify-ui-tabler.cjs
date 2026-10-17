@@ -327,6 +327,7 @@ async function login(page) {
     assert.equal(await page.locator(":focus").getAttribute("id"), "connection-secret-help-trigger");
     await page.waitForFunction(() => getComputedStyle(document.querySelector(".field-help-tooltip")).visibility === "visible");
     assert.equal(await page.locator(".field-help-tooltip").evaluate(el => getComputedStyle(el).visibility), "visible");
+    await require("./verify-ui-connections.cjs")(page, base, layout);
     // Report browsing no longer loads configuration; settings has its own page.
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`${base}/ui/?view=reports`); await visible(page, "#report-dashboard");

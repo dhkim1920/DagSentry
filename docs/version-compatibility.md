@@ -21,7 +21,7 @@ version.
 | PostgreSQL | `17` | CI and the production Compose manifest use PostgreSQL 17. SQLite is used for bounded unit tests only and is not a production database. |
 | Airflow package | Declared `>=3.1.8,<4` | CI targets exact 3.1.8 and 3.3.1 on Python 3.11, including default lazy listener discovery. These are configured test targets; check the deployed commit's CI result rather than assuming it passed. Running-server E2E remains separate. Airflow 4 is unsupported. |
 | Production deployment | Linux container, Docker Compose v2.20+ | One Linux host is supported. Kubernetes, multi-host orchestration, and non-container production installs are not compatibility targets. |
-| New database install | Alembic `base -> 0020` | CI applies `upgrade head`, runs the complete PostgreSQL suite, and checks the migration graph and upgrade preservation. The current single head is `0020` (`0020_daily_report_v2.py`); update this row when adding a migration. |
+| New database install | Alembic `base -> 0021` | CI applies `upgrade head`, runs the complete PostgreSQL suite, and checks the migration graph and upgrade preservation. The current single head is `0021` (`0021_smtp_managed_connections.py`). |
 | Previous-minor database upgrade | `0.2.x` schema revision `0008 -> 0.3.x head` | CI loads representative v0.2 Failure, Diagnosis, Notification, and Incident data, upgrades it, and verifies preservation. v0.2 is an upgrade source, not a supported running binary. |
 | Packaged Web UI browsers | Chromium regression target; cross-browser certification incomplete | `frontend-browser` runs the packaged UI against a seeded demo with Playwright 1.58.2 / Chromium on PRs and pushes to `main`. Firefox, Safari, real devices and external Provider E2E remain separate verification work. Check the workflow result for the deployed commit. |
 
@@ -76,7 +76,7 @@ The following are not public compatibility promises:
 - Web UI DOM structure, CSS class names, and bundled JavaScript internals;
 - direct queries or writes against DagSentry tables;
 - untagged development commits other than the current CI-tested build;
-- Provider extension interfaces, whose versioning policy remains a separate v1.0 deliverable.
+- Internal vendor adapter implementation details outside the public `dagsentry.extensions` facade.
 
 Adding an optional response field or endpoint is normally backward compatible. Removing or
 renaming a field, making an optional input required, changing authentication, narrowing accepted
@@ -116,11 +116,15 @@ exception.
 
 ## Active deprecation inventory
 
-There are no active deprecations in `0.3.0.dev0`.
+| Surface | Replacement | First deprecated version | Earliest removal |
+| --- | --- | --- | --- |
+| Viewer/Operator shared auth headers and `DAGSENTRY_VIEWER_API_TOKEN`, `DAGSENTRY_OPERATOR_API_TOKEN`, `DAGSENTRY_OPERATOR_API_IDENTITY` | Named local users, session cookies and CSRF | 0.3 (staged in `0.3.0.dev0`) | 0.5; supported throughout 0.4 |
 
-The shared Viewer and Operator header-token settings are legacy migration mechanisms and local
-user sessions are their intended replacement. The tokens are not formally deprecated until a
-release assigns the notice and removal versions above.
+The [0.3 release notes](release-notes.md) document migration and credential-free warnings.
+Configured API processes log one startup warning; authenticated legacy responses carry
+`X-DagSentry-Auth-Deprecation`. Session authentication emits no response warning.
+The [Provider extension API v1](provider-extension-api.md) is supported beginning with 0.3 and
+follows this lifecycle independently of payload and prompt versions.
 The Airflow ingest token is a service credential and is not part of that planned retirement.
 
 ## Release checklist
