@@ -56,15 +56,32 @@ module.exports = async function verifyConnections(page, base, capture) {
     };
     delete fixture.secret;
     fixture.non_secret_config.timeout_seconds = 17;
-    await page.route(listPattern, route => route.fulfill({ json: { total: 1, items: [fixture], limit: 20, offset: 0 } }));
+    const runtime = {
+      scope: "api", environment: "browser-test", encryption_key_configured: false,
+      selections: [
+        { purpose: "AIRFLOW", source: "database", provider: null, connection_id: null, version: null, secret_configured: false, fallback_providers: [] },
+        { purpose: "LLM", source: "environment", provider: null, connection_id: null, version: null, secret_configured: false, fallback_providers: [] },
+        { purpose: "NOTIFICATION", source: "environment", provider: "WEBHOOK", connection_id: null, version: null, secret_configured: false, fallback_providers: ["SMTP"] },
+      ],
+    };
+    await page.route(listPattern, route => route.fulfill({ json: { total: 1, items: [fixture], limit: 20, offset: 0, runtime_configuration: runtime } }));
     await page.reload();
     await page.locator("#admin-connection-rows button").first().waitFor({ state: "visible" });
+    assert.ok((await page.locator("#admin-connection-rows").textContent()).includes("Stored only"));
+    assert.ok((await page.locator("#connection-runtime-summary").textContent()).includes("Enabled connection missing"));
+    assert.equal(await page.locator("#connection-runtime-key-warning").isVisible(), false);
+    runtime.selections[2] = { purpose: "NOTIFICATION", source: "database", provider: "SMTP", connection_id: fixture.id, version: 3, secret_configured: true, fallback_providers: [] };
+    await page.reload();
+    await page.locator("#connection-runtime-key-warning").waitFor({ state: "visible" });
+    assert.ok((await page.locator("#admin-connection-rows").textContent()).includes("Selected by API settings"));
     assert.equal(await page.locator("#admin-connection-rows").getByRole("button", { name: "Test", exact: true }).count(), 0);
     await page.locator("#admin-connection-rows").getByRole("button", { name: "Edit", exact: true }).click();
     assert.equal(await page.locator("#connection-secret").inputValue(), "");
     assert.equal(await page.locator("#connection-extra-username").inputValue(), "");
     await page.locator("#language-select").selectOption("ko");
     assert.equal(await page.locator('label[for="connection-extra-host"]').innerText(), "SMTP 호스트");
+    assert.equal(await page.locator("#connection-runtime-title").innerText(), "연결 설정 선택 상태 (API 기준)");
+    assert.ok((await page.locator("#admin-connection-rows").textContent()).includes("API 설정 기준 선택됨"));
     await page.locator("#language-select").selectOption("en");
     await page.locator("#connection-save").click();
     await page.locator("#admin-error").waitFor({ state: "visible" });
@@ -76,6 +93,9 @@ module.exports = async function verifyConnections(page, base, capture) {
       await page.setViewportSize({ width, height: 1000 });
       await capture(page, `connections-smtp-${width}`);
     }
+    await page.locator("#connection-runtime-title").scrollIntoViewIfNeeded();
+    await page.locator('summary').filter({ hasText: "How to apply saved connections" }).click();
+    await capture(page, "connection-apply-help-320");
   } finally {
     await page.unroute(pattern);
     await page.unroute(listPattern);

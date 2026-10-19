@@ -1142,6 +1142,23 @@
 
           <section id="admin-connections-page" class="results-panel card" data-settings-page="connections" aria-labelledby="admin-connections-title" hidden>
             <div class="card-header"><h2 id="admin-connections-title" class="card-title">External connections</h2></div>
+            <section class="card-body" aria-labelledby="connection-runtime-title">
+              <h3 id="connection-runtime-title" class="card-title">Configuration selection (API reference)</h3>
+              <p><span>Default environment</span>: <code id="connection-runtime-environment" data-i18n-fixed></code></p>
+              <div id="connection-runtime-summary" class="row g-3" aria-live="polite"></div>
+              <p class="text-secondary mt-3">These are the API process settings, not confirmation of Worker or scheduler configuration or connectivity. Jobs use their own environment and retain their connection snapshot until completion.</p>
+              <details>
+                <summary>How to apply saved connections</summary>
+                <p>Set the corresponding source to database in the API, Worker and scheduler environment, then restart each affected process. Saving a connection alone does not change the source.</p>
+                <ul class="text-break" data-i18n-fixed>
+                  <li><code>DAGSENTRY_AIRFLOW_CONFIG_SOURCE=database</code></li>
+                  <li><code>DAGSENTRY_LLM_CONFIG_SOURCE=database</code></li>
+                  <li><code>DAGSENTRY_NOTIFICATION_CONFIG_SOURCE=database</code></li>
+                </ul>
+                <p>Enabled database connections are read at the start of each new job. Existing jobs keep their saved snapshot. Connection tests remain separate from source selection.</p>
+              </details>
+              <p id="connection-runtime-key-warning" class="notice alert alert-warning text-break mt-3" hidden>The API encryption key is not configured. Configure the same DAGSENTRY_CONNECTION_ENCRYPTION_KEY securely in every process that reads encrypted connection secrets.</p>
+            </section>
             <form id="connection-form" class="connection-form card card-body uniform-control-height" aria-label="Create or edit external connection">
               <div class="connection-form-grid">
                 <div class="field-group">
@@ -1221,6 +1238,7 @@
                   <tr>
                     <th scope="col">Connection</th>
                     <th scope="col">Provider</th>
+                    <th scope="col">Selection (API reference)</th>
                     <th scope="col">Secret</th>
                     <th scope="col">Last test</th>
                     <th scope="col">Actions</th>

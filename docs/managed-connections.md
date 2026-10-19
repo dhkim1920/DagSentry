@@ -55,6 +55,25 @@ snapshots for each applicable job/run and fail closed without falling back to en
 Edits apply to the next snapshot. Notification fallback chains remain an environment configuration
 feature; a database connection selects one Provider.
 
+The Admin connection list includes a **Configuration selection (API reference)** section. It
+shows the API process's configured sources and its default environment's selected Provider,
+connection ID/version, or missing enabled database connection. The list response includes this as
+`runtime_configuration`, independently of the current `limit`/`offset` page. Environment-backed
+Notification fallback Provider names are shown only for the environment source. No credentials,
+URLs, decryption results, or external responses are included in this summary.
+
+Each stored connection is labelled **Stored only**, **Selected by API settings**, or **Disabled**.
+An enabled database connection is selected for its own environment when that purpose's source is
+`database`; saving a connection does not change the source. The UI supplies the corresponding
+`DAGSENTRY_*_CONFIG_SOURCE=database` settings and restart guidance. Missing API encryption-key
+configuration is flagged when encrypted database connections are selected, without decrypting them.
+
+This is local configuration selection, not a connectivity/readiness check or proof of the Worker
+and scheduler's deployed settings. Configure the same sources and encryption key in the applicable
+processes, then restart processes whose environment changed. Their existing jobs retain their
+snapshots; subsequent jobs read the latest enabled database version. Selection does not validate a
+configured encryption key or replace explicit supported connection tests.
+
 | Provider | Non-secret destination/model fields | Encrypted Secret fields |
 | --- | --- | --- |
 | OpenAI | `api_base_url`, `model`, `trusted_http_hosts` | `api_key` |

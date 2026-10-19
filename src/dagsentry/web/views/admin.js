@@ -186,7 +186,46 @@ async function disableManagedConnection(connection) {
   }
 }
 
-function renderAdminConnections(connections) {
+function renderConnectionRuntime(runtime) {
+  elements.connectionRuntimeSummary.replaceChildren();
+  elements.connectionRuntimeKeyWarning.hidden = true;
+  elements.connectionRuntimeEnvironment.textContent = runtime?.environment || "—";
+  if (!runtime) {
+    elements.connectionRuntimeSummary.append(textElement("p", "Selection information unavailable. Refresh after upgrading the API."));
+    return new Map();
+  }
+  elements.connectionRuntimeKeyWarning.hidden = runtime.encryption_key_configured
+    || !runtime.selections.some(selection => selection.source === "database" && selection.secret_configured);
+  const purposes = { AIRFLOW: "Airflow", LLM: "AI diagnosis", NOTIFICATION: "Notifications" };
+  for (const selection of runtime.selections) {
+    const column = textElement("div", "", "col-12 col-md-4");
+    const panel = textElement("div", "", "card card-body h-100");
+    panel.append(textElement("h4", purposes[selection.purpose], "card-title"));
+    panel.append(textElement("span", selection.source === "database" ? "Database connections" : "Environment variables"));
+    if (selection.source === "database" && !selection.connection_id) {
+      panel.append(textElement("strong", "Enabled connection missing", "text-warning"));
+    } else {
+      const provider = textElement("code", selection.provider || "");
+      provider.dataset.i18nFixed = "";
+      panel.append(selection.provider ? provider : textElement("span", "Rule-based diagnosis only"));
+      if (selection.version !== null) {
+        panel.append(textElement("span", `${translatedText("Selected version")}: ${selection.version}`));
+      }
+      if (selection.fallback_providers.length) {
+        panel.append(textElement("span", `${translatedText("Fallback providers")}: ${selection.fallback_providers.join(" → ")}`));
+      }
+    }
+    column.append(panel);
+    elements.connectionRuntimeSummary.append(column);
+  }
+  return new Map(runtime.selections.map(selection => [selection.purpose, selection]));
+}
+
+function renderAdminConnections(connections, runtime) {
+  const selections = renderConnectionRuntime(runtime);
+  if (runtime && !runtime.encryption_key_configured && connections.some(connection => (
+    connection.enabled && connection.secret_configured && selections.get(connection.purpose)?.source === "database"
+  ))) elements.connectionRuntimeKeyWarning.hidden = false;
   elements.adminConnectionRows.replaceChildren();
   const hasConnections = connections.length > 0;
   elements.adminConnectionsEmpty.hidden = hasConnections;
@@ -201,6 +240,21 @@ function renderAdminConnections(connections) {
     );
     appendCell(row, identity);
     appendCell(row, `${connection.purpose} · ${connection.provider}`);
+
+    const selection = selections.get(connection.purpose);
+    const selectionState = !connection.enabled ? "Disabled"
+      : !selection ? "Selection unknown"
+      : selection.source === "database" ? "Selected by API settings" : "Stored only";
+    const selected = selection && connection.enabled && selection.source === "database";
+    const selectionDetails = textElement("div", "", "task-identity");
+    selectionDetails.append(textElement("span", selectionState, `badge ${selected ? "bg-azure-lt" : "bg-secondary-lt"}`));
+    selectionDetails.append(textElement("span", `${translatedText("Saved version")}: ${connection.version}`));
+    if (selection?.source === "environment" && connection.enabled) {
+      const setting = textElement("code", `DAGSENTRY_${connection.purpose}_CONFIG_SOURCE=database`);
+      setting.dataset.i18nFixed = "";
+      selectionDetails.append(setting);
+    }
+    appendCell(row, selectionDetails);
 
     const secret = document.createElement("div");
     secret.className = "connection-secret-state";
@@ -403,7 +457,7 @@ export async function loadAdminDashboard(showLoading = true) {
     if (!request.isCurrent()) return false;
     if (section === "connections") {
       elements.adminConnectionTotal.textContent = String(payload.total);
-      renderAdminConnections(payload.items);
+      renderAdminConnections(payload.items, payload.runtime_configuration);
     } else if (section === "jobs") {
       renderWorkerJobs(payload);
     } else if (section === "audit") {

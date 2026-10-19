@@ -2,6 +2,10 @@
 
 ## 0.3.0 (in development)
 
+- External connection settings show API-scoped source selection, the default environment's
+  selected Provider/connection version, and stored-only or disabled connections. The UI explains
+  the source environment variables and required process restarts. This is local selection metadata,
+  not a Worker/scheduler deployment or connectivity check; no external calls or decryption occur.
 - Admins can inspect exhausted Diagnosis jobs in **Settings → Failed diagnosis jobs** and queue
   them for another bounded Worker cycle. The UI supports environment filters and pagination, shows
   normalized error metadata, and retains an atomic Admin audit event for each successful requeue.

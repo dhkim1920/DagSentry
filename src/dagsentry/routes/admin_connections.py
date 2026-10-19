@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 import httpx
@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from dagsentry.config import Settings
 from dagsentry.connection_config import ConnectionConfigError
 from dagsentry.connection_crypto import ConnectionEncryptionError, ConnectionSecretCipher
 from dagsentry.connection_management import (
@@ -86,6 +87,29 @@ class ConnectionResponse(BaseModel):
     updated_at: datetime
 
 
+class ConnectionSelectionResponse(BaseModel):
+    """Source selection for the API process's default environment, not a health check."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    purpose: ConnectionPurpose
+    source: Literal["environment", "database"]
+    provider: ConnectionProvider | None
+    connection_id: UUID | None
+    version: int | None
+    secret_configured: bool
+    fallback_providers: list[ConnectionProvider]
+
+
+class RuntimeConfigurationResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    scope: Literal["api"] = "api"
+    environment: str
+    encryption_key_configured: bool
+    selections: list[ConnectionSelectionResponse]
+
+
 class ConnectionListResponse(BaseModel):
     """Stable bounded Admin list of Managed Connections."""
 
@@ -95,6 +119,7 @@ class ConnectionListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+    runtime_configuration: RuntimeConfigurationResponse
 
 
 class ConnectionTestResponse(BaseModel):
@@ -109,6 +134,7 @@ class ConnectionTestResponse(BaseModel):
 
 @router.get("", response_model=ConnectionListResponse)
 def list_connections(
+    request: Request,
     session: Annotated[Session, Depends(get_session)],
     limit: Annotated[int, Query(ge=1, le=200)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
@@ -130,6 +156,63 @@ def list_connections(
         total=total,
         limit=limit,
         offset=offset,
+        runtime_configuration=_runtime_configuration(session, request.app.state.settings),
+    )
+
+
+def _runtime_configuration(session: Session, settings: Settings) -> RuntimeConfigurationResponse:
+    sources = {
+        ConnectionPurpose.AIRFLOW: settings.airflow_config_source,
+        ConnectionPurpose.LLM: settings.llm_config_source,
+        ConnectionPurpose.NOTIFICATION: settings.notification_config_source,
+    }
+    environment_providers = {
+        ConnectionPurpose.AIRFLOW: ConnectionProvider.AIRFLOW,
+        ConnectionPurpose.LLM: (
+            ConnectionProvider(settings.llm_provider.upper()) if settings.llm_provider else None
+        ),
+        ConnectionPurpose.NOTIFICATION: ConnectionProvider(settings.notification_provider.upper()),
+    }
+    active = {
+        record.purpose: record
+        for record in session.scalars(
+            select(ManagedConnectionRecord).where(
+                ManagedConnectionRecord.environment == settings.environment,
+                ManagedConnectionRecord.enabled.is_(True),
+            )
+        )
+    }
+    selections = []
+    for purpose, source in sources.items():
+        record = active.get(purpose) if source == "database" else None
+        selections.append(
+            ConnectionSelectionResponse(
+                purpose=purpose,
+                source=source,
+                provider=(
+                    record.provider
+                    if record is not None
+                    else environment_providers[purpose]
+                    if source == "environment"
+                    else None
+                ),
+                connection_id=record.id if record is not None else None,
+                version=record.version if record is not None else None,
+                secret_configured=record is not None and record.secret_ciphertext is not None,
+                fallback_providers=(
+                    [
+                        ConnectionProvider(name.upper())
+                        for name in settings.notification_fallback_providers
+                    ]
+                    if purpose == ConnectionPurpose.NOTIFICATION and source == "environment"
+                    else []
+                ),
+            )
+        )
+    return RuntimeConfigurationResponse(
+        environment=settings.environment,
+        encryption_key_configured=settings.connection_encryption_key is not None,
+        selections=selections,
     )
 
 

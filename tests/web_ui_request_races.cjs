@@ -240,6 +240,35 @@ const failedJob = {
   error_category: "attempts_exhausted", error_stage: "notification",
   error_type: "RetryableDiagnosisError", updated_at: "2026-10-19T00:00:00Z",
 };
+
+test("connection selection distinguishes saved, selected and disabled rows without claiming worker health", async () => {
+  const { context, get, elements } = await runtime();
+  context.window.location.search = "?view=admin&section=connections";
+  const selections = [
+    { purpose: "AIRFLOW", source: "database", provider: null, connection_id: null, version: null, secret_configured: false, fallback_providers: [] },
+    { purpose: "LLM", source: "environment", provider: null, connection_id: null, version: null, secret_configured: false, fallback_providers: [] },
+    { purpose: "NOTIFICATION", source: "environment", provider: "WEBHOOK", connection_id: null, version: null, secret_configured: false, fallback_providers: [] },
+  ];
+  const runtimeConfig = { scope: "api", environment: "test", encryption_key_configured: false, selections };
+  const items = [true, false].map((enabled, index) => ({ id: `connection-${index}`, environment: "test", purpose: "NOTIFICATION", provider: "SLACK", display_name: "Saved Slack", version: 3, enabled, secret_configured: true }));
+  context.fetch = async () => response({ total: 2, items, runtime_configuration: runtimeConfig });
+  const view = await get("views/admin.js");
+  await view.loadAdminDashboard();
+  assert.match(elements.adminConnectionRows.textContent, /Stored only/);
+  assert.match(elements.adminConnectionRows.textContent, /Disabled/);
+  assert.match(elements.adminConnectionRows.textContent, /DAGSENTRY_NOTIFICATION_CONFIG_SOURCE=database/);
+  assert.match(elements.connectionRuntimeSummary.textContent, /Enabled connection missing/);
+  assert.match(elements.connectionRuntimeSummary.textContent, /Rule-based diagnosis only/);
+  assert.equal(elements.connectionRuntimeKeyWarning.hidden, true);
+  selections[2].source = "database";
+  selections[2].secret_configured = true;
+  await view.loadAdminDashboard();
+  assert.match(elements.adminConnectionRows.textContent, /Selected by API settings/);
+  assert.equal(elements.connectionRuntimeKeyWarning.hidden, false);
+  context.fetch = async () => response({ total: 0, items: [] });
+  await view.loadAdminDashboard();
+  assert.match(elements.connectionRuntimeSummary.textContent, /Selection information unavailable/);
+});
 const jobList = items => ({ items, total: items.length, limit: 50, offset: 0 });
 function findText(root, text) {
   if (root.textContent === text) return root;
