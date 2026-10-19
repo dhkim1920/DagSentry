@@ -34,6 +34,7 @@ from dagsentry.routes.error_signatures import router as error_signatures_router
 from dagsentry.routes.failures import router as failures_router
 from dagsentry.routes.human_diagnoses import router as human_diagnoses_router
 from dagsentry.routes.incidents import router as incidents_router
+from dagsentry.routes.worker_jobs import router as worker_jobs_router
 from dagsentry.security import LEGACY_QUERY_AUTH_DEPRECATION
 from dagsentry.service_runner import run_api_and_scheduler
 
@@ -143,6 +144,7 @@ def create_app(
     application.include_router(auth_router)
     application.include_router(admin_router)
     application.include_router(admin_connections_router)
+    application.include_router(worker_jobs_router)
     application.include_router(failures_router)
     application.include_router(incidents_router)
     application.include_router(human_diagnoses_router)

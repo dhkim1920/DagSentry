@@ -156,7 +156,7 @@ export function detailBackHref() {
 
 export function adminPageFromUrl() {
   const section = new URLSearchParams(window.location.search).get("section");
-  return ["users", "connections", "reports", "audit"].includes(section) ? section : "users";
+  return ["users", "connections", "reports", "jobs", "audit"].includes(section) ? section : "users";
 }
 
 export function reportHref(reportId) {

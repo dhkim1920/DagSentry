@@ -89,6 +89,7 @@
                   <li class="nav-item"><a class="nav-link" data-settings-link="users" href="/ui/?view=admin&amp;section=users">User management</a></li>
                   <li class="nav-item"><a class="nav-link" data-settings-link="connections" href="/ui/?view=admin&amp;section=connections">External connections</a></li>
                   <li class="nav-item"><a class="nav-link" data-settings-link="reports" href="/ui/?view=admin&amp;section=reports">Report settings</a></li>
+                  <li class="nav-item"><a class="nav-link" data-settings-link="jobs" href="/ui/?view=admin&amp;section=jobs">Failed diagnosis jobs</a></li>
                   <li class="nav-item"><a class="nav-link" data-settings-link="audit" href="/ui/?view=admin&amp;section=audit">Administrator audit history</a></li>
                 </ul>
               </details>
@@ -1300,6 +1301,43 @@
               </form>
               <section class="report-execution-status card card-body" aria-labelledby="report-execution-title"><h3 id="report-execution-title">최근 실행</h3><div id="report-schedule-runs" class="report-schedule-runs" aria-live="polite"></div></section>
             </section>
+          </section>
+
+          <section id="admin-jobs-page" class="results-panel card" data-settings-page="jobs" aria-labelledby="admin-jobs-title" hidden>
+            <div class="results-heading card-header">
+              <h2 id="admin-jobs-title" class="card-title">Failed diagnosis jobs</h2>
+              <button id="worker-job-refresh" class="btn btn-outline-secondary" type="button">Refresh</button>
+            </div>
+            <div class="card-body">
+              <p>Review the failure and correct its cause before requeueing. The Worker will retry the job with a fresh attempt count; stored diagnoses and delivery records are preserved.</p>
+              <form id="worker-job-filter" class="d-flex flex-wrap gap-3 align-items-end uniform-control-height">
+                <div class="field-group">
+                  <label for="worker-job-environment" class="form-label">Environment</label>
+                  <input id="worker-job-environment" name="environment" maxlength="64" class="form-control" placeholder="All environments">
+                </div>
+                <button class="btn btn-outline-secondary" type="submit">Apply filters</button>
+              </form>
+            </div>
+            <p id="worker-job-empty" class="empty-state card-body" role="status" hidden>No failed diagnosis jobs match these filters.</p>
+            <div id="worker-job-table" class="table-wrap table-responsive" role="region" tabindex="0" aria-label="Failed diagnosis jobs table" hidden>
+              <table class="table table-vcenter table-hover card-table">
+                <thead><tr>
+                  <th scope="col">Task</th>
+                  <th scope="col">Processing attempts</th>
+                  <th scope="col">Failure reason</th>
+                  <th scope="col">Last failure</th>
+                  <th scope="col">Review and requeue</th>
+                </tr></thead>
+                <tbody id="worker-job-rows"></tbody>
+              </table>
+            </div>
+            <div class="card-footer d-flex flex-wrap gap-3 justify-content-between align-items-center">
+              <span id="worker-job-range" aria-live="polite"></span>
+              <div class="d-flex gap-2">
+                <button id="worker-job-previous" class="btn btn-outline-secondary" type="button" disabled>Previous</button>
+                <button id="worker-job-next" class="btn btn-outline-secondary" type="button" disabled>Next</button>
+              </div>
+            </div>
           </section>
 
           <section id="admin-audit-page" class="results-panel card" data-settings-page="audit" aria-labelledby="admin-audit-title" hidden>

@@ -484,6 +484,62 @@
   min-width: 120px;
 }
 
+#worker-job-table td {
+  vertical-align: top;
+}
+
+@media (max-width: 767px) {
+  #worker-job-table table,
+  #worker-job-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  #worker-job-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  #worker-job-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px 20px;
+  }
+
+  #worker-job-table td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    white-space: normal;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  #worker-job-table td::before {
+    display: block;
+    content: attr(data-label);
+    color: var(--tblr-secondary-color);
+  }
+
+  #worker-job-table td:first-child::before,
+  #worker-job-table td:last-child::before {
+    display: none;
+  }
+
+  #worker-job-table tr + tr {
+    border-top: 1px solid var(--tblr-border-color);
+  }
+
+  #worker-job-table .task-identity {
+    min-width: 0;
+  }
+}
+
 .admin-summary {
   display: block;
   max-width: 420px;

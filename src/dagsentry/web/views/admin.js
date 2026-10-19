@@ -6,7 +6,7 @@ import { translatedText } from "../core/i18n.js";
 import { apiJson, generateUuid } from "../core/api.js";
 import { handleApiError } from "../core/auth.js";
 import { adminPageFromUrl } from "../core/router.js";
-import { appendCell, formatTimestamp, timestampBlock, textElement } from "../core/dom.js";
+import { appendCell, formatTimestamp, timestampBlock, textElement, definitionItem } from "../core/dom.js";
 import { applyStatusColor } from "../components/badges.js";
 import { loadReportSchedules } from "./reports.js";
 
@@ -260,11 +260,101 @@ function renderAdminAudit(events) {
   }
 }
 
+const WORKER_JOB_PAGE_SIZE = 50;
+
+function workerJobOffset() {
+  const value = Number.parseInt(new URLSearchParams(window.location.search).get("offset") || "0", 10);
+  return Number.isFinite(value) && value >= 0 ? value : 0;
+}
+
+function updateWorkerJobUrl(offset = 0) {
+  const params = new URLSearchParams({ view: "admin", section: "jobs" });
+  const environment = elements.workerJobEnvironment.value.trim();
+  if (environment) params.set("environment", environment);
+  if (offset) params.set("offset", String(offset));
+  history.replaceState({}, "", `/ui/?${params}`);
+}
+
+async function requeueWorkerJob(job, button) {
+  if (button.disabled) return;
+  button.disabled = true;
+  try {
+    const response = await adminApiRequest(
+      `/api/v1/admin/worker-jobs/${encodeURIComponent(job.outbox_id)}/requeue`,
+      { method: "POST" },
+    );
+    if (!response) return;
+    updateWorkerJobUrl();
+    if (await loadAdminDashboard(false)) {
+      showAdminFeedback(translatedText("Job queued for the Worker. Refresh to check for further failures."));
+    }
+  } catch (error) {
+    showAdminError(translatedText(error instanceof Error ? error.message : "Unable to requeue job."));
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function renderWorkerJobs(payload) {
+  elements.workerJobRows.replaceChildren();
+  elements.workerJobEmpty.hidden = payload.items.length > 0;
+  elements.workerJobTable.hidden = payload.items.length === 0;
+  const reasons = {
+    attempts_exhausted: "Attempts exhausted", permanent: "Permanent failure",
+    retryable: "Retryable failure", stale_lock_reclaimed: "Stale lock reclaimed",
+  };
+  const stages = {
+    diagnosis: "Diagnosis processing", load_event: "Load failure event",
+    worker_recovery: "Worker recovery", airflow_connection: "Airflow connection",
+    notification_connection: "Notification connection", llm_connection: "AI connection",
+    notification: "Notification delivery",
+  };
+  for (const job of payload.items) {
+    const row = document.createElement("tr");
+    const identity = textElement("div", "", "task-identity");
+    identity.dataset.i18nFixed = "";
+    identity.append(textElement("strong", job.dag_id), textElement("span", job.task_id), textElement("span", job.environment));
+    appendCell(row, identity);
+    appendCell(row, String(job.attempt_count), "numeric");
+    const reason = textElement("div", "", "task-identity");
+    reason.append(
+      textElement("strong", reasons[job.error_category] || "Error details unavailable"),
+      textElement("span", stages[job.error_stage] || "Unknown processing stage"),
+    );
+    if (job.error_type) reason.append(textElement("code", job.error_type));
+    appendCell(row, reason);
+    appendCell(row, timestampBlock(job.updated_at));
+    const details = document.createElement("details");
+    details.append(textElement("summary", "Review and requeue"));
+    const metadata = document.createElement("dl");
+    metadata.className = "canonical-fields";
+    metadata.append(
+      definitionItem("DAG run", job.dag_run_id),
+      definitionItem("Task try", String(job.try_number)),
+      definitionItem("Map index", String(job.map_index)),
+      definitionItem("Failure Event ID", job.failure_event_id),
+      definitionItem("Job ID", job.outbox_id),
+    );
+    const button = adminActionButton("Requeue job", () => requeueWorkerJob(job, button), "btn btn-primary btn-sm");
+    details.append(metadata, button);
+    appendCell(row, details);
+    ["Task", "Processing attempts", "Failure reason", "Last failure", "Review and requeue"].forEach((label, index) => {
+      row.children[index].dataset.label = translatedText(label);
+    });
+    elements.workerJobRows.append(row);
+  }
+  const start = payload.items.length ? payload.offset + 1 : 0;
+  elements.workerJobRange.textContent = `${start}–${payload.offset + payload.items.length} of ${payload.total}`;
+  elements.workerJobPrevious.disabled = payload.offset === 0;
+  elements.workerJobNext.disabled = payload.offset + payload.limit >= payload.total;
+}
+
 function showAdminPage(section) {
   const [title, description] = {
     users: ["User management", "Manage user accounts, roles, and sessions."],
     connections: ["External connections", "Manage Airflow, AI, and notification connections."],
     reports: ["Report settings", "Manage report delivery schedules and review recent runs."],
+    jobs: ["Failed diagnosis jobs", "Inspect exhausted diagnosis jobs and requeue them after fixing the cause."],
     audit: ["Administrator audit history", "Review administrator changes to users and external connections."],
   }[section];
   elements.adminDashboardTitle.textContent = title;
@@ -297,6 +387,12 @@ export async function loadAdminDashboard(showLoading = true) {
     let response;
     if (section === "connections") {
       response = await adminApiRequest("/api/v1/admin/connections?limit=200");
+    } else if (section === "jobs") {
+      const source = new URLSearchParams(window.location.search);
+      elements.workerJobEnvironment.value = source.get("environment") || "";
+      const query = new URLSearchParams({ limit: String(WORKER_JOB_PAGE_SIZE), offset: String(workerJobOffset()) });
+      if (elements.workerJobEnvironment.value) query.set("environment", elements.workerJobEnvironment.value);
+      response = await adminApiRequest(`/api/v1/admin/worker-jobs?${query}`);
     } else if (section === "audit") {
       response = await adminApiRequest("/api/v1/admin/audit-events?limit=100");
     } else {
@@ -308,6 +404,8 @@ export async function loadAdminDashboard(showLoading = true) {
     if (section === "connections") {
       elements.adminConnectionTotal.textContent = String(payload.total);
       renderAdminConnections(payload.items);
+    } else if (section === "jobs") {
+      renderWorkerJobs(payload);
     } else if (section === "audit") {
       renderAdminAudit(payload.items);
     } else {
@@ -327,6 +425,18 @@ export async function loadAdminDashboard(showLoading = true) {
 }
 
 export function bindAdminEvents() {
+  elements.workerJobFilter.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    updateWorkerJobUrl();
+    await loadAdminDashboard();
+  });
+  elements.workerJobRefresh.addEventListener("click", () => loadAdminDashboard());
+  for (const [button, direction] of [[elements.workerJobPrevious, -1], [elements.workerJobNext, 1]]) {
+    button.addEventListener("click", async () => {
+      updateWorkerJobUrl(Math.max(0, workerJobOffset() + direction * WORKER_JOB_PAGE_SIZE));
+      await loadAdminDashboard();
+    });
+  }
   elements.adminCreateForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = new FormData(elements.adminCreateForm);

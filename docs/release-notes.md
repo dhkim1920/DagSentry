@@ -2,6 +2,10 @@
 
 ## 0.3.0 (in development)
 
+- Admins can inspect exhausted Diagnosis jobs in **Settings → Failed diagnosis jobs** and queue
+  them for another bounded Worker cycle. The UI supports environment filters and pagination, shows
+  normalized error metadata, and retains an atomic Admin audit event for each successful requeue.
+  Session CSRF protection and DEAD-only state checks apply; see [Worker recovery](worker-recovery.md).
 - The Daily Report scheduler recovers interrupted scheduled/manual executions at startup and on
   each poll. `DAGSENTRY_SCHEDULER_STALE_RUN_TIMEOUT_SECONDS` defaults to 900 seconds. PostgreSQL
   row locks protect live executions from recovery, including runs longer than the timeout.

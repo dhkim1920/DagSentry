@@ -233,6 +233,68 @@ test("API helpers merge CSRF and caller headers, preserve signals and normalize 
   await assert.rejects(api.apiJson("/api/test", { signal: controller.signal }), { name: "AbortError" });
 });
 
+const failedJob = {
+  outbox_id: "job-id", failure_event_id: "event-id", environment: "test",
+  dag_id: "failed-dag", task_id: "failed-task", dag_run_id: "run-id",
+  try_number: 1, map_index: -1, attempt_count: 5,
+  error_category: "attempts_exhausted", error_stage: "notification",
+  error_type: "RetryableDiagnosisError", updated_at: "2026-10-19T00:00:00Z",
+};
+const jobList = items => ({ items, total: items.length, limit: 50, offset: 0 });
+function findText(root, text) {
+  if (root.textContent === text) return root;
+  return root.children.filter(child => typeof child === "object").map(child => findText(child, text)).find(Boolean);
+}
+
+test("failed job requeue blocks double clicks, sends CSRF, and refreshes the list on success", async () => {
+  const { context, get, state, elements } = await runtime();
+  context.window.location.search = "?view=admin&section=jobs";
+  state.currentUser = { role: "ADMIN", display_name: "Admin" };
+  const pending = deferred(); let writes = 0; let captured; let listed = 0;
+  context.fetch = async (_url, options) => {
+    if (options.method === "POST") { writes += 1; captured = options; return response(pending.promise, 202); }
+    return response(jobList(listed++ ? [] : [failedJob]));
+  };
+  const view = await get("views/admin.js");
+  assert.equal(await view.loadAdminDashboard(), true);
+  const button = findText(elements.workerJobRows, "Requeue job");
+  assert.ok(button);
+  const first = button.listeners.click(); await flush();
+  assert.equal(button.disabled, true);
+  await button.listeners.click();
+  assert.equal(writes, 1);
+  assert.equal(captured.headers.get("X-CSRF-Token"), "test token");
+  pending.resolve({ outbox_id: "job-id", available_at: "2026-10-19T00:00:00Z" });
+  await first;
+  assert.equal(elements.workerJobRows.children.length, 0);
+  assert.equal(elements.workerJobEmpty.hidden, false);
+  assert.equal(elements.adminFeedback.hidden, false);
+  assert.match(elements.adminFeedback.textContent, /queued for the Worker/);
+});
+
+test("failed job conflicts are shown; late requeue responses cannot navigate or restore feedback", async () => {
+  const { context, get, elements } = await runtime();
+  context.window.location.search = "?view=admin&section=jobs";
+  context.fetch = async () => response(jobList([failedJob]));
+  const view = await get("views/admin.js");
+  await view.loadAdminDashboard();
+  const button = findText(elements.workerJobRows, "Requeue job");
+  context.fetch = async () => response({ detail: "Job already changed" }, 409);
+  await button.listeners.click();
+  assert.equal(elements.adminError.hidden, false);
+  assert.equal(elements.adminError.textContent, "Job already changed");
+  assert.equal(button.disabled, false);
+  const pending = deferred();
+  context.fetch = async () => response(pending.promise, 202);
+  const oldWrite = button.listeners.click(); await flush();
+  (await get("core/requests.js")).beginViewRequest();
+  context.window.location.search = "?view=admin&section=connections";
+  elements.adminFeedback.textContent = "new view";
+  pending.resolve({ outbox_id: "job-id" }); await oldWrite;
+  assert.equal(elements.adminFeedback.textContent, "new view");
+  assert.equal(context.url, undefined);
+});
+
 
 test("connection forms cover every built-in provider and preserve omitted encrypted secrets", async () => {
   const { get, elements, state } = await runtime();

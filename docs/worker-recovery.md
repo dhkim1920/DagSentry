@@ -19,6 +19,20 @@ jobs continue after it becomes `DEAD`.
 
 ## Inspect and requeue DEAD jobs
 
+Admins can open **Settings → Failed diagnosis jobs** in the Web UI, filter by environment,
+and expand **Review and requeue** to inspect the TaskInstance and Failure Event identifiers.
+The list shows the processing attempt count, last failure time, normalized failure category,
+stage and exception type; stored error messages and Task logs are not exposed. Correct the cause,
+then choose **Requeue job**. This queues processing by a running Worker rather than running the
+pipeline in the API request. Refresh the list to check whether processing fails again.
+
+The session-only Admin API is `GET /api/v1/admin/worker-jobs` (bounded pagination with
+`environment`, `limit`, and `offset`) and `POST /api/v1/admin/worker-jobs/{outbox_id}/requeue`.
+POST requires the session CSRF token and returns `202 Accepted`. Non-DEAD state conflicts return
+`409`; missing jobs return `404`. Requeue and the `worker_job.requeued` Admin audit event commit
+atomically. Duplicate or concurrent requests cannot reset an already requeued job or add a second
+success audit event. Viewer and Operator accounts cannot access these operations.
+
 List up to 100 failed jobs as newline-delimited JSON:
 
 ```shell

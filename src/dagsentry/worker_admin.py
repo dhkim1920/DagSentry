@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from dagsentry.config import get_settings
 from dagsentry.db import create_session_factory
-from dagsentry.models import DiagnosisOutboxRecord, OutboxStatus
+from dagsentry.models import AdminAuditEventRecord, DiagnosisOutboxRecord, OutboxStatus
 
 
 class WorkerJobNotFoundError(ValueError):
@@ -73,6 +73,8 @@ def requeue_dead_job(
     outbox_id: UUID | None = None,
     failure_event_id: UUID | None = None,
     now: datetime | None = None,
+    actor_user_id: UUID | None = None,
+    correlation_id: str | None = None,
 ) -> RequeuedWorkerJob:
     """Explicitly reset one DEAD job for a fresh bounded processing cycle."""
     if (outbox_id is None) == (failure_event_id is None):
@@ -89,6 +91,7 @@ def requeue_dead_job(
         if record.status != OutboxStatus.DEAD:
             raise WorkerJobStateError(f"Only DEAD jobs can be requeued; status is {record.status}")
         available_at = _as_utc(now or datetime.now(UTC))
+        previous_attempt_count = record.attempt_count
         record.status = OutboxStatus.PENDING
         record.attempt_count = 0
         record.available_at = available_at
@@ -96,6 +99,23 @@ def requeue_dead_job(
         record.locked_by = None
         record.last_error = None
         record.updated_at = available_at
+        if actor_user_id is not None:
+            session.add(
+                AdminAuditEventRecord(
+                    actor_user_id=actor_user_id,
+                    action="worker_job.requeued",
+                    target_type="diagnosis_outbox",
+                    target_id=record.id,
+                    correlation_id=correlation_id,
+                    change_summary={
+                        "failure_event_id": str(record.failure_event_id),
+                        "previous_attempt_count": previous_attempt_count,
+                        "previous_status": "DEAD",
+                        "status": "PENDING",
+                    },
+                    created_at=available_at,
+                )
+            )
         return RequeuedWorkerJob(
             outbox_id=record.id,
             failure_event_id=record.failure_event_id,
