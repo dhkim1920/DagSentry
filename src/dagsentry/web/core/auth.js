@@ -179,6 +179,8 @@ export function bindAuthEvents(loadCurrentView) {
     elements.adminConnectionRows.replaceChildren();
     elements.adminAuditRows.replaceChildren();
     elements.workerJobRows.replaceChildren();
+    elements.operationsServices.replaceChildren();
+    elements.operationsQueue.replaceChildren();
     resetConnectionForm();
     showAuth();
   });

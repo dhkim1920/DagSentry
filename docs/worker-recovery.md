@@ -17,6 +17,16 @@ A stale job that already reached `DAGSENTRY_WORKER_MAX_ATTEMPTS` moves to `DEAD`
 claimed again. A retryable poison job is similarly bounded by the maximum attempt count, so later
 jobs continue after it becomes `DEAD`.
 
+## Process observations
+
+After applying migration `0022`, updated Workers record per-process heartbeats independently of
+job execution. The default interval is 10 seconds (`DAGSENTRY_WORKER_HEARTBEAT_INTERVAL_SECONDS`);
+the Admin operational overview marks unstopped instances offline after 30 seconds
+(`DAGSENTRY_WORKER_OFFLINE_AFTER_SECONDS` in the API). Heartbeats continue during graceful job
+draining, and normal exit records a stop. Forced exit is detected by heartbeat expiry.
+Heartbeat writes do not renew job locks or change retry ownership. A live process can still have
+a stalled job; inspect stale processing locks separately. See [Operations](operations.md#operational-overview).
+
 ## Inspect and requeue DEAD jobs
 
 Admins can open **Settings → Failed diagnosis jobs** in the Web UI, filter by environment,

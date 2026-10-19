@@ -2,6 +2,11 @@
 
 ## 0.3.0 (in development)
 
+- Admins can open **Settings → Operational overview** for API/database observations, Worker and
+  scheduler heartbeats, last success times, and Diagnosis queue counts. Snapshot failures clear
+  previous counts to unknown. Apply migration `0022` before starting the updated API and Workers;
+  restart Workers to enable per-process heartbeats (10-second interval, 30-second offline threshold).
+  Heartbeats continue during jobs and do not renew job locks. See [Operations](operations.md#operational-overview).
 - External connection settings show API-scoped source selection, the default environment's
   selected Provider/connection version, and stored-only or disabled connections. The UI explains
   the source environment variables and required process restarts. This is local selection metadata,

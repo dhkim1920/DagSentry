@@ -8,17 +8,18 @@ import signal
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from threading import Event
+from threading import Event, Thread
 from types import FrameType
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import and_, or_, select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from dagsentry import __version__
 from dagsentry.db import SessionFactory
 from dagsentry.metrics import increment_counter
-from dagsentry.models import DiagnosisOutboxRecord, OutboxStatus
+from dagsentry.models import DiagnosisOutboxRecord, OutboxStatus, WorkerHeartbeatRecord
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ class WorkerOptions:
     backoff_max_seconds: float = 300.0
     poll_interval_seconds: float = 1.0
     stale_lock_timeout_seconds: float = 900.0
+    heartbeat_interval_seconds: float = 10.0
 
     def __post_init__(self) -> None:
         if self.max_attempts < 1:
@@ -58,6 +60,8 @@ class WorkerOptions:
             raise ValueError("poll_interval_seconds must be positive")
         if self.stale_lock_timeout_seconds <= 0:
             raise ValueError("stale_lock_timeout_seconds must be positive")
+        if self.heartbeat_interval_seconds <= 0:
+            raise ValueError("heartbeat_interval_seconds must be positive")
 
 
 class DiagnosisProcessingError(RuntimeError):
@@ -100,6 +104,8 @@ class DiagnosisWorker:
         self.options = options or WorkerOptions()
         self.clock = clock
         self.stop_event = Event()
+        self.instance_id = uuid4()
+        self.started_at = self.clock()
 
     def request_stop(self, _signal: int | None = None, _frame: FrameType | None = None) -> None:
         """Stop claiming new jobs after the current job is safely finalized."""
@@ -112,16 +118,54 @@ class DiagnosisWorker:
 
     def run(self) -> None:
         """Process available work until graceful shutdown is requested."""
-        while not self.stop_event.is_set():
-            try:
-                processed = self.process_one()
-            except SQLAlchemyError as error:
-                logger.error(
-                    "worker database operation failed exception_type=%s", type(error).__name__
-                )
-                processed = False
-            if not processed:
-                self.stop_event.wait(self.options.poll_interval_seconds)
+        heartbeat_stop = Event()
+        self._heartbeat()
+        heartbeat_thread = Thread(
+            target=self._heartbeat_loop,
+            args=(heartbeat_stop,),
+            name="worker-heartbeat",
+            daemon=True,
+        )
+        heartbeat_thread.start()
+        try:
+            while not self.stop_event.is_set():
+                try:
+                    processed = self.process_one()
+                except SQLAlchemyError as error:
+                    logger.error(
+                        "worker database operation failed exception_type=%s", type(error).__name__
+                    )
+                    processed = False
+                if not processed:
+                    self.stop_event.wait(self.options.poll_interval_seconds)
+        finally:
+            heartbeat_stop.set()
+            heartbeat_thread.join(timeout=5)
+            self._heartbeat(stopped=True)
+
+    def _heartbeat_loop(self, stop: Event) -> None:
+        while not stop.wait(self.options.heartbeat_interval_seconds):
+            self._heartbeat()
+
+    def _heartbeat(self, *, stopped: bool = False) -> None:
+        """Observe process liveness without renewing job ownership or exposing DB errors."""
+        now = self.clock()
+        try:
+            with self.session_factory.begin() as session:
+                record = session.get(WorkerHeartbeatRecord, self.instance_id)
+                if record is None:
+                    record = WorkerHeartbeatRecord(
+                        instance_id=self.instance_id,
+                        started_at=self.started_at,
+                        last_heartbeat_at=now,
+                        version=__version__,
+                    )
+                    session.add(record)
+                record.last_heartbeat_at = now
+                if stopped:
+                    record.stopped_at = now
+        except SQLAlchemyError as error:
+            logger.warning("worker heartbeat write failed exception_type=%s", type(error).__name__)
 
     def process_one(self) -> bool:
         """Process at most one job, returning whether a job was claimed."""

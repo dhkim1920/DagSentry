@@ -9,6 +9,7 @@ import { adminPageFromUrl } from "../core/router.js";
 import { appendCell, formatTimestamp, timestampBlock, textElement, definitionItem } from "../core/dom.js";
 import { applyStatusColor } from "../components/badges.js";
 import { loadReportSchedules } from "./reports.js";
+import { loadOperations } from "./operations.js";
 
 function showAdminError(message) {
   elements.adminError.textContent = message;
@@ -409,6 +410,7 @@ function showAdminPage(section) {
     connections: ["External connections", "Manage Airflow, AI, and notification connections."],
     reports: ["Report settings", "Manage report delivery schedules and review recent runs."],
     jobs: ["Failed diagnosis jobs", "Inspect exhausted diagnosis jobs and requeue them after fixing the cause."],
+    operations: ["Operational overview", "Check service observations and the diagnosis processing queue."],
     audit: ["Administrator audit history", "Review administrator changes to users and external connections."],
   }[section];
   elements.adminDashboardTitle.textContent = title;
@@ -432,6 +434,11 @@ export async function loadAdminDashboard(showLoading = true) {
   }
   elements.adminError.hidden = true;
   try {
+    if (section === "operations") {
+      const loaded = await loadOperations(request);
+      if (request.isCurrent()) elements.adminContent.hidden = false;
+      return loaded;
+    }
     if (section === "reports") {
       const loaded = await loadReportSchedules(request);
       if (!request.isCurrent()) return false;
@@ -479,6 +486,7 @@ export async function loadAdminDashboard(showLoading = true) {
 }
 
 export function bindAdminEvents() {
+  elements.operationsRefresh.addEventListener("click", () => loadAdminDashboard());
   elements.workerJobFilter.addEventListener("submit", async (event) => {
     event.preventDefault();
     updateWorkerJobUrl();

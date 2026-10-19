@@ -241,6 +241,58 @@ const failedJob = {
   error_type: "RetryableDiagnosisError", updated_at: "2026-10-19T00:00:00Z",
 };
 
+const operationalSnapshot = {
+  observed_at: "2026-10-19T00:00:00Z", version: "test", api_status: "ONLINE", database_status: "READY",
+  worker: { status: "ONLINE", online_instances: 2, last_heartbeat_at: "2026-10-19T00:00:00Z", last_success_at: null },
+  scheduler: { status: "OFFLINE", last_heartbeat_at: null, last_success_at: null },
+  queue: { pending: 7, ready: 2, delayed: 5, processing: 1, stale_processing: 0, dead: 3, completed: 9, oldest_ready_at: "2026-10-18T23:59:00Z", oldest_ready_age_seconds: 60 },
+};
+
+test("operational errors clear old counters, preserve the session, and distinguish database unavailability", async () => {
+  const { context, get, elements, state } = await runtime();
+  context.window.location.search = "?view=admin&section=operations";
+  state.currentUser = { role: "ADMIN", display_name: "Admin" };
+  const view = await get("views/admin.js");
+  context.fetch = async () => response(operationalSnapshot);
+  const serviceStatus = name => {
+    const root = elements.operationsServices.children.find(node => node.dataset?.service === name);
+    const visit = node => node.dataset?.status || node.children?.filter(child => typeof child === "object").map(visit).find(Boolean);
+    return visit(root);
+  };
+  assert.equal(await view.loadAdminDashboard(), true);
+  assert.equal(elements.operationsQueue.children[0].children[1].textContent, "7");
+  context.fetch = async url => response({ detail: url === "/health/ready" ? "Database is not ready" : "Operational status is unavailable" }, 503);
+  assert.equal(await view.loadAdminDashboard(), false);
+  assert.equal(elements.operationsQueue.children[0].children[1].textContent, "—");
+  assert.equal(serviceStatus("database"), "UNAVAILABLE");
+  assert.equal(serviceStatus("worker"), "UNKNOWN");
+  assert.equal(elements.operationsError.hidden, false);
+  assert.notEqual(state.currentUser, null);
+  context.fetch = async url => url === "/health/ready" ? response({ status: "ready" }) : response({ detail: "Snapshot failed" }, 503);
+  await view.loadAdminDashboard();
+  assert.equal(serviceStatus("database"), "READY");
+  assert.equal(elements.operationsQueue.children[0].children[1].textContent, "—");
+  context.fetch = async () => response({ detail: "Gateway unavailable" }, 503);
+  await view.loadAdminDashboard();
+  assert.equal(serviceStatus("api"), "UNKNOWN");
+  assert.equal(serviceStatus("database"), "UNKNOWN");
+});
+
+test("late operational snapshots cannot restore data after navigation or sign-out", async () => {
+  const { context, get, elements } = await runtime();
+  context.window.location.search = "?view=admin&section=operations";
+  const pending = deferred();
+  context.fetch = async () => response(pending.promise);
+  const view = await get("views/admin.js");
+  const old = view.loadAdminDashboard(); await flush();
+  (await get("core/requests.js")).beginViewRequest();
+  elements.operationsObserved.textContent = "new view";
+  pending.resolve(operationalSnapshot);
+  assert.equal(await old, false);
+  assert.equal(elements.operationsObserved.textContent, "new view");
+  assert.equal(elements.operationsQueue.children[0].children[1].textContent, "—");
+});
+
 test("connection selection distinguishes saved, selected and disabled rows without claiming worker health", async () => {
   const { context, get, elements } = await runtime();
   context.window.location.search = "?view=admin&section=connections";

@@ -110,6 +110,8 @@ class Settings(BaseSettings):
     worker_backoff_max_seconds: float = Field(default=300.0, ge=0)
     worker_poll_interval_seconds: float = Field(default=1.0, gt=0)
     worker_stale_lock_timeout_seconds: float = Field(default=900.0, gt=0)
+    worker_heartbeat_interval_seconds: float = Field(default=10.0, gt=0)
+    worker_offline_after_seconds: float = Field(default=30.0, gt=0)
     scheduler_poll_interval_seconds: float = Field(default=5.0, gt=0)
     scheduler_heartbeat_interval_seconds: float = Field(default=10.0, gt=0)
     scheduler_offline_after_seconds: float = Field(default=30.0, gt=0)

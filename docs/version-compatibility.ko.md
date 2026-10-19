@@ -6,7 +6,7 @@
 시험함을 뜻합니다. 목록에 없는 조합은 암묵 호환이 아니라 unsupported입니다.
 
 현재 CI 대상은 Python 3.11/3.12, PostgreSQL 17, Airflow `>=3.1.8,<4`(정확한 3.1.8과 3.3.1),
-Linux Docker Compose v2.20+ single-host deployment, Alembic `base -> 0020`, v0.2 schema `0008`에서 current head로의
+Linux Docker Compose v2.20+ single-host deployment, Alembic `base -> 0022`, v0.2 schema `0008`에서 current head로의
 forward upgrade를 포함합니다. application, API, Worker, scheduled job, Airflow package, migration은 같은 build에서
 와야 하며 mixed-version process는 시험하지 않습니다. SQLite는 bounded unit test만 쓰며 production DB가 아닙니다.
 

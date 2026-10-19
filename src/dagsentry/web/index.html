@@ -90,6 +90,7 @@
                   <li class="nav-item"><a class="nav-link" data-settings-link="connections" href="/ui/?view=admin&amp;section=connections">External connections</a></li>
                   <li class="nav-item"><a class="nav-link" data-settings-link="reports" href="/ui/?view=admin&amp;section=reports">Report settings</a></li>
                   <li class="nav-item"><a class="nav-link" data-settings-link="jobs" href="/ui/?view=admin&amp;section=jobs">Failed diagnosis jobs</a></li>
+                  <li class="nav-item"><a class="nav-link" data-settings-link="operations" href="/ui/?view=admin&amp;section=operations">Operational overview</a></li>
                   <li class="nav-item"><a class="nav-link" data-settings-link="audit" href="/ui/?view=admin&amp;section=audit">Administrator audit history</a></li>
                 </ul>
               </details>
@@ -1356,6 +1357,21 @@
                 <button id="worker-job-next" class="btn btn-outline-secondary" type="button" disabled>Next</button>
               </div>
             </div>
+          </section>
+
+          <section id="admin-operations-page" class="card card-body" data-settings-page="operations" aria-labelledby="operations-title" hidden>
+            <div class="results-heading mb-3">
+              <h2 id="operations-title" class="card-title">Operational overview</h2>
+              <button id="operations-refresh" class="btn btn-outline-secondary" type="button">Refresh</button>
+            </div>
+            <p>Snapshot across all environments. Use Refresh for the latest state.</p>
+            <p><span>Observed at</span>: <span id="operations-observed" data-i18n-fixed></span></p>
+            <div id="operations-error" class="notice alert alert-danger" role="alert" hidden></div>
+            <div id="operations-services" class="row g-3" aria-live="polite"></div>
+            <p class="text-secondary mt-3">Heartbeats indicate process liveness, not successful job execution. No observation means the service has not reported a heartbeat.</p>
+            <h3 class="card-title mt-3">Diagnosis queue</h3>
+            <dl id="operations-queue" class="row g-3" aria-live="polite"></dl>
+            <a class="btn btn-outline-secondary align-self-start" href="/ui/?view=admin&amp;section=jobs">Review failed jobs</a>
           </section>
 
           <section id="admin-audit-page" class="results-panel card" data-settings-page="audit" aria-labelledby="admin-audit-title" hidden>

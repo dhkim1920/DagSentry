@@ -740,6 +740,18 @@ class DailyReportScheduleRunRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
+class WorkerHeartbeatRecord(Base):
+    """One Worker process lifetime, observed independently of job completion."""
+
+    __tablename__ = "worker_heartbeats"
+
+    instance_id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_heartbeat_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    stopped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    version: Mapped[str] = mapped_column(String(64))
+
+
 class SchedulerHeartbeatRecord(Base):
     """Latest liveness signal from the dedicated scheduler process."""
 

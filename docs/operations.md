@@ -46,6 +46,34 @@ Uvicorn. The Worker stops claiming new jobs on SIGINT/SIGTERM, finishes the owne
 result, and exits. A restarted Worker continues pending jobs and does not repeat an already stored
 Diagnosis or delivered Notification.
 
+## Operational overview
+
+Admins can open **Settings → Operational overview** (`/ui/?view=admin&section=operations`).
+The session-only `GET /api/v1/admin/operations` returns the same snapshot across all environments.
+Use **Refresh** for a new observation; the page does not refresh automatically.
+
+Apply `alembic upgrade head` through revision `0022` before starting the updated API and Worker.
+Restart Workers with this version to populate `worker_heartbeats`. Each Worker process records its
+own heartbeat every 10 seconds, including while processing a job. The API considers an unstopped
+instance online for 30 seconds after its last heartbeat. Configure these with
+`DAGSENTRY_WORKER_HEARTBEAT_INTERVAL_SECONDS` and `DAGSENTRY_WORKER_OFFLINE_AFTER_SECONDS`; keep
+the API's offline threshold longer than the Workers' heartbeat interval. Normal Worker exit records
+its stop immediately; forced exit becomes offline after the threshold. Scheduler status uses its
+existing heartbeat and `DAGSENTRY_SCHEDULER_OFFLINE_AFTER_SECONDS`.
+
+No heartbeat history means **No observation**, including Workers running an older version.
+Recent completed jobs do not establish process liveness. Heartbeats establish process presence,
+not pipeline progress or external connection health. Last success times come from retained completed
+Diagnosis jobs and successful report runs; report runs include manual executions.
+
+The queue distinguishes all pending jobs, jobs ready now, delayed retries, processing jobs, stale
+processing locks, failed jobs, and completed jobs. Stale locks use the API's
+`DAGSENTRY_WORKER_STALE_LOCK_TIMEOUT_SECONDS`; align this with the Worker configuration.
+The oldest ready wait measures time since the earliest eligible `available_at`, excluding delayed
+retries. On snapshot failure the UI clears previous counts to unknown. It separately checks
+`/health/ready` for database connectivity; a successful connectivity check does not verify migrations
+or restore queue counts. The overview contains no raw errors, credentials, or machine names.
+
 ## Failure inspection
 
 Inspect these tables in order when a job is delayed or failed:

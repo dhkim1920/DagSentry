@@ -57,6 +57,7 @@ def test_empty_schema_upgrade_and_repeated_upgrade(monkeypatch: pytest.MonkeyPat
             "user_sessions",
             "admin_audit_events",
             "managed_connections",
+            "worker_heartbeats",
         }
         assert "initial_failure_event_id" in {
             column["name"] for column in inspect(schema_engine).get_columns("incidents")
@@ -302,6 +303,7 @@ def test_previous_minor_upgrade_preserves_v02_incident_data(
             "user_sessions",
             "admin_audit_events",
             "managed_connections",
+            "worker_heartbeats",
         }
     finally:
         schema_engine.dispose()

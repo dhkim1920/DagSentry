@@ -23,6 +23,30 @@ uv run dagsentry-scheduler
 SIGINT/SIGTERM에서 새 job claim을 멈춘 뒤 소유 job을 마무리·기록하고 종료합니다. 재시작 Worker는 pending
 job을 계속하며 이미 저장된 Diagnosis나 전송 완료 Notification을 반복하지 않습니다.
 
+## 운영 현황
+
+Admin은 **설정 → 운영 현황** (`/ui/?view=admin&section=operations`)에서 API·DB·Worker·Scheduler 상태와
+진단 큐를 확인합니다. 세션 전용 `GET /api/v1/admin/operations`도 같은 전체 환경 집계를 반환합니다.
+자동 갱신은 없으며 **새로고침**으로 관측 시점을 갱신합니다.
+
+업데이트한 API·Worker를 시작하기 전에 `alembic upgrade head`로 revision `0022`를 적용합니다.
+Worker도 새 버전으로 재시작해야 `worker_heartbeats`에 프로세스별 heartbeat를 기록합니다.
+기본 기록 간격은 10초이며 작업 처리 중에도 기록합니다. API는 종료 기록이 없고 마지막 기록 이후
+30초 이내인 인스턴스를 실행 중으로 판단합니다. 설정은 `DAGSENTRY_WORKER_HEARTBEAT_INTERVAL_SECONDS`와
+`DAGSENTRY_WORKER_OFFLINE_AFTER_SECONDS`이며, API의 판정 시간을 Worker의 기록 간격보다 길게 유지합니다.
+정상 종료는 즉시 중단 상태로 기록하고 강제 종료는 판정 시간 이후 중단으로 표시합니다.
+Scheduler는 기존 heartbeat와 `DAGSENTRY_SCHEDULER_OFFLINE_AFTER_SECONDS`를 사용합니다.
+
+기록이 없으면 **관측 정보 없음**으로 표시합니다. 이전 버전 Worker의 최근 작업 성공만으로 실행 중이라
+판단하지 않습니다. heartbeat는 프로세스 존재를 나타내며 작업 진행이나 외부 연결 성공을 보장하지 않습니다.
+최근 성공 시각은 보존된 완료 진단 작업과 성공 리포트 실행에서 집계하며 수동 리포트 실행도 포함합니다.
+
+큐는 전체 대기, 즉시 실행 가능, 재시도 대기, 처리 중, 오래된 처리 잠금, 실패, 완료를 구분합니다.
+오래된 잠금은 API의 `DAGSENTRY_WORKER_STALE_LOCK_TIMEOUT_SECONDS`를 기준으로 하므로 Worker 설정과
+맞춥니다. 최장 실행 대기는 실행 가능한 가장 오래된 `available_at` 이후 시간이며 지연 재시도는 제외합니다.
+조회 실패 시 이전 작업 수를 지우고 확인 불가로 표시합니다. `/health/ready`로 DB 연결을 별도 확인하지만
+연결 성공이 마이그레이션 정상이나 큐 조회 성공을 뜻하지는 않습니다. 원시 오류·자격 증명·호스트명은 노출하지 않습니다.
+
 ## 실패 검사
 
 job 지연/실패 시 `daily_report_schedules`, `scheduler_heartbeats`, `daily_report_schedule_runs`, `daily_reports`,

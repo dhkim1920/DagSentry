@@ -67,6 +67,7 @@ def main() -> None:
             backoff_max_seconds=settings.worker_backoff_max_seconds,
             poll_interval_seconds=settings.worker_poll_interval_seconds,
             stale_lock_timeout_seconds=settings.worker_stale_lock_timeout_seconds,
+            heartbeat_interval_seconds=settings.worker_heartbeat_interval_seconds,
         ),
     )
     worker.install_signal_handlers()
