@@ -67,6 +67,11 @@ export async function loadCurrentView() {
 }
 
 export function bindNavigationEvents() {
+  elements.skipLink.addEventListener("click", (event) => {
+    event.preventDefault();
+    elements.mainContent.focus();
+  });
+
   elements.sidebarToggle.addEventListener("click", () => {
     setSidebarCollapsed(!sidebarCollapsed);
   });

@@ -3,7 +3,10 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { chromium } = require("playwright");
+const playwright = require("playwright");
+
+const browserName = process.env.DAGSENTRY_UI_BROWSER || "chromium";
+assert.ok(["chromium", "firefox", "webkit"].includes(browserName), "Choose chromium, firefox or webkit");
 
 const base = process.env.DAGSENTRY_UI_TEST_URL || "http://127.0.0.1:8000";
 assert.ok(["127.0.0.1", "localhost", "[::1]"].includes(new URL(base).hostname), "Use a local demo server");
@@ -55,10 +58,11 @@ async function login(page) {
 
 (async () => {
   await fs.mkdir(output, { recursive: true });
-  const browser = await chromium.launch({ headless: true, chromiumSandbox: true });
+  const browser = await playwright[browserName].launch({ headless: true, ...(browserName === "chromium" ? { chromiumSandbox: true } : {}) });
+  let page;
   try {
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: "ko-KR", timezoneId: "Asia/Seoul", reducedMotion: "reduce" });
-    const page = await context.newPage();
+    page = await context.newPage();
     const errors = [];
     const violations = [];
     const external = [];
@@ -83,12 +87,14 @@ async function login(page) {
             const range = document.createRange();
             range.selectNodeContents(line);
             const rect = range.getBoundingClientRect();
-            return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right };
+            const lineBox = line.getBoundingClientRect();
+            // Firefox includes font ascent/descent beyond the line box in Range height.
+            return { top: lineBox.top, bottom: lineBox.bottom, left: rect.left, right: rect.right };
           });
           return { lines, size: parseFloat(getComputedStyle(el).fontSize), height: parseFloat(getComputedStyle(el).lineHeight) };
         });
         assert.ok(title.height >= title.size * 1.2, "Login title needs room for each line");
-        assert.ok(title.lines[0].bottom <= title.lines[1].top, "Login title glyphs must not overlap");
+        assert.ok(title.lines[0].bottom <= title.lines[1].top, `Login title lines must not overlap (${language}, ${width}px): ${JSON.stringify(title)}`);
         assert.ok(title.lines.every(line => line.left >= 0 && line.right <= width), "Login title must fit the viewport");
         if (width <= 1050) {
           const form = await page.locator("#auth-form").boundingBox();
@@ -152,12 +158,13 @@ async function login(page) {
       await page.goto(url);
       await visible(page, selector);
       await page.waitForLoadState("networkidle");
-      for (const width of [1440, 768, 390, 320]) {
+      for (const width of [1440, 1024, 768, 390, 320]) {
         await page.setViewportSize({ width, height: width === 1440 ? 1000 : 844 });
         await layout(page, `${name}-${width}`);
         await recordPosition(name, width, "after");
       }
     }
+    const accessibility = await require("./verify-ui-accessibility.cjs")(page, routes, layout);
     // The same data can also be rendered with pre-migration assets for comparisons.
     if (process.env.DAGSENTRY_UI_BASELINE_ASSETS) {
       const baseline = process.env.DAGSENTRY_UI_BASELINE_ASSETS;
@@ -313,11 +320,13 @@ async function login(page) {
       assert.equal(await page.locator("[data-settings-page]:visible").count(), 1);
       assert.equal(await page.locator('#primary-navigation [aria-current="page"]').getAttribute("data-settings-link"), section);
       assert.equal(new URL(page.url()).searchParams.get("section"), section);
-      await page.reload(); await visible(page, `#admin-${section}-page`);
       assert.equal(await page.locator("#admin-navigation").evaluate(el => el.open), true);
     }
+    // Check same-document history separately from full reload restoration.
     await page.goBack(); await visible(page, "#admin-audit-page");
     await page.goForward(); await visible(page, "#admin-users-page");
+    await page.reload(); await visible(page, "#admin-users-page");
+    assert.equal(await page.locator("#admin-navigation").evaluate(el => el.open), true);
     for (const width of [1440, 768, 390, 320]) {
       await page.setViewportSize({ width, height: 844 }); await layout(page, `settings-navigation-${width}`);
     }
@@ -492,6 +501,13 @@ async function login(page) {
     assert.deepEqual(errors, []);
     assert.deepEqual(violations, []);
     assert.deepEqual(external, []);
-    console.log(JSON.stringify({ result: "PASS", screenshots: output, checks: "views, responsive overflow, first-viewport content, diagnosis priority/rejection, labels, keyboard, dialogs, filters, URL/history, language/timezone, loading/empty/error, XSS text, pagination, CSRF request, viewer, logout", fixtureOnly: ["report content", "write failure", "operator/rejected diagnosis", "long text/pagination", "temporary password", "viewer role"] }));
+    const result = { result: "PASS", browser: browserName, version: browser.version(), platform: process.platform, observedAt: new Date().toISOString(),
+      screenshots: output, accessibility, checks: "views, responsive overflow, first-viewport content, diagnosis priority/rejection, labels, keyboard, dialogs, filters, URL/history, language/timezone, loading/empty/error, XSS text, pagination, CSRF request, viewer, logout",
+      fixtureOnly: ["report content", "write failure", "operator/rejected diagnosis", "long text/pagination", "temporary password", "viewer role"] };
+    await fs.writeFile(path.join(output, "report.json"), JSON.stringify(result, null, 2));
+    console.log(JSON.stringify(result));
+  } catch (error) {
+    if (page) await page.screenshot({ path: path.join(output, "failure.png"), fullPage: true }).catch(() => {});
+    throw error;
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

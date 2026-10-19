@@ -1,4 +1,6 @@
 export const elements = {
+  skipLink: document.querySelector(".skip-link"),
+  mainContent: document.querySelector("#main-content"),
   authPanel: document.querySelector("#auth-panel"),
   authForm: document.querySelector("#auth-form"),
   authLoading: document.querySelector("#auth-loading"),

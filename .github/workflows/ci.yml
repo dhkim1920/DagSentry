@@ -112,8 +112,13 @@ jobs:
   frontend-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
     env:
       UV_PYTHON: "3.11"
+      DAGSENTRY_UI_BROWSER: ${{ matrix.browser }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -127,18 +132,22 @@ jobs:
           node-version: "22"
           package-manager-cache: false
 
-      - name: Install project and test-only Chromium
+      - name: Install project and test-only browser
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/dagsentry-ui-check/browsers
         run: |
           uv sync --locked
           npm install --prefix "$RUNNER_TEMP/dagsentry-ui-check" --no-save --ignore-scripts playwright@1.58.2
-          "$RUNNER_TEMP/dagsentry-ui-check/node_modules/.bin/playwright" install --with-deps chromium --only-shell
+          if [ "$DAGSENTRY_UI_BROWSER" = chromium ]; then
+            "$RUNNER_TEMP/dagsentry-ui-check/node_modules/.bin/playwright" install --with-deps chromium --only-shell
+          else
+            "$RUNNER_TEMP/dagsentry-ui-check/node_modules/.bin/playwright" install --with-deps "$DAGSENTRY_UI_BROWSER"
+          fi
 
       - name: Test modules and UI contracts
         run: uv run pytest tests/test_web_ui.py tests/test_web_ui_behavior.py tests/test_web_ui_tabler.py -q
 
-      - name: Verify Chromium against an isolated demo database
+      - name: Verify browser against an isolated demo database
         env:
           NODE_PATH: ${{ runner.temp }}/dagsentry-ui-check/node_modules
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/dagsentry-ui-check/browsers
@@ -161,7 +170,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: frontend-browser
+          name: frontend-browser-${{ matrix.browser }}
           path: ${{ runner.temp }}/frontend-browser
           retention-days: 7
           if-no-files-found: ignore

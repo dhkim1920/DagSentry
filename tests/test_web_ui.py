@@ -1000,6 +1000,7 @@ def test_web_ui_exposes_keyboard_and_assistive_technology_contracts(
     script = asset_source(app, "/ui/app.js")
 
     assert 'class="skip-link" href="#main-content"' in shell.text
+    assert '<main id="main-content" tabindex="-1">' in shell.text
     assert (
         'id="detail-feedback" class="notice alert notice-success alert-success" role="status" tabindex="-1"'
         in shell.text

@@ -2,6 +2,10 @@
 
 ## 0.3.0 (in development)
 
+- Browser regression checks support Chromium, Firefox and WebKit, with per-engine CI artifacts,
+  1024px coverage, reduced-motion/forced-colors checks and keyboard skip-link verification.
+  The skip link explicitly focuses the main content across browsers. Actual Safari, browser zoom
+  and screen-reader checks remain manual; see [Browser checks](browser-checks.md).
 - `dagsentry-retention` previews or applies bounded cleanup of expired/revoked sessions and old
   Worker process observations, preserving the latest observation and domain/audit history.
   `dagsentry-backup` creates private PostgreSQL archives with checksums and recovery metadata.
