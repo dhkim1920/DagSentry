@@ -2,6 +2,10 @@
 
 ## 0.3.0 (in development)
 
+- `dagsentry-retention` previews or applies bounded cleanup of expired/revoked sessions and old
+  Worker process observations, preserving the latest observation and domain/audit history.
+  `dagsentry-backup` creates private PostgreSQL archives with checksums and recovery metadata.
+  Optional Linux systemd timers schedule both jobs; see [Maintenance](maintenance.md).
 - Admins can open **Settings → Operational overview** for API/database observations, Worker and
   scheduler heartbeats, last success times, and Diagnosis queue counts. Snapshot failures clear
   previous counts to unknown. Apply migration `0022` before starting the updated API and Workers;

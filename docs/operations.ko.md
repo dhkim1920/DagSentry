@@ -71,3 +71,6 @@ Ctrl+C/SIGTERM에서 둘 다 정상 종료를 요청하고 최대 5분 후 남�
 별도로 준비합니다. 운영 Compose는 기존 API·scheduler 서비스 분리 구성을 사용합니다.
 
 영문 원문: [Operations](operations.md)
+
+만료 세션·오래된 Worker heartbeat 정리와 정기 백업 timer는 [maintenance](maintenance.md)를 참조합니다.
+정리 명령은 기본 미리보기이며 `--apply`를 지정해야 삭제합니다. 진단·장애·리포트·감사 이력은 유지합니다.

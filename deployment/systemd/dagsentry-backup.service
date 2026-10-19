@@ -1,0 +1,20 @@
+[Unit]
+Description=DagSentry PostgreSQL backup
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=dagsentry
+Group=dagsentry
+WorkingDirectory=/opt/dagsentry
+EnvironmentFile=/etc/dagsentry/maintenance.env
+ExecStart=/opt/dagsentry/.venv/bin/dagsentry-backup --directory /var/lib/dagsentry/backups --service ${DAGSENTRY_BACKUP_SERVICE} --key-version ${DAGSENTRY_CONNECTION_ENCRYPTION_KEY_VERSION} --git-revision ${DAGSENTRY_GIT_REVISION}
+StateDirectory=dagsentry/backups
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+TimeoutStartSec=2h

@@ -40,6 +40,8 @@ dagsentry-daily-report = "dagsentry.report_app:main"
 dagsentry-scheduler = "dagsentry.scheduler_app:main"
 dagsentry-scheduler-health = "dagsentry.scheduler_health:main"
 dagsentry-admin = "dagsentry.admin_app:main"
+dagsentry-retention = "dagsentry.retention:main"
+dagsentry-backup = "dagsentry.backup:main"
 
 [project.entry-points.apache_airflow_provider]
 provider_info = "dagsentry.airflow.provider:get_provider_info"

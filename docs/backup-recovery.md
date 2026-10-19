@@ -51,6 +51,37 @@ DAGSENTRY_TEST_DATABASE_URL='postgresql+psycopg:///?service=dagsentry-test' \
   uv run pytest tests/integration/test_postgres_security_boundaries.py
 ```
 
+## Automated archive creation
+
+`dagsentry-backup` wraps the logical backup procedure without placing connection passwords in
+arguments. PostgreSQL `psql`, `pg_dump`, and `pg_restore` must be on PATH; authentication uses an
+existing libpq service/pass file. Use a client version compatible with the PostgreSQL server.
+
+```shell
+uv run dagsentry-backup --directory /secure/backups --service dagsentry-backup \
+  --key-version 1 --git-revision <deployed-commit-sha>
+```
+
+Supply the exact `DAGSENTRY_CONNECTION_ENCRYPTION_KEY_VERSION`, never the key itself. The command
+records the installed application version, supplied deployed commit, observed Alembic revision,
+UTC time, key version and SHA-256 checksum in `manifest.json`, alongside `database.dump`. Prevent
+migrations and key rotation throughout the operation so the recorded metadata matches the dump.
+The service must point to a dedicated DagSentry database; `pg_dump` archives that entire database.
+
+Each archive is written inside a private staging directory, checked with `pg_restore --list`, and
+published by directory rename only when all steps succeed. Directories are mode 0700 and files
+0600. A normal failure removes its incomplete staging directory and returns a nonzero status with
+a fixed error, excluding PostgreSQL stderr. Missing credentials fail without an interactive prompt.
+Existing completed backups are never overwritten or removed. The command does not encrypt archives,
+upload them, include the connection encryption key, or verify that the supplied key version is
+available in the Secret manager. Store archives on the encrypted storage required above.
+
+The output and manifest explicitly report `restore_verified: false`: listing an archive does not
+establish recoverability. Follow the isolated restore procedure below for each recovery point.
+Before restoring, compare the SHA-256 of `database.dump` with `manifest.json`; a mismatch is a failed
+verification. Optional [systemd timers](maintenance.md#linux-systemd-timers) schedule backups without
+changing the application scheduler or Compose services.
+
 ## Restore verification
 
 Test every backup in an isolated PostgreSQL database before declaring it recoverable. Never point a

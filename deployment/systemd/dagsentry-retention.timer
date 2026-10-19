@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily DagSentry operational record cleanup
+
+[Timer]
+OnCalendar=*-*-* 04:00:00 UTC
+RandomizedDelaySec=5m
+Persistent=true
+Unit=dagsentry-retention.service
+
+[Install]
+WantedBy=timers.target

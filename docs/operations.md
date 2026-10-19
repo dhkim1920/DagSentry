@@ -106,3 +106,6 @@ permanent error or exhausted attempts and requires operator inspection. Use
 
 Prometheus scraping, metric meanings, dashboard panels, and initial alert thresholds are documented
 in [`metrics.md`](metrics.md).
+
+Operational record retention and optional scheduled backup jobs are documented in
+[`maintenance.md`](maintenance.md).
