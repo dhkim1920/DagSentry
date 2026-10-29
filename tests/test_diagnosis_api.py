@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
+
+import pytest
 
 from dagsentry.api import create_app
 from dagsentry.config import Settings
@@ -13,7 +15,7 @@ from dagsentry.domain.diagnosis import (
     DiagnosisValidationStatus,
     DiagnosisVersions,
 )
-from dagsentry.models import IncidentRecord
+from dagsentry.models import DiagnosisRecord, IncidentRecord
 from tests.test_incident_api import (
     TOKEN_HEADER,
     VIEWER_HEADER,
@@ -198,3 +200,36 @@ def test_diagnosis_api_validates_auth_identity_sort_and_dates(
     assert missing.status_code == 404
     assert invalid_sort.status_code == 422
     assert invalid_dates.status_code == 422
+
+
+@pytest.mark.parametrize("path", ["/api/v1/diagnoses", "/api/v1/diagnoses/history"])
+def test_diagnosis_date_filter_includes_the_last_representable_instant(
+    settings: Settings,
+    session_factory: SessionFactory,
+    path: str,
+) -> None:
+    _, _, _, _, diagnosis_id, _ = create_diagnosis_history(session_factory)
+    with session_factory.begin() as session:
+        diagnosis = session.get(DiagnosisRecord, diagnosis_id)
+        assert diagnosis is not None
+        diagnosis.created_at = datetime.max.replace(tzinfo=UTC)
+
+    app = create_app(settings, session_factory)
+    response = request(
+        app,
+        "GET",
+        f"{path}?date_from=9999-12-31&date_to=9999-12-31",
+        headers=TOKEN_HEADER,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 1
+    assert response.json()["items"][0]["id"] == str(diagnosis_id)
+    previous_day = request(
+        app,
+        "GET",
+        f"{path}?date_from=9999-12-30&date_to=9999-12-30",
+        headers=TOKEN_HEADER,
+    )
+    assert previous_day.status_code == 200
+    assert previous_day.json()["total"] == 0

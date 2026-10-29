@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
+
+import pytest
 
 from dagsentry.api import create_app
 from dagsentry.config import Settings
 from dagsentry.db import SessionFactory
 from dagsentry.diagnosis import persist_diagnosis
 from dagsentry.domain.diagnosis import DiagnosisSource, DiagnosisValidationStatus
-from dagsentry.models import IncidentRecord
+from dagsentry.models import FailureEventRecord, IncidentRecord
 from tests.test_incident_api import (
     NOW,
     TOKEN_HEADER,
@@ -179,3 +181,51 @@ def test_signature_api_validates_identity_sort_and_trend_range(
     assert missing.status_code == 404
     assert invalid_sort.status_code == 422
     assert invalid_range.status_code == 422
+
+
+@pytest.mark.parametrize("suffix", ["", "/occurrences", "/trend"])
+def test_signature_date_filter_includes_the_last_representable_instant(
+    settings: Settings,
+    session_factory: SessionFactory,
+    suffix: str,
+) -> None:
+    with session_factory() as session:
+        incident_id, failure_ids = create_incident(session)
+        incident = session.get(IncidentRecord, incident_id)
+        failure = session.get(FailureEventRecord, failure_ids[0])
+        assert incident is not None and incident.error_signature_id is not None
+        assert failure is not None
+        signature_id = incident.error_signature_id
+        failure.observed_at = datetime.max.replace(tzinfo=UTC)
+        session.commit()
+
+    path = "/api/v1/error-signatures"
+    if suffix:
+        path += f"/{signature_id}{suffix}"
+    app = create_app(settings, session_factory)
+    response = request(
+        app,
+        "GET",
+        f"{path}?date_from=9999-12-31&date_to=9999-12-31",
+        headers=TOKEN_HEADER,
+    )
+
+    assert response.status_code == 200
+    if suffix == "/trend":
+        assert response.json()["items"] == [{"date": "9999-12-31", "failure_count": 1}]
+    else:
+        assert response.json()["total"] == 1
+        key = "failure_event_id" if suffix else "id"
+        expected_id = failure_ids[0] if suffix else signature_id
+        assert response.json()["items"][0][key] == str(expected_id)
+    previous_day = request(
+        app,
+        "GET",
+        f"{path}?date_from=9999-12-30&date_to=9999-12-30",
+        headers=TOKEN_HEADER,
+    )
+    assert previous_day.status_code == 200
+    if suffix == "/trend":
+        assert previous_day.json()["items"] == [{"date": "9999-12-30", "failure_count": 0}]
+    else:
+        assert previous_day.json()["total"] == 0

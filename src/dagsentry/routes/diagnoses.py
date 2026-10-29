@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time
 from enum import StrEnum
 from typing import Annotated
 from uuid import UUID
@@ -237,7 +237,9 @@ def list_diagnoses(
     if date_from is not None:
         filters.append(DiagnosisRecord.created_at >= _day_start(date_from))
     if date_to is not None:
-        filters.append(DiagnosisRecord.created_at < _day_start(date_to + timedelta(days=1)))
+        filters.append(
+            DiagnosisRecord.created_at <= datetime.combine(date_to, time.max, tzinfo=UTC)
+        )
 
     sort_columns = {
         DiagnosisSort.CREATED_AT: DiagnosisRecord.created_at,
@@ -307,9 +309,9 @@ def list_diagnosis_history(
         automatic_filters.append(DiagnosisRecord.created_at >= _day_start(date_from))
         human_filters.append(IncidentHumanDiagnosisRecord.created_at >= _day_start(date_from))
     if date_to is not None:
-        end = _day_start(date_to + timedelta(days=1))
-        automatic_filters.append(DiagnosisRecord.created_at < end)
-        human_filters.append(IncidentHumanDiagnosisRecord.created_at < end)
+        end = datetime.combine(date_to, time.max, tzinfo=UTC)
+        automatic_filters.append(DiagnosisRecord.created_at <= end)
+        human_filters.append(IncidentHumanDiagnosisRecord.created_at <= end)
 
     automatic = (
         select(

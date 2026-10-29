@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from apscheduler.triggers.cron import CronTrigger  # type: ignore[import-untyped]
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from dagsentry.config import Settings
@@ -127,6 +127,8 @@ class ScheduleWriteRequest(BaseModel):
     def reject_seconds(cls, value: time) -> time:
         if value.second or value.microsecond:
             raise ValueError("run_at_local_time must not include seconds")
+        if value.tzinfo is not None:
+            raise ValueError("run_at_local_time must not include a timezone offset")
         return value
 
     @field_validator("timezone")
@@ -299,20 +301,35 @@ def update_schedule(
     if duplicate is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="schedule already exists")
     before = _schedule_summary(record)
-    record.environment = body.environment
-    record.enabled = body.enabled
-    record.display_name = body.display_name
-    record.report_title = body.report_title
-    record.notification_connection_id = _validated_notification_connection_id(
-        session, body, settings
+    updated_id = session.scalar(
+        update(DailyReportScheduleRecord)
+        .where(
+            DailyReportScheduleRecord.id == schedule_id,
+            DailyReportScheduleRecord.revision == body.expected_revision,
+        )
+        .values(
+            environment=body.environment,
+            enabled=body.enabled,
+            display_name=body.display_name,
+            report_title=body.report_title,
+            notification_connection_id=_validated_notification_connection_id(
+                session, body, settings
+            ),
+            use_ai_summary=body.use_ai_summary,
+            run_at_local_time=body.run_at_local_time,
+            timezone=body.timezone,
+            revision=DailyReportScheduleRecord.revision + 1,
+            updated_by_user_id=_actor_id(principal),
+            updated_at=utc_now(),
+        )
+        .returning(DailyReportScheduleRecord.id)
+        .execution_options(synchronize_session=False)
     )
-    record.use_ai_summary = body.use_ai_summary
-    record.run_at_local_time = body.run_at_local_time
-    record.timezone = body.timezone
-    record.revision += 1
-    record.updated_by_user_id = _actor_id(principal)
-    record.updated_at = utc_now()
-    session.flush()
+    if updated_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="schedule revision conflict"
+        )
+    session.refresh(record)
     _audit(
         session,
         principal,

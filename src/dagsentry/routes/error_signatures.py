@@ -435,7 +435,7 @@ def get_signature_trend(
         .where(
             IncidentRecord.error_signature_id == signature_id,
             FailureEventRecord.observed_at >= _day_start(date_from),
-            FailureEventRecord.observed_at < _day_start(date_to + timedelta(days=1)),
+            FailureEventRecord.observed_at <= datetime.combine(date_to, time.max, tzinfo=UTC),
         )
         .group_by(bucket)
         .order_by(bucket)
@@ -502,7 +502,9 @@ def _occurrence_filters(
     if date_from is not None:
         filters.append(FailureEventRecord.observed_at >= _day_start(date_from))
     if date_to is not None:
-        filters.append(FailureEventRecord.observed_at < _day_start(date_to + timedelta(days=1)))
+        filters.append(
+            FailureEventRecord.observed_at <= datetime.combine(date_to, time.max, tzinfo=UTC)
+        )
     return filters
 
 
