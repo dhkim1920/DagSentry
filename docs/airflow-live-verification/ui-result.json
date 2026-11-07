@@ -1,0 +1,73 @@
+{
+  "incidents": {
+    "items": [
+      {
+        "id": "809a5757-7ccb-4739-9a96-5fecee379a4d",
+        "environment": "airflow-live",
+        "dag_id": "dagsentry_failure_scenarios",
+        "task_id": "always_fails",
+        "error_signature_id": "79e822e8-f8b8-4d33-ae6a-9861ffa2cf19",
+        "exception_class": "RuntimeError",
+        "normalized_message": "RuntimeError: intentional terminal failure",
+        "status": "OPEN",
+        "failure_count": 3,
+        "first_failure_at": "2026-11-07T12:54:42.585167Z",
+        "last_failure_at": "2026-11-07T12:54:54.547155Z",
+        "created_at": "2026-11-07T12:54:43.417950Z",
+        "updated_at": "2026-11-07T12:54:43.417951Z"
+      },
+      {
+        "id": "edcb0bd2-b4f3-4b80-a654-d2782bb1b92c",
+        "environment": "airflow-live",
+        "dag_id": "dagsentry_failure_scenarios",
+        "task_id": "mapped_failure",
+        "error_signature_id": "07bbd43f-521d-43ae-a189-b9e00329c4d1",
+        "exception_class": "RuntimeError",
+        "normalized_message": "RuntimeError: intentional mapped failure 1",
+        "status": "OPEN",
+        "failure_count": 1,
+        "first_failure_at": "2026-11-07T12:54:43.151762Z",
+        "last_failure_at": "2026-11-07T12:54:43.151762Z",
+        "created_at": "2026-11-07T12:54:43.459231Z",
+        "updated_at": "2026-11-07T12:54:43.459232Z"
+      },
+      {
+        "id": "5256ede4-49c4-4052-951b-bbdea8ad4415",
+        "environment": "airflow-live",
+        "dag_id": "dagsentry_failure_scenarios",
+        "task_id": "mapped_failure",
+        "error_signature_id": "c32015e0-0eb0-4cb4-8c10-f6c7e2c029d0",
+        "exception_class": "RuntimeError",
+        "normalized_message": "RuntimeError: intentional mapped failure 0",
+        "status": "OPEN",
+        "failure_count": 1,
+        "first_failure_at": "2026-11-07T12:54:43.150804Z",
+        "last_failure_at": "2026-11-07T12:54:43.150804Z",
+        "created_at": "2026-11-07T12:54:43.447877Z",
+        "updated_at": "2026-11-07T12:54:43.447878Z"
+      },
+      {
+        "id": "a73528ea-d85e-4bce-844a-6cb3b7176f30",
+        "environment": "airflow-live",
+        "dag_id": "dagsentry_failure_scenarios",
+        "task_id": "retry_then_success",
+        "error_signature_id": "e36c0fca-7757-44f5-8569-98be7b669e74",
+        "exception_class": "RuntimeError",
+        "normalized_message": "RuntimeError: intentional first Try failure",
+        "status": "RECOVERED",
+        "failure_count": 1,
+        "first_failure_at": "2026-11-07T12:54:42.585383Z",
+        "last_failure_at": "2026-11-07T12:54:42.585383Z",
+        "created_at": "2026-11-07T12:54:43.435173Z",
+        "updated_at": "2026-11-07T12:55:56.391323Z"
+      }
+    ],
+    "total": 4,
+    "limit": 20,
+    "offset": 0
+  },
+  "logHref": "http://192.0.2.10:8082/dags/dagsentry_failure_scenarios/runs/dagsentry_live_20261107T125439/tasks/always_fails?map_index=-1&try_number=3",
+  "result": "PASS",
+  "fixtureResponses": false,
+  "screenshots": ".audit/airflow-live"
+}

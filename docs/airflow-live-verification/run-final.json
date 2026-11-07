@@ -1,0 +1,35 @@
+{
+  "dag_run_id": "dagsentry_live_20261107T125439",
+  "dag_id": "dagsentry_failure_scenarios",
+  "logical_date": "2026-11-07T12:54:39.694771Z",
+  "queued_at": "2026-11-07T12:54:39.698411Z",
+  "start_date": "2026-11-07T12:54:40.898628Z",
+  "end_date": "2026-11-07T12:54:55.065281Z",
+  "duration": 14.166653,
+  "data_interval_start": "2026-11-07T12:54:39.694771Z",
+  "data_interval_end": "2026-11-07T12:54:39.694771Z",
+  "run_after": "2026-11-07T12:54:39.696487Z",
+  "last_scheduling_decision": "2026-11-07T12:54:55.064319Z",
+  "run_type": "manual",
+  "state": "failed",
+  "triggered_by": "rest_api",
+  "triggering_user_name": "admin",
+  "conf": {},
+  "note": "Live collector, diagnosis, incident and recovery verification",
+  "dag_versions": [
+    {
+      "id": "01a1b611-440b-7b38-9cec-b76f90d991a6",
+      "version_number": 1,
+      "dag_id": "dagsentry_failure_scenarios",
+      "bundle_name": "dags-folder",
+      "bundle_version": null,
+      "created_at": "2026-11-07T12:52:27.275608Z",
+      "dag_display_name": "dagsentry_failure_scenarios",
+      "bundle_url": null
+    }
+  ],
+  "bundle_version": null,
+  "dag_display_name": "dagsentry_failure_scenarios",
+  "partition_key": null,
+  "partition_date": null
+}
