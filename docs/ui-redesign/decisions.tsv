@@ -1,0 +1,9 @@
+ts	phase	decision	why	evidence	result
+2026-11-07T12:00:00Z	frame	Keep seven incident columns and existing named forms	Existing behavior tests require this structure	tests/web_ui_behavior.cjs	Scope set
+2026-11-07T12:12:44Z	baseline	Captured 72 original screenshots before editing production files	Compare the same incident data at four widths in both languages	.audit/ui-redesign/before/capture.json	VERIFIED
+2026-11-07T12:12:44Z	implementation	Exposed evidence beside actions and moved state controls to the header	Operators need the cause and evidence before deciding how to respond	src/dagsentry/web/views/incidents/detail.js	VERIFIED
+2026-11-07T12:12:44Z	review	Darkened primary buttons and separated operator-author translation key	Independent review found insufficient button contrast and ambiguous Korean terminology	.audit/ui-redesign/after/capture.json	VERIFIED
+2026-11-07T12:12:44Z	verification	Passed 724 tests and full Chromium browser regression plus 72 final captures	Prove behavior, security contracts, layout and actual evidence rendering	docs/ui-redesign-verification.md	VERIFIED; 37 integration skips and manual accessibility limits documented
+2026-11-07T12:34:51Z	correction	Replaced boxed dashboard layout with status queue, integrated toolbar and independent root-cause region	User found first redesign visually too similar; compared two real-data layout prototypes	.audit/ui-redesign-v2/comparison.html	VERIFIED
+2026-11-07T12:34:51Z	review	Fixed expanded-filter overlap, tablet grid specificity and keyboard focus loss	Browser and independent review proved concrete layout and focus failures; preserved replaceState semantics	scripts/verify-ui-redesign.cjs	VERIFIED
+2026-11-07T12:35:50Z	verification	Final second redesign passed 724 tests, 37 integration skips, 72 bilingual responsive comparisons and keyboard-filter checks	Verify the rendered product and existing contracts after the user correction	.audit/ui-redesign-v2/after/capture.json	VERIFIED

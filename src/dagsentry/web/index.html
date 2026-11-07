@@ -7,9 +7,9 @@
     <meta name="description" content="DagSentry incident operations dashboard">
     <title>DagSentry — Incident operations</title>
     <link rel="stylesheet" href="/ui/vendor/tabler-1.6.0/tabler.min.css">
-    <link rel="stylesheet" href="/ui/app.css?v=20260928-modules1">
+    <link rel="stylesheet" href="/ui/app.css?v=20261107-workspace2">
     <script src="/ui/vendor/tabler-1.6.0/tabler-sparkline.min.js" defer></script>
-    <script type="module" src="/ui/app.js?v=20260928-modules1" defer></script>
+    <script type="module" src="/ui/app.js?v=20261107-workspace2" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -55,6 +55,7 @@
       <aside id="site-sidebar" class="site-sidebar navbar navbar-vertical navbar-expand-lg" hidden>
         <nav id="primary-navigation" class="primary-nav navbar-collapse" aria-label="Primary navigation">
           <ul class="navbar-nav">
+            <li class="nav-section-label"><span>Workspace</span></li>
             <li class="nav-item active">
               <a id="incidents-nav" class="nav-link active" href="/ui/" aria-current="page">
                 <span class="nav-link-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg></span>
@@ -169,20 +170,16 @@
         </div>
 
         <div class="incident-summary" role="group" aria-label="Incident summary" aria-describedby="incident-summary-scope">
-          <dl class="summary-stats card mb-0">
-            <div class="card-body p-2 p-sm-3" aria-live="polite" aria-atomic="true">
-              <dt><span class="badge bg-secondary-lt">Matching incidents</span></dt>
-              <dd id="incident-total" class="h2 mb-0 mt-1">—</dd>
-            </div>
-            <div class="card-body p-2 p-sm-3 border-start" aria-live="polite" aria-atomic="true">
-              <dt><span class="badge bg-red-lt">Open</span></dt>
-              <dd id="incident-open-total" class="h2 mb-0 mt-1">—</dd>
-            </div>
-            <div class="card-body p-2 p-sm-3 border-start" aria-live="polite" aria-atomic="true">
-              <dt><span class="badge bg-yellow-lt">Acknowledged</span></dt>
-              <dd id="incident-acknowledged-total" class="h2 mb-0 mt-1">—</dd>
-            </div>
-          </dl>
+          <div class="queue-state-list" role="group" aria-label="Quick status filters">
+            <button class="queue-state-button btn" type="button" data-incident-status="OPEN" aria-pressed="true">
+              <span class="queue-state-dot" data-status="OPEN" aria-hidden="true"></span>
+              <span>Open</span><strong id="incident-open-total" aria-live="polite">—</strong>
+            </button>
+            <button class="queue-state-button btn" type="button" data-incident-status="ACKNOWLEDGED" aria-pressed="false">
+              <span class="queue-state-dot" data-status="ACKNOWLEDGED" aria-hidden="true"></span>
+              <span>Acknowledged</span><strong id="incident-acknowledged-total" aria-live="polite">—</strong>
+            </button>
+          </div>
           <div class="incident-summary-help accordion native-accordion">
             <details class="accordion-item">
               <summary class="accordion-header accordion-button collapsed">
@@ -281,7 +278,10 @@
         <section id="results-panel" class="results-panel card" aria-labelledby="results-title" hidden>
           <div class="results-heading card-header">
             <div>
-              <h2 id="results-title" class="card-title">Incident list</h2>
+              <div class="queue-results-title">
+                <h2 id="results-title" class="card-title">Incident list</h2>
+                <strong id="incident-total" class="queue-total" aria-label="Matching incidents" aria-live="polite">—</strong>
+              </div>
             </div>
             <p id="results-range" class="results-range"></p>
           </div>
@@ -769,6 +769,16 @@
               <p id="detail-task" class="detail-task"></p>
               <p id="detail-state-help" class="heading-copy text-secondary"></p>
             </div>
+            <div id="operator-controls" class="operator-panel" hidden>
+              <h2 class="card-title">Change state</h2>
+              <p id="operator-help" class="aside-empty"></p>
+              <div id="operator-actions" class="operator-actions"></div>
+            </div>
+            <div id="viewer-state-note" class="read-only-panel" hidden>
+              <p class="table-kicker">Read-only access</p>
+              <h2 class="card-title">State changes unavailable</h2>
+              <p>Sign in with an Operator or Admin account to change this Incident.</p>
+            </div>
           </header>
 
           <div class="detail-layout incident-detail-layout">
@@ -786,16 +796,6 @@
                   <div id="human-diagnosis-content"></div>
                   <div id="human-diagnosis-actions" class="operator-actions" hidden></div>
                 </details>
-              </div>
-              <div id="operator-controls" class="aside-panel card card-body operator-panel" hidden>
-                <h2 class="card-title">Change state</h2>
-                <p id="operator-help" class="aside-empty"></p>
-                <div id="operator-actions" class="operator-actions"></div>
-              </div>
-              <div id="viewer-state-note" class="aside-panel card card-body read-only-panel" hidden>
-                <p class="table-kicker">Read-only access</p>
-                <h2 class="card-title">State changes unavailable</h2>
-                <p>Sign in with an Operator or Admin account to change this Incident.</p>
               </div>
               <details id="failure-history-panel" class="context-panel card card-body disclosure-panel">
                 <summary id="failure-history-title">Failure &amp; Diagnosis history</summary>
@@ -958,7 +958,7 @@
                 <div id="signature-latest-diagnosis"></div>
               </section>
               <section class="context-panel card card-body signature-diagnosis-panel" aria-labelledby="signature-operator-diagnoses-title">
-                <div class="section-heading"><div><h2 id="signature-operator-diagnoses-title" class="card-title">과거 운영자 진단</h2></div></div>
+                <div class="section-heading"><div><h2 id="signature-operator-diagnoses-title" class="card-title">Past operator diagnoses</h2></div></div>
                 <div id="signature-operator-diagnoses"></div>
               </section>
             </div>
@@ -1254,10 +1254,10 @@
             <section id="report-schedule-panel" class="context-panel card card-body report-schedule-panel" aria-labelledby="report-schedule-title">
               <div class="section-heading report-schedule-heading">
                 <div>
-                  <h2 id="report-schedule-title" class="card-title">리포트 스케줄 설정</h2>
-                  <p class="report-schedule-copy">매일 생성되는 DagSentry 리포트의 발송 설정입니다.</p>
+                  <h2 id="report-schedule-title" class="card-title">Report schedule settings</h2>
+                  <p class="report-schedule-copy">Configure delivery of daily DagSentry reports.</p>
                 </div>
-                <p class="scheduler-state"><span>스케줄러 상태</span><span id="report-scheduler-status" class="status-badge badge" data-status="OFFLINE">오프라인</span></p>
+                <p class="scheduler-state"><span>Scheduler status</span><span id="report-scheduler-status" class="status-badge badge" data-status="OFFLINE">Offline</span></p>
               </div>
               <div id="report-schedule-error" class="notice alert notice-error alert-danger" role="alert" hidden></div>
               <div id="report-schedule-list" class="report-schedule-list" aria-live="polite"></div>
@@ -1267,58 +1267,58 @@
                 <input id="report-schedule-revision" name="expected_revision" type="hidden">
                 <div class="report-schedule-grid">
                   <div class="field-group report-schedule-full-width">
-                    <label for="report-schedule-name" class="form-label">리포트 이름</label>
+                    <label for="report-schedule-name" class="form-label">Report name</label>
                     <input id="report-schedule-name" name="display_name" maxlength="120" required class="form-control">
                   </div>
                   <div class="field-group report-schedule-full-width">
-                    <label for="report-schedule-title-input" class="form-label">리포트 제목</label>
+                    <label for="report-schedule-title-input" class="form-label">Report title</label>
                     <input id="report-schedule-title-input" name="report_title" maxlength="160" required class="form-control">
                   </div>
                   <div class="field-group">
-                    <label for="report-schedule-environment" class="form-label">환경</label>
+                    <label for="report-schedule-environment" class="form-label">Environment</label>
                     <input id="report-schedule-environment" name="environment" maxlength="64" required class="form-control">
                   </div>
                   <div class="field-group">
-                    <label for="report-schedule-notification-connection" class="form-label">발송 대상</label>
+                    <label for="report-schedule-notification-connection" class="form-label">Delivery destination</label>
                     <select id="report-schedule-notification-connection" name="notification_connection_id" class="form-select">
-                      <option value="">기본 알림 설정</option>
+                      <option value="">Default notification settings</option>
                     </select>
                   </div>
                   <div class="field-group">
-                    <label for="report-schedule-time" class="form-label">실행 시간</label>
+                    <label for="report-schedule-time" class="form-label">Run time</label>
                     <input id="report-schedule-time" name="run_at_local_time" type="time" required class="form-control">
                   </div>
                   <div class="field-group">
-                    <label for="report-schedule-timezone" class="form-label">시간대</label>
+                    <label for="report-schedule-timezone" class="form-label">Timezone</label>
                     <select id="report-schedule-timezone" name="timezone" class="form-select">
                       <option value="UTC">UTC</option>
                       <option value="Asia/Seoul">Asia/Seoul</option>
                     </select>
                   </div>
                   <div class="setting-toggle-row report-schedule-full-width">
-                    <div><strong>AI 요약</strong><p>AI가 주요 장애 내용을 요약합니다.</p></div>
-                    <label class="toggle-switch form-check form-switch" for="report-schedule-ai-summary"><input id="report-schedule-ai-summary" name="use_ai_summary" type="checkbox" class="form-check-input"><span class="visually-hidden">AI 요약 사용</span></label>
+                    <div><strong>AI summary</strong><p>AI summarizes the main incidents.</p></div>
+                    <label class="toggle-switch form-check form-switch" for="report-schedule-ai-summary"><input id="report-schedule-ai-summary" name="use_ai_summary" type="checkbox" class="form-check-input"><span class="visually-hidden">Use AI summary</span></label>
                   </div>
                   <div class="setting-toggle-row report-schedule-full-width">
-                    <div><strong>자동 리포트</strong><p>매일 설정된 시간에 자동으로 발송합니다.</p></div>
-                    <label class="toggle-switch form-check form-switch" for="report-schedule-enabled"><input id="report-schedule-enabled" name="enabled" type="checkbox" checked class="form-check-input"><span class="visually-hidden">자동 리포트 활성화</span></label>
+                    <div><strong>Automatic reports</strong><p>Send automatically at the scheduled time each day.</p></div>
+                    <label class="toggle-switch form-check form-switch" for="report-schedule-enabled"><input id="report-schedule-enabled" name="enabled" type="checkbox" checked class="form-check-input"><span class="visually-hidden">Enable automatic reports</span></label>
                   </div>
                 </div>
                 <div id="report-schedule-preview" class="report-schedule-preview alert alert-info" aria-live="polite"></div>
                 <div class="filter-actions report-schedule-actions">
-                  <button id="report-schedule-save" class="btn btn-primary" type="submit">설정 저장</button>
+                  <button id="report-schedule-save" class="btn btn-primary" type="submit">Save settings</button>
                 </div>
                 <div id="report-schedule-feedback" class="notice alert notice-success alert-success" role="status" hidden></div>
               </form>
 
               <form id="report-manual-run-form" class="report-manual-run-form uniform-control-height" hidden>
                 <div class="field-group">
-                  <label for="report-manual-date" class="form-label">스케줄 시간대의 완료된 리포트 날짜</label>
+                  <label for="report-manual-date" class="form-label">Completed report date in the schedule timezone</label>
                   <input id="report-manual-date" name="report_date" type="date" required class="form-control">
                 </div>
-                <button id="report-manual-run" class="btn btn-outline-secondary" type="submit">지금 실행</button>
+                <button id="report-manual-run" class="btn btn-outline-secondary" type="submit">Run now</button>
               </form>
-              <section class="report-execution-status card card-body" aria-labelledby="report-execution-title"><h3 id="report-execution-title">최근 실행</h3><div id="report-schedule-runs" class="report-schedule-runs" aria-live="polite"></div></section>
+              <section class="report-execution-status card card-body" aria-labelledby="report-execution-title"><h3 id="report-execution-title">Latest run</h3><div id="report-schedule-runs" class="report-schedule-runs" aria-live="polite"></div></section>
             </section>
           </section>
 

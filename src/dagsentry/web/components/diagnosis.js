@@ -12,6 +12,8 @@ export function renderEvidence(evidence, headingTag = "h4") {
   }
   const list = document.createElement("ol");
   list.className = "evidence-list";
+  list.tabIndex = 0;
+  list.setAttribute("aria-label", "Evidence");
   for (const item of evidence) {
     const entry = document.createElement("li");
     entry.value = item.line_id;

@@ -14,6 +14,12 @@ function setLoading(isLoading) {
   elements.refreshIncidents.disabled = isLoading;
   elements.previous.disabled = isLoading || state.currentOffset === 0;
   elements.next.disabled = isLoading || state.currentOffset + PAGE_SIZE >= state.currentTotal;
+  for (const button of document.querySelectorAll("[data-incident-status]")) {
+    button.setAttribute("aria-disabled", String(isLoading));
+    button.setAttribute("aria-pressed", String(
+      button.dataset.incidentStatus === document.querySelector("#status-filter").value,
+    ));
+  }
 }
 
 function renderRows(items) {
@@ -138,6 +144,15 @@ export async function loadIncidents() {
 }
 
 export function bindListEvents() {
+  for (const button of document.querySelectorAll("[data-incident-status]")) {
+    button.addEventListener("click", async () => {
+      if (button.getAttribute("aria-disabled") === "true") return;
+      document.querySelector("#status-filter").value = button.dataset.incidentStatus;
+      state.currentOffset = 0;
+      await loadIncidents();
+    });
+  }
+
   elements.filterForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     state.currentOffset = 0;

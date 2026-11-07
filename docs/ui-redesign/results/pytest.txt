@@ -1,0 +1,45 @@
+.........ssssssssssssssssssssssssssssssssssss........................... [  9%]
+........................................................................ [ 18%]
+...........................................................s............ [ 28%]
+........................................................................ [ 37%]
+........................................................................ [ 47%]
+........................................................................ [ 56%]
+........................................................................ [ 66%]
+........................................................................ [ 75%]
+........................................................................ [ 85%]
+........................................................................ [ 94%]
+.........................................                                [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/integration/test_ollama_runtime.py:27: DAGSENTRY_TEST_OLLAMA_API_BASE_URL and MODEL are not configured
+SKIPPED [1] tests/integration/test_postgres_backup_retention.py:53: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_connection_rotation.py:30: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_daily_report.py:32: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_diagnosis.py:38: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [2] tests/integration/test_postgres_incident.py:45: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_incident.py:166: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_incident.py:263: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_ingestion.py:27: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_ingestion.py:80: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_ingestion.py:131: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_ingestion.py:186: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_ingestion.py:244: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_ingestion.py:304: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_managed_connection_migration.py:16: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_metrics.py:19: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_migrations.py:25: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_migrations.py:102: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_notification.py:50: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_report_v2_migration.py:16: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_reporting.py:34: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_scheduler_recovery.py:106: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_scheduler_recovery.py:152: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [4] tests/integration/test_postgres_scheduler_recovery.py:189: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_security_boundaries.py:133: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_security_boundaries.py:238: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_signature.py:24: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_user_management.py:29: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_worker_heartbeat_migration.py:16: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/integration/test_postgres_worker_job_requeue.py:25: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [2] tests/integration/test_postgres_worker_liveness.py:28: DAGSENTRY_TEST_DATABASE_URL is not configured
+SKIPPED [1] tests/test_daily_report_schedule_api.py:337: DAGSENTRY_TEST_DATABASE_URL is not configured
+724 passed, 37 skipped in 19.69s

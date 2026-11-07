@@ -424,6 +424,8 @@ async function login(page) {
     assert.equal(await page.locator("#human-diagnosis-panel").evaluate(el => el.open), true);
     assert.equal(await page.locator("#current-diagnosis-panel").evaluate(el => el.open), false);
     assert.ok((await page.locator("#human-diagnosis-content").innerText()).includes("Operator-confirmed network cause"));
+    assert.ok((await page.locator("#human-diagnosis-content").innerText()).includes("Confirmed at"));
+    assert.ok(!(await page.locator("#human-diagnosis-content").innerText()).includes("확정 시각"));
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: width === 1440 ? 1000 : 844 });
       await layout(page, `operator-confirmed-${width}`);
@@ -454,6 +456,12 @@ async function login(page) {
     await page.locator("#failure-history-panel > summary").click();
     for (const width of [1440, 768, 390, 320]) {
       await page.setViewportSize({ width, height: 844 }); await layout(page, `long-detail-${width}`);
+    }
+    const currentEvidence = page.locator("#current-diagnosis-content > .diagnosis-investigation .evidence-list");
+    await currentEvidence.focus();
+    if (await currentEvidence.evaluate(node => node.scrollHeight > node.clientHeight)) {
+      await page.keyboard.press("ArrowDown");
+      await page.waitForFunction(node => node.scrollTop > 0, await currentEvidence.elementHandle());
     }
     await page.unroute(`**/api/v1/incidents/${incident.id}`);
     await page.route("**/api/v1/auth/me", async route => {

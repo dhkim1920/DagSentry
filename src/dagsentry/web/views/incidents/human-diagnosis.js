@@ -22,21 +22,21 @@ export function renderHumanDiagnosis(diagnosis) {
       textElement("p", translatedText("No operator-confirmed diagnosis has been published."), "aside-empty"),
     );
   } else {
-    elements.humanDiagnosisRevision.textContent = `리비전 ${diagnosis.revision}`;
+    elements.humanDiagnosisRevision.textContent = `Revision ${diagnosis.revision}`;
     const rootCause = document.createElement("div");
     rootCause.className = "human-diagnosis-root-cause";
-    rootCause.append(definitionItem("근본 원인", diagnosis.root_cause));
+    rootCause.append(definitionItem("Root cause", diagnosis.root_cause));
     const assessment = document.createElement("dl");
     assessment.className = "human-diagnosis-assessment";
     assessment.append(
-      definitionItem("분류", humanClassificationLabel(diagnosis.classification)),
-      definitionItem("재시도 판단", humanRetryLabel(diagnosis.retry_decision)),
+      definitionItem("Classification", humanClassificationLabel(diagnosis.classification)),
+      definitionItem("Retry decision", humanRetryLabel(diagnosis.retry_decision)),
     );
     elements.humanDiagnosisContent.append(rootCause, assessment);
     if ((diagnosis.recommended_actions || []).length) {
       const actionsSection = document.createElement("section");
       actionsSection.className = "human-diagnosis-actions-section";
-      actionsSection.append(textElement("h3", "권장 조치"));
+      actionsSection.append(textElement("h3", "Recommended actions"));
       const actions = document.createElement("ul");
       for (const action of diagnosis.recommended_actions || []) {
         actions.append(textElement("li", action));
@@ -45,13 +45,13 @@ export function renderHumanDiagnosis(diagnosis) {
       elements.humanDiagnosisContent.append(actionsSection);
     }
     if (diagnosis.operator_notes) {
-      elements.humanDiagnosisContent.append(definitionItem("운영자 메모", diagnosis.operator_notes));
+      elements.humanDiagnosisContent.append(definitionItem("Operator notes", diagnosis.operator_notes));
     }
     const meta = document.createElement("dl");
     meta.className = "human-diagnosis-meta";
     meta.append(
-      definitionItem("작성자", diagnosis.actor_identity),
-      definitionItem("확정 시각", formatTimestamp(diagnosis.created_at).primary),
+      definitionItem("Author", diagnosis.actor_identity),
+      definitionItem("Confirmed at", formatTimestamp(diagnosis.created_at).primary),
     );
     elements.humanDiagnosisContent.append(meta);
   }
@@ -75,8 +75,8 @@ export function renderHumanDiagnosis(diagnosis) {
 }
 
 function humanRevisionLabel(revision) {
-  if (revision.action === "WITHDRAW") return "철회";
-  return revision.revision === 1 ? "최초 등록" : "수정";
+  if (revision.action === "WITHDRAW") return "Withdrawn";
+  return revision.revision === 1 ? "Published" : "Edited";
 }
 
 function closeHumanDiagnosisDialog() {
@@ -109,26 +109,26 @@ export async function renderHumanDiagnosisHistory(request) {
     details.open = index === 0;
     const summary = document.createElement("summary");
     summary.append(
-      textElement("strong", `리비전 ${revision.revision} · ${humanRevisionLabel(revision)}`),
+      textElement("strong", `Revision ${revision.revision} · ${humanRevisionLabel(revision)}`),
       textElement("time", formatTimestamp(revision.created_at).primary),
     );
     details.append(summary);
     const fields = document.createElement("dl");
     fields.className = "human-diagnosis-revision-fields";
     if (revision.root_cause) {
-      const rootCause = definitionItem("근본 원인", revision.root_cause);
+      const rootCause = definitionItem("Root cause", revision.root_cause);
       rootCause.className = "is-wide";
       fields.append(rootCause);
     }
-    if (revision.classification) fields.append(definitionItem("분류", humanClassificationLabel(revision.classification)));
-    if (revision.retry_decision) fields.append(definitionItem("재시도 판단", humanRetryLabel(revision.retry_decision)));
+    if (revision.classification) fields.append(definitionItem("Classification", humanClassificationLabel(revision.classification)));
+    if (revision.retry_decision) fields.append(definitionItem("Retry decision", humanRetryLabel(revision.retry_decision)));
     if (revision.operator_notes) {
-      const notes = definitionItem("운영자 메모", revision.operator_notes);
+      const notes = definitionItem("Operator notes", revision.operator_notes);
       notes.className = "is-wide";
       fields.append(notes);
     }
     if (revision.change_reason) {
-      const reason = definitionItem("변경 사유", revision.change_reason);
+      const reason = definitionItem("Change reason", revision.change_reason);
       reason.className = "is-wide";
       fields.append(reason);
     }
@@ -136,12 +136,12 @@ export async function renderHumanDiagnosisHistory(request) {
     if ((revision.recommended_actions || []).length) {
       actionsSection = document.createElement("section");
       actionsSection.className = "human-diagnosis-actions-section";
-      actionsSection.append(textElement("h3", "권장 조치"));
+      actionsSection.append(textElement("h3", "Recommended actions"));
       const list = document.createElement("ul");
       for (const action of revision.recommended_actions || []) list.append(textElement("li", action));
       actionsSection.append(list);
     }
-    const author = definitionItem("작성자", revision.actor_identity);
+    const author = definitionItem("Author", revision.actor_identity);
     author.className = "is-wide";
     fields.append(author);
     details.append(fields);

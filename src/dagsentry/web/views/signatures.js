@@ -144,7 +144,7 @@ function renderSignatureIdentity(signature) {
   const operatorDiagnoses = signature.operator_diagnoses || [];
   elements.signatureOperatorDiagnoses.replaceChildren();
   if (!operatorDiagnoses.length) {
-    elements.signatureOperatorDiagnoses.append(textElement("p", "등록된 과거 운영자 진단이 없습니다.", "aside-empty"));
+    elements.signatureOperatorDiagnoses.append(textElement("p", "No past operator diagnoses have been published.", "aside-empty"));
     return;
   }
   for (const diagnosis of operatorDiagnoses) {
@@ -170,16 +170,16 @@ function renderSignatureIdentity(signature) {
     const fields = document.createElement("dl");
     fields.className = "diagnosis-card-fields";
     fields.append(
-      definitionItem("근본 원인", diagnosis.root_cause),
-      definitionItem("분류", humanClassificationLabel(diagnosis.classification)),
-      definitionItem("재시도 판단", humanRetryLabel(diagnosis.retry_decision)),
+      definitionItem("Root cause", diagnosis.root_cause),
+      definitionItem("Classification", humanClassificationLabel(diagnosis.classification)),
+      definitionItem("Retry decision", humanRetryLabel(diagnosis.retry_decision)),
     );
     body.append(fields);
     const recommendedActions = diagnosis.recommended_actions || [];
     if (recommendedActions.length) {
       const actionsSection = document.createElement("section");
       actionsSection.className = "operator-diagnosis-recommendations";
-      actionsSection.append(textElement("h3", "권장 조치"));
+      actionsSection.append(textElement("h3", "Recommended actions"));
       const actions = document.createElement("ul");
       for (const action of recommendedActions) actions.append(textElement("li", action));
       actionsSection.append(actions);
@@ -188,7 +188,7 @@ function renderSignatureIdentity(signature) {
     const footer = document.createElement("div");
     footer.className = "operator-diagnosis-actions";
     const incidentButton = contextLink(
-      "인시던트 보기",
+      "View incident",
       `/ui/?incident=${encodeURIComponent(diagnosis.incident_id)}`,
     );
     incidentButton.className = "btn btn-outline-secondary operator-diagnosis-button";

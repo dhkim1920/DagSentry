@@ -40,7 +40,7 @@ def test_web_ui_serves_dashboard_with_browser_security_headers(
     assert "test-viewer-token" not in response.text
 
     asset_source(create_app(settings, session_factory), "/ui/app.js")
-    assert 'src="/ui/app.js?v=20260928-modules1"' in response.text
+    assert 'src="/ui/app.js?v=20261107-workspace2"' in response.text
 
 
 def test_auth_title_remains_exactly_two_lines_in_both_languages(
@@ -267,14 +267,15 @@ def test_daily_report_ui_exposes_list_detail_filters_and_authenticated_api(
     assert 'apiJson("/api/v1/daily-report-schedules/status"' in script
     assert 'apiJson("/api/v1/admin/connections?limit=100"' in script
     assert '"/api/v1/admin/daily-report-schedules"' in script
-    assert "리포트 스케줄 설정" in shell.text
-    assert "자동 리포트" in shell.text
-    assert 'class="visually-hidden">AI 요약 사용</span>' in shell.text
+    assert "Report schedule settings" in shell.text
+    assert "Automatic reports" in shell.text
+    assert 'class="visually-hidden">Use AI summary</span>' in shell.text
     assert "max-width: 960px" in stylesheet
     assert ".setting-toggle-row > div" in stylesheet
     assert "min-width: 44px" in stylesheet
-    assert "전일 UTC 기준 데이터를 집계합니다." in script
-    assert "아직 저장된 리포트 스케줄이 없습니다." in script
+    assert "Aggregates data for the previous UTC day." in script
+    assert "No report schedules saved yet." in script
+    assert '"Report schedule settings": "리포트 스케줄 설정"' in script
     assert 'details.className = "report-execution-grid"' in script
     assert ".report-execution-grid .inspect-link" in stylesheet
     assert ".report-manual-run-form .field-group" in stylesheet
@@ -585,7 +586,11 @@ def test_operator_diagnosis_history_uses_latest_open_timeline_layout(
     assert 'definitionItem("생성 시각"' not in renderer
     assert ".human-diagnosis-history li summary" in stylesheet
     assert "#incident-diagnoses {" in stylesheet
-    assert shell.text.index('id="incident-diagnoses"') < shell.text.index('id="operator-controls"')
+    assert (
+        shell.text.index('id="detail-state-help"')
+        < shell.text.index('id="operator-controls"')
+        < shell.text.index('id="incident-diagnoses"')
+    )
     assert ".human-diagnosis-revision-fields" in stylesheet
     assert "width: 100%" in stylesheet
     assert "justify-content: flex-start" in stylesheet

@@ -6,7 +6,7 @@ import { state } from "../../core/state.js";
 import { apiJson } from "../../core/api.js";
 import { handleApiError } from "../../core/auth.js";
 import { detailBackHref } from "../../core/router.js";
-import { renderActions, renderDiagnosis } from "../../components/diagnosis.js";
+import { renderActions, renderEvidence, renderDiagnosis } from "../../components/diagnosis.js";
 import { renderTransitions, renderOperatorControls, bindTransitionsEvents } from "./transitions.js";
 import { renderHumanDiagnosis, renderHumanDiagnosisHistory, bindHumanDiagnosisEvents } from "./human-diagnosis.js";
 
@@ -121,8 +121,15 @@ function renderCurrentDiagnosis(payload) {
     const labels = document.createElement("div");
     labels.className = "diagnosis-labels";
     labels.append(sourceBadge(diagnosis.source), validationBadge(diagnosis.validation_status));
-    content.append(labels);
-    content.append(textElement("h3", diagnosis.root_cause || "No Root Cause was produced", "diagnosis-root-cause"));
+    const conclusion = document.createElement("section");
+    conclusion.className = "diagnosis-conclusion";
+    conclusion.append(
+      labels,
+      textElement("p", "Root cause", "diagnosis-section-label"),
+      textElement("h3", diagnosis.root_cause || "No Root Cause was produced", "diagnosis-root-cause"),
+      textElement("p", "Automated validation does not confirm the cause. Review the operator diagnosis separately.", "diagnosis-validation-note"),
+    );
+    content.append(conclusion);
     const facts = document.createElement("dl");
     facts.className = "diagnosis-facts";
     facts.append(
@@ -132,8 +139,12 @@ function renderCurrentDiagnosis(payload) {
         ? "Unavailable" : diagnosis.operator_review_required ? "Operator required" : "Not required"),
     );
     content.append(facts);
+    const investigation = document.createElement("div");
+    investigation.className = "diagnosis-investigation";
+    investigation.append(renderEvidence(diagnosis.evidence));
     const actions = renderActions(diagnosis.recommended_actions);
-    if (actions) content.append(actions);
+    if (actions) investigation.append(actions);
+    content.append(investigation);
     const evidence = document.createElement("details");
     evidence.className = "diagnosis-technical-details";
     evidence.append(textElement("summary", "Evidence and diagnosis details"), renderDiagnosis(diagnosis));

@@ -1,0 +1,515 @@
+{
+  "phase": "after",
+  "incidentId": "efebf23d-6b3d-49e7-8c50-fb1ab5dd8482",
+  "incidentData": {
+    "items": [
+      {
+        "id": "efebf23d-6b3d-49e7-8c50-fb1ab5dd8482",
+        "environment": "production",
+        "dag_id": "orders_pipeline",
+        "task_id": "load_orders",
+        "error_signature_id": "31983e75-4a84-464e-b05d-4989debe1481",
+        "exception_class": "ConnectionError",
+        "normalized_message": "Connection refused on port <PORT>",
+        "status": "OPEN",
+        "failure_count": 1,
+        "first_failure_at": "2026-11-07T11:50:27Z",
+        "last_failure_at": "2026-11-07T11:50:27Z",
+        "created_at": "2026-11-07T11:50:27Z",
+        "updated_at": "2026-11-07T11:50:27Z"
+      },
+      {
+        "id": "9b16cbc9-a84c-4fff-b774-f5e59a771ed2",
+        "environment": "staging",
+        "dag_id": "payments_pipeline",
+        "task_id": "transfer_data",
+        "error_signature_id": "ba1e576e-4d33-4bc0-9421-25bcc3bda1b0",
+        "exception_class": "AirflowException",
+        "normalized_message": "Task failed with exception in decorated operator",
+        "status": "OPEN",
+        "failure_count": 2,
+        "first_failure_at": "2026-11-06T09:43:27Z",
+        "last_failure_at": "2026-11-06T09:50:27Z",
+        "created_at": "2026-11-06T09:43:27Z",
+        "updated_at": "2026-11-06T09:50:27Z"
+      },
+      {
+        "id": "1176ad21-93d5-47f0-9c99-2004c27a7dd6",
+        "environment": "production",
+        "dag_id": "payments_pipeline",
+        "task_id": "transfer_data",
+        "error_signature_id": "ba1e576e-4d33-4bc0-9421-25bcc3bda1b0",
+        "exception_class": "AirflowException",
+        "normalized_message": "Task failed with exception in decorated operator",
+        "status": "OPEN",
+        "failure_count": 3,
+        "first_failure_at": "2026-10-31T23:36:27Z",
+        "last_failure_at": "2026-10-31T23:50:27Z",
+        "created_at": "2026-10-31T23:36:27Z",
+        "updated_at": "2026-10-31T23:50:27Z"
+      }
+    ],
+    "total": 3,
+    "limit": 20,
+    "offset": 0
+  },
+  "measurements": [
+    {
+      "name": "incidents",
+      "language": "ko",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "incidents",
+      "language": "ko",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "incidents",
+      "language": "ko",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "incidents",
+      "language": "ko",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "incident-detail",
+      "language": "ko",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "incident-detail",
+      "language": "ko",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "incident-detail",
+      "language": "ko",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "incident-detail",
+      "language": "ko",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "signatures",
+      "language": "ko",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "signatures",
+      "language": "ko",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "signatures",
+      "language": "ko",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "signatures",
+      "language": "ko",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "signature-detail",
+      "language": "ko",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "signature-detail",
+      "language": "ko",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "signature-detail",
+      "language": "ko",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "signature-detail",
+      "language": "ko",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "diagnoses",
+      "language": "ko",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "diagnoses",
+      "language": "ko",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "diagnoses",
+      "language": "ko",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "diagnoses",
+      "language": "ko",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "diagnosis-detail",
+      "language": "ko",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "diagnosis-detail",
+      "language": "ko",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "diagnosis-detail",
+      "language": "ko",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "diagnosis-detail",
+      "language": "ko",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "reports",
+      "language": "ko",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "reports",
+      "language": "ko",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "reports",
+      "language": "ko",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "reports",
+      "language": "ko",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "settings",
+      "language": "ko",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "settings",
+      "language": "ko",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "settings",
+      "language": "ko",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "settings",
+      "language": "ko",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "report-settings",
+      "language": "ko",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "report-settings",
+      "language": "ko",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "report-settings",
+      "language": "ko",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "report-settings",
+      "language": "ko",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "incidents",
+      "language": "en",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "incidents",
+      "language": "en",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "incidents",
+      "language": "en",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "incidents",
+      "language": "en",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "incident-detail",
+      "language": "en",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "incident-detail",
+      "language": "en",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "incident-detail",
+      "language": "en",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "incident-detail",
+      "language": "en",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "signatures",
+      "language": "en",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "signatures",
+      "language": "en",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "signatures",
+      "language": "en",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "signatures",
+      "language": "en",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "signature-detail",
+      "language": "en",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "signature-detail",
+      "language": "en",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "signature-detail",
+      "language": "en",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "signature-detail",
+      "language": "en",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "diagnoses",
+      "language": "en",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "diagnoses",
+      "language": "en",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "diagnoses",
+      "language": "en",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "diagnoses",
+      "language": "en",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "diagnosis-detail",
+      "language": "en",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "diagnosis-detail",
+      "language": "en",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "diagnosis-detail",
+      "language": "en",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "diagnosis-detail",
+      "language": "en",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "reports",
+      "language": "en",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "reports",
+      "language": "en",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "reports",
+      "language": "en",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "reports",
+      "language": "en",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "settings",
+      "language": "en",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "settings",
+      "language": "en",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "settings",
+      "language": "en",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "settings",
+      "language": "en",
+      "width": 320,
+      "contentWidth": 320
+    },
+    {
+      "name": "report-settings",
+      "language": "en",
+      "width": 1440,
+      "contentWidth": 1440
+    },
+    {
+      "name": "report-settings",
+      "language": "en",
+      "width": 768,
+      "contentWidth": 768
+    },
+    {
+      "name": "report-settings",
+      "language": "en",
+      "width": 390,
+      "contentWidth": 390
+    },
+    {
+      "name": "report-settings",
+      "language": "en",
+      "width": 320,
+      "contentWidth": 320
+    }
+  ],
+  "buttonContrast": [
+    {
+      "language": "ko",
+      "hovered": false,
+      "ratio": 5.782930155845178
+    },
+    {
+      "language": "ko",
+      "hovered": true,
+      "ratio": 5.165420080382731
+    },
+    {
+      "language": "en",
+      "hovered": false,
+      "ratio": 5.782930155845178
+    },
+    {
+      "language": "en",
+      "hovered": true,
+      "ratio": 5.165420080382731
+    }
+  ],
+  "fixtureOnly": [
+    "successful status transition response"
+  ]
+}

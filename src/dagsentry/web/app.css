@@ -1,3 +1,38 @@
 @import url("./styles/layout.css");
 @import url("./styles/components.css");
 @import url("./styles/views.css");
+
+:root,
+[data-bs-theme="dark"] {
+  --ds-canvas: #111316;
+  --ds-surface: #191c20;
+  --ds-surface-raised: #20242a;
+  --ds-border: #30353d;
+  --ds-text: #e8eaed;
+  --ds-muted: #a2a9b3;
+  --ds-accent: #91a7ff;
+  --ds-space-1: 4px;
+  --ds-space-2: 8px;
+  --ds-space-3: 12px;
+  --ds-space-4: 16px;
+  --ds-space-6: 24px;
+  --tblr-body-bg: var(--ds-canvas);
+  --tblr-body-color: var(--ds-text);
+  --tblr-bg-surface: var(--ds-surface);
+  --tblr-bg-surface-secondary: var(--ds-surface-raised);
+  --tblr-bg-forms: var(--ds-canvas);
+  --tblr-border-color: var(--ds-border);
+  --tblr-border-color-translucent: var(--ds-border);
+  --tblr-secondary-color: var(--ds-muted);
+  --tblr-primary: var(--ds-accent);
+  --tblr-primary-rgb: 145, 167, 255;
+  --tblr-link-color: var(--ds-accent);
+  --tblr-link-hover-color: #bdcaff;
+  --tblr-border-radius: 5px;
+  --tblr-border-radius-sm: 3px;
+  --tblr-border-radius-lg: 6px;
+  --tblr-font-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+  --tblr-body-font-size: 0.8125rem;
+  --tblr-body-line-height: 1.55;
+  --tblr-sidebar-width: 216px;
+}

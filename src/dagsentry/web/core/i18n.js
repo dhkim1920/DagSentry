@@ -5,6 +5,16 @@ const originalText = new WeakMap();
 const originalAttributes = new WeakMap();
 
 function translatePattern(value) {
+  const revision = value.match(/^Revision (\d+)(?: · (Published|Edited|Withdrawn))?$/);
+  if (revision) return `리비전 ${revision[1]}${revision[2] ? ` · ${KOREAN_TRANSLATIONS[revision[2]]}` : ""}`;
+  let schedule = value.match(/^Runs daily at (.+)\.$/);
+  if (schedule) return `매일 ${schedule[1]}에 실행됩니다.`;
+  schedule = value.match(/^Next run: (.+)$/);
+  if (schedule) return `다음 실행: ${schedule[1]}`;
+  schedule = value.match(/^Last heartbeat: (.+)$/);
+  if (schedule) return `마지막 heartbeat: ${schedule[1]}`;
+  schedule = value.match(/^(Automatic reporting is enabled\.|Automatic reporting is disabled\.) · (.+)$/);
+  if (schedule) return `${KOREAN_TRANSLATIONS[schedule[1]]} · ${schedule[2]}`;
   let match = value.match(/^(\d+)–(\d+) of (\d+)$/);
   if (match) {
     return `전체 ${match[3]}개 중 ${match[1]}–${match[2]}`;

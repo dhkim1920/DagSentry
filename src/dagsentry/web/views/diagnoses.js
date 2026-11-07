@@ -21,6 +21,8 @@ function renderDiagnosisRows(items) {
   elements.diagnosisRows.replaceChildren();
   for (const diagnosis of items) {
     const row = document.createElement("tr");
+    row.dataset.validation = diagnosis.status;
+    row.dataset.source = diagnosis.source_type;
     if (diagnosis.incident_id) {
       appendCell(
         row,

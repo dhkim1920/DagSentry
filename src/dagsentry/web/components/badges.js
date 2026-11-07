@@ -38,21 +38,14 @@ export function diagnosisHistorySourceBadge(sourceType) {
   const badge = sourceBadge(sourceType);
   badge.textContent = {
     AI: "AI",
-    RULE: "규칙",
-    OPERATOR: "운영자",
+    RULE: "Rule",
+    OPERATOR: "Operator-authored",
   }[sourceType] || sourceType;
   return badge;
 }
 
 export function diagnosisHistoryStatusBadge(status) {
   const badge = validationBadge(status);
-  badge.textContent = {
-    PASSED: "검증 통과",
-    REJECTED: "거부",
-    CONFIRMED: "확정",
-    UPDATED: "수정됨",
-    WITHDRAWN: "철회",
-  }[status] || status;
   if (status === "REJECTED" || status === "WITHDRAWN") {
     badge.classList.add("is-rejected");
   }
@@ -61,20 +54,20 @@ export function diagnosisHistoryStatusBadge(status) {
 
 export function humanClassificationLabel(value) {
   return {
-    DAG_CODE: "DAG 코드",
-    AIRFLOW_PLATFORM: "Airflow 플랫폼",
-    SOURCE_DATABASE: "원본 데이터베이스",
-    NETWORK: "네트워크",
-    AUTHENTICATION: "인증",
-    AUTHORIZATION: "권한",
-    RESOURCE: "리소스",
-    DATA_QUALITY: "데이터 품질",
-    EXTERNAL_SYSTEM: "외부 시스템",
-    CONFIGURATION: "설정",
-    UNKNOWN: "알 수 없음",
+    DAG_CODE: "DAG code",
+    AIRFLOW_PLATFORM: "Airflow platform",
+    SOURCE_DATABASE: "Source database",
+    NETWORK: "Network",
+    AUTHENTICATION: "Authentication",
+    AUTHORIZATION: "Authorization",
+    RESOURCE: "Resource",
+    DATA_QUALITY: "Data quality",
+    EXTERNAL_SYSTEM: "External system",
+    CONFIGURATION: "Configuration",
+    UNKNOWN: "Unknown",
   }[value] || value;
 }
 
 export function humanRetryLabel(value) {
-  return { RETRYABLE: "재시도 가능", NOT_RETRYABLE: "재시도 불가", UNKNOWN: "판단 보류" }[value] || value;
+  return { RETRYABLE: "Retryable", NOT_RETRYABLE: "Not retryable", UNKNOWN: "Undetermined" }[value] || value;
 }

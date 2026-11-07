@@ -1,3 +1,409 @@
+.incident-summary {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--ds-border);
+}
+
+.queue-state-list {
+  display: flex;
+  gap: 28px;
+  min-width: 0;
+}
+
+.queue-state-button.btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 16px 2px;
+  border: 0;
+  border-radius: 0;
+  color: var(--ds-muted);
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.queue-state-button.btn[aria-pressed="true"] {
+  color: var(--ds-text);
+  box-shadow: inset 0 -2px var(--ds-accent);
+}
+
+.queue-state-button.btn:hover {
+  color: var(--ds-text);
+  background: var(--ds-surface);
+}
+
+.queue-state-button.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.queue-state-button strong,
+.queue-total {
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #c8cdd7;
+  background: var(--ds-surface-raised);
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-state-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #ff9f9f;
+}
+
+.queue-state-dot[data-status="ACKNOWLEDGED"] {
+  background: #e5c27f;
+}
+
+.queue-results-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.incident-summary-help {
+  position: relative;
+  padding-top: 18px;
+}
+
+.incident-summary-help .accordion-item {
+  border: 0;
+  background: transparent;
+}
+
+.incident-summary-help .accordion-button {
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 24px;
+  padding: 2px;
+  color: var(--ds-muted);
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.6875rem;
+}
+
+.incident-summary-help .accordion-button-toggle {
+  flex: 0 0 14px;
+  margin: 0;
+}
+
+.incident-summary-help .accordion-body {
+  position: absolute;
+  z-index: 4;
+  top: 100%;
+  right: 0;
+  width: min(340px, calc(100vw - 24px));
+  padding: 16px;
+  border: 1px solid var(--ds-border);
+  border-radius: 5px;
+  background: var(--ds-surface);
+}
+
+.dashboard > .filter-panel {
+  position: relative;
+  padding: 18px 0;
+  border: 0;
+  border-bottom: 1px solid var(--ds-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.dashboard > .filter-panel > .card-body {
+  padding: 0 !important;
+}
+
+.dashboard > .filter-panel > .card-footer {
+  margin-top: 12px;
+  border: 0;
+  background: transparent;
+}
+
+.dashboard > .filter-panel .accordion-item {
+  border: 0;
+  background: transparent;
+}
+
+.dashboard > .filter-panel .accordion-button {
+  min-height: 38px;
+  padding: 9px 12px;
+  border: 1px solid #454c58;
+  border-radius: 5px;
+  background: transparent;
+  font-size: 0.75rem;
+}
+
+.dashboard > .summary-stats {
+  display: flex;
+  flex-direction: row;
+  gap: 28px;
+  margin-bottom: 12px !important;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.dashboard > .summary-stats > .card-body {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0 !important;
+  border: 0;
+}
+
+.dashboard > .summary-stats dd {
+  font-size: 1rem;
+}
+
+.dashboard > .notice,
+.dashboard > .loading-state,
+.dashboard > .empty-state {
+  margin-top: 20px;
+}
+
+#results-panel .incident-error-summary strong {
+  color: var(--ds-text);
+  font-size: 0.9375rem;
+}
+
+#results-panel .incident-error-summary span {
+  margin-top: 3px;
+  font-size: 0.75rem;
+}
+
+.failure-count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+#incident-detail .detail-header {
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 360px);
+  align-items: start;
+}
+
+#incident-detail .operator-panel,
+#incident-detail .read-only-panel {
+  padding-left: 20px;
+  border-left: 1px solid var(--ds-border);
+}
+
+#incident-detail .operator-panel .aside-empty {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+}
+
+#incident-detail .operator-actions {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.diagnosis-section-label {
+  margin: 0 0 -10px;
+  color: var(--ds-muted);
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+#current-diagnosis-content .diagnosis-root-cause {
+  font-size: 1.375rem;
+  font-weight: 550;
+  line-height: 1.5;
+  letter-spacing: -0.015em;
+}
+
+.diagnosis-validation-note {
+  margin: -6px 0 0;
+  color: var(--ds-muted);
+  font-size: 0.75rem;
+}
+
+.diagnosis-conclusion {
+  display: grid;
+  gap: 12px;
+  padding: 22px 24px;
+  border-left: 3px solid var(--ds-accent);
+  background: #20212b;
+}
+
+.diagnosis-conclusion .diagnosis-section-label,
+.diagnosis-conclusion .diagnosis-validation-note {
+  margin: 0;
+}
+
+#current-diagnosis-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+#current-diagnosis-panel > summary {
+  padding-block: 0 8px;
+  color: var(--ds-muted);
+  font-size: 0.8125rem;
+}
+
+.incident-detail-layout > .detail-aside {
+  gap: 28px;
+  padding-left: 24px;
+  border-left: 1px solid var(--ds-border);
+}
+
+.incident-detail-layout > .detail-aside > .card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.incident-metrics > div:first-child dd {
+  font-size: 2rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.incident-detail-main > .disclosure-panel,
+#human-diagnosis-panel {
+  padding: 18px 0;
+  border: 0;
+  border-top: 1px solid var(--ds-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.diagnosis-investigation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ds-border);
+}
+
+.diagnosis-investigation > section {
+  min-width: 0;
+  align-content: start;
+}
+
+.diagnosis-investigation h4 {
+  color: var(--ds-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.diagnosis-investigation .recommendation-list {
+  padding-left: 18px;
+  font-size: 0.8125rem;
+}
+
+.diagnosis-investigation .evidence-list {
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#diagnosis-rows tr[data-validation="REJECTED"] > td:first-child,
+#diagnosis-rows tr[data-validation="WITHDRAWN"] > td:first-child {
+  box-shadow: inset 2px 0 #dd8e94;
+}
+
+#diagnosis-rows tr[data-validation="CONFIRMED"] > td:first-child,
+#diagnosis-rows tr[data-validation="UPDATED"] > td:first-child {
+  box-shadow: inset 2px 0 #95d7b3;
+}
+
+#diagnosis-rows td:nth-child(4) {
+  min-width: 280px;
+  max-width: 480px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.occurrence-panel td:nth-last-child(2) {
+  min-width: 130px;
+  white-space: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.occurrence-panel .task-identity {
+  min-width: 120px;
+  max-width: 180px;
+  font-size: 0.8125rem;
+}
+
+.report-schedule-panel {
+  margin-top: 0;
+}
+
+.report-schedule-form .form-label,
+.connection-form .form-label {
+  color: var(--ds-text);
+}
+
+.report-schedule-preview,
+.report-execution-status {
+  border: 1px solid var(--ds-border);
+}
+
+@media (min-width: 1280px) {
+  .diagnosis-investigation:has(> section + section) {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  #report-filter-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 20px;
+  }
+
+  #report-filter-form .filter-actions {
+    margin: 0;
+  }
+
+  .dashboard > .filter-panel:has(> .card-footer) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 200px;
+    align-items: start;
+    gap: 12px;
+  }
+
+  .dashboard > .filter-panel > .card-footer {
+    margin-top: 24px;
+  }
+
+  .dashboard > .filter-panel .accordion-body {
+    width: 100%;
+    padding: 20px;
+    border: 1px solid var(--ds-border);
+    border-radius: 5px;
+    background: var(--ds-surface);
+  }
+
+  .dashboard > .filter-panel > .card-footer:has(.advanced-filters[open]) {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+
+  .dashboard > .filter-panel .advanced-filters[open] > summary {
+    position: absolute;
+    top: 42px;
+    right: 0;
+    width: 200px;
+  }
+}
+
 .signature-detail-header {
   grid-template-columns: minmax(0, 1fr) minmax(480px, auto);
 }
@@ -567,6 +973,30 @@
 }
 
 @media (max-width: 1050px) {
+  .filter-grid.report-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .incident-detail-layout > .detail-aside {
+    padding: 24px 0 0;
+    border-top: 1px solid var(--ds-border);
+    border-left: 0;
+  }
+  #incident-detail .detail-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #incident-detail .operator-panel,
+  #incident-detail .read-only-panel {
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--ds-border);
+  }
+
+  #incident-detail .operator-panel > h2,
+  #incident-detail .operator-panel > p {
+    display: inline;
+    margin-right: 8px;
+  }
   .site-header {
     padding: 0 18px;
   }
@@ -615,6 +1045,73 @@
 }
 
 @media (max-width: 680px) {
+  .filter-grid.report-filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .dashboard-heading {
+    margin-bottom: 18px;
+  }
+
+  .incident-summary {
+    gap: 8px;
+  }
+
+  .queue-state-list {
+    gap: 16px;
+  }
+
+  .queue-state-button.btn {
+    gap: 6px;
+    min-height: 52px;
+    font-size: 0.75rem;
+  }
+
+  .incident-summary-help {
+    padding-top: 14px;
+  }
+
+  .incident-summary-help summary > span:first-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .dashboard > .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 20px;
+  }
+
+  .diagnosis-conclusion {
+    padding: 18px 16px;
+  }
+
+  #current-diagnosis-content .diagnosis-root-cause {
+    font-size: 1.125rem;
+  }
+  .summary-stats .card-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    align-content: start;
+    padding: 12px 8px !important;
+  }
+
+  .summary-stats dt .badge {
+    font-size: 0.6875rem;
+    letter-spacing: 0;
+    overflow-wrap: normal;
+  }
+
+  .summary-stats dd {
+    font-size: 1.25rem;
+  }
+
   #incident-dashboard .dashboard-heading {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -735,11 +1232,21 @@
   }
 
   .session-actions {
+    display: grid;
+    grid-template-columns: minmax(68px, 0.8fr) minmax(100px, 1fr);
     gap: 6px;
   }
 
+  .session-actions #disconnect-button {
+    grid-column: 2;
+    justify-self: end;
+    min-height: 28px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
   #language-select {
-    min-width: 68px;
+    min-width: 0;
   }
 
   #timezone-select {
@@ -748,8 +1255,15 @@
     min-width: 0;
   }
 
+  #language-select,
+  #timezone-select {
+    width: 100%;
+    padding: 7px 24px 7px 8px;
+    font-size: 0.75rem;
+  }
+
   main {
-    padding: 32px 16px 52px;
+    padding: 20px 12px 40px;
   }
 
   .auth-shell {

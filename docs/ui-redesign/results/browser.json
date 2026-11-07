@@ -1,0 +1,31 @@
+{
+  "result": "PASS",
+  "browser": "chromium",
+  "version": "145.0.7632.6",
+  "platform": "darwin",
+  "observedAt": "2026-11-07T12:35:19.528Z",
+  "screenshots": ".audit/ui-redesign-v2/regression",
+  "accessibility": {
+    "views": [
+      "incidents",
+      "signatures",
+      "signature-detail",
+      "diagnoses",
+      "diagnosis-detail"
+    ],
+    "reducedMotion": true,
+    "forcedColorsEmulated": true,
+    "reflowWidth": 720,
+    "actualBrowserZoom": "manual check required",
+    "screenReader": "manual check required"
+  },
+  "checks": "views, responsive overflow, first-viewport content, diagnosis priority/rejection, labels, keyboard, dialogs, filters, URL/history, language/timezone, loading/empty/error, XSS text, pagination, CSRF request, viewer, logout",
+  "fixtureOnly": [
+    "report content",
+    "write failure",
+    "operator/rejected diagnosis",
+    "long text/pagination",
+    "temporary password",
+    "viewer role"
+  ]
+}

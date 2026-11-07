@@ -16,7 +16,7 @@ function reportStatusBadge(status) {
 }
 
 function setReportSchedulerStatus(status) {
-  elements.reportSchedulerStatus.textContent = status === "ONLINE" ? "정상" : "오프라인";
+  elements.reportSchedulerStatus.textContent = status === "ONLINE" ? "Online" : "Offline";
   elements.reportSchedulerStatus.dataset.status = status;
   applyStatusColor(elements.reportSchedulerStatus, status);
 }
@@ -36,26 +36,26 @@ function scheduleSummary(schedule) {
   const copy = textElement(
     "p",
     `${schedule.enabled
-      ? "자동 리포트가 활성화되어 있습니다."
-      : "자동 리포트가 비활성화되어 있습니다."} · ${schedule.environment}`,
+      ? "Automatic reporting is enabled."
+      : "Automatic reporting is disabled."} · ${schedule.environment}`,
   );
   const next = textElement(
     "p",
     schedule.next_run_at
-      ? `다음 실행: ${formatScheduleTimestamp(schedule.next_run_at, schedule.timezone)}`
-      : "다음 실행: 자동 리포트 비활성",
+      ? `Next run: ${formatScheduleTimestamp(schedule.next_run_at, schedule.timezone)}`
+      : "Automatic reporting is disabled; no next run.",
     "muted-copy",
   );
   const applied = textElement(
     "p",
-    schedule.applied_revision === schedule.revision ? "스케줄러 적용 완료" : "스케줄러 적용 대기 중",
+    schedule.applied_revision === schedule.revision ? "Applied by scheduler" : "Awaiting scheduler sync",
     "muted-copy",
   );
   const heartbeat = textElement(
     "p",
     schedule.last_heartbeat_at
-      ? `마지막 heartbeat: ${formatTimestamp(schedule.last_heartbeat_at).primary}`
-      : "마지막 heartbeat: 없음",
+      ? `Last heartbeat: ${formatTimestamp(schedule.last_heartbeat_at).primary}`
+      : "No heartbeat recorded",
     "muted-copy",
   );
   card.append(heading, copy, next, applied, heartbeat);
@@ -89,16 +89,16 @@ function renderReportSchedulePreview() {
   const timezone = elements.reportScheduleTimezone.value || "Asia/Seoul";
   elements.reportSchedulePreview.replaceChildren(
     textElement("p", elements.reportScheduleEnabled.checked
-      ? `매일 ${time} ${timezone}에 실행됩니다.`
-      : "자동 리포트가 비활성화되어 있습니다."),
-    textElement("p", "전일 UTC 기준 데이터를 집계합니다."),
+      ? `Runs daily at ${time} ${timezone}.`
+      : "Automatic reporting is disabled."),
+    textElement("p", "Aggregates data for the previous UTC day."),
   );
 }
 
 function renderNotificationConnections() {
   const selected = elements.reportScheduleNotificationConnection.value;
   elements.reportScheduleNotificationConnection.replaceChildren(
-    new Option("기본 알림 설정", ""),
+    new Option("Default notification settings", ""),
     ...state.reportNotificationConnections.map((connection) => new Option(
       `${connection.display_name} · ${connection.environment}`,
       connection.id,
@@ -111,7 +111,7 @@ function renderReportSchedules(schedules, runs, schedulerStatus) {
   setReportSchedulerStatus(schedulerStatus.status);
   elements.reportScheduleList.replaceChildren(...schedules.map(scheduleSummary));
   if (!schedules.length) {
-    elements.reportScheduleList.append(textElement("p", "아직 저장된 리포트 스케줄이 없습니다.", "aside-empty"));
+    elements.reportScheduleList.append(textElement("p", "No report schedules saved yet.", "aside-empty"));
   }
   const isAdmin = state.currentUser?.role === "ADMIN";
   elements.reportScheduleForm.hidden = !isAdmin;
@@ -124,23 +124,23 @@ function renderReportSchedules(schedules, runs, schedulerStatus) {
   }
   elements.reportScheduleRuns.replaceChildren();
   if (!runs.length) {
-    elements.reportScheduleRuns.append(textElement("p", "아직 실행 이력이 없습니다.", "aside-empty"));
+    elements.reportScheduleRuns.append(textElement("p", "No runs recorded yet.", "aside-empty"));
     return;
   }
   const latest = runs[0];
   const statusLabels = {
-    CLAIMED: "대기 중",
-    RUNNING: "실행 중",
-    SUCCEEDED: "성공",
-    FAILED: "실패",
-    SKIPPED: "건너뜀",
+    CLAIMED: "Pending",
+    RUNNING: "Running",
+    SUCCEEDED: "Succeeded",
+    FAILED: "Failed",
+    SKIPPED: "Skipped",
   };
   const deliveryLabels = {
-    CLAIMED: "전송 대기",
-    RUNNING: "전송 중",
-    SUCCEEDED: "전송 완료",
-    FAILED: "전송 실패",
-    SKIPPED: "이미 전송됨",
+    CLAIMED: "Delivery pending",
+    RUNNING: "Delivering",
+    SUCCEEDED: "Delivered",
+    FAILED: "Delivery failed",
+    SKIPPED: "Already delivered",
   };
   const details = document.createElement("dl");
   details.className = "report-execution-grid";
@@ -148,14 +148,14 @@ function renderReportSchedules(schedules, runs, schedulerStatus) {
     details.append(textElement("dt", label), textElement("dd", value));
   };
   appendDetail(
-    "실행 시각",
+    "Execution time",
     formatTimestamp(latest.started_at || latest.scheduled_for).primary,
   );
-  appendDetail("상태", statusLabels[latest.status] || latest.status);
-  appendDetail("리포트 날짜", latest.report_date);
-  appendDetail("전송 상태", deliveryLabels[latest.status] || latest.status);
+  appendDetail("Status", statusLabels[latest.status] || latest.status);
+  appendDetail("Report date", latest.report_date);
+  appendDetail("Delivery status", deliveryLabels[latest.status] || latest.status);
   if (latest.report_id) {
-    details.append(textElement("dt", "리포트"), contextLink("상세 보기", reportHref(latest.report_id)));
+    details.append(textElement("dt", "Report"), contextLink("View details", reportHref(latest.report_id)));
   }
   elements.reportScheduleRuns.append(details);
 }
@@ -189,7 +189,7 @@ export async function loadReportSchedules(request = beginViewRequest()) {
     if (!request.isCurrent() || handleApiError(error)) return false;
     elements.reportScheduleError.textContent = error instanceof Error
       ? error.message
-      : "Daily Report 스케줄을 불러오지 못했습니다.";
+      : "Unable to load report schedules.";
     elements.reportScheduleError.hidden = false;
     return false;
   }
@@ -227,14 +227,14 @@ async function saveReportSchedule() {
     );
     if (!request.isCurrent()) return;
     state.currentReportSchedule = response;
-    elements.reportScheduleFeedback.textContent = "설정을 저장했습니다. 스케줄러가 다음 동기화 때 적용합니다.";
+    elements.reportScheduleFeedback.textContent = "Settings saved. The scheduler will apply them at the next sync.";
     elements.reportScheduleFeedback.hidden = false;
     await loadReportSchedules();
   } catch (error) {
     if (!request.isCurrent() || handleApiError(error)) return;
     elements.reportScheduleError.textContent = error instanceof Error
       ? error.message
-      : "Daily Report 스케줄을 저장하지 못했습니다.";
+      : "Unable to save report schedule.";
     elements.reportScheduleError.hidden = false;
   } finally {
     elements.reportScheduleSave.disabled = false;
@@ -259,14 +259,14 @@ async function requestManualReportRun() {
       },
     );
     if (!request.isCurrent()) return;
-    elements.reportScheduleFeedback.textContent = "Daily Report 실행을 스케줄러에 요청했습니다.";
+    elements.reportScheduleFeedback.textContent = "Report run requested from the scheduler.";
     elements.reportScheduleFeedback.hidden = false;
     await loadReportSchedules();
   } catch (error) {
     if (!request.isCurrent() || handleApiError(error)) return;
     elements.reportScheduleError.textContent = error instanceof Error
       ? error.message
-      : "Daily Report 실행을 요청하지 못했습니다.";
+      : "Unable to request report run.";
     elements.reportScheduleError.hidden = false;
   } finally {
     elements.reportManualRun.disabled = false;
