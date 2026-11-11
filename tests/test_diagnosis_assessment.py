@@ -177,7 +177,7 @@ def test_abstention_never_exposes_a_known_cause(root_cause: str) -> None:
     )
     result = validate_ai_evidence(response, [], log_processor=LogProcessor())
     assert result.response.root_cause == "제공된 근거만으로 실패 원인을 판단할 수 없습니다."
-    assert result.response.classification == "UNKNOWN"
+    assert result.response.classification == response.classification
     assert result.response.retry_decision == "UNKNOWN"
     assert "original-secret" not in result.response.model_dump_json()
     assert result.status == ("REJECTED" if "password=" in root_cause else "PASSED")
@@ -267,3 +267,23 @@ def test_malicious_log_quote_is_allowed_without_adopting_its_instruction() -> No
     result = validate_ai_evidence(response, [evidence], log_processor=LogProcessor())
     assert result.status == "PASSED"
     assert result.response.evidence == [evidence]
+
+
+def test_unknown_underlying_cause_keeps_observed_resource_error() -> None:
+    observed = "Container terminated: OOMKilled"
+    response = ai_response(
+        root_cause="원인 불명", evidence=[AIEvidence(line_id=1, text=observed)]
+    ).model_copy(
+        update={
+            "assessment": uncertain().model_copy(update={"facts": [observed]}),
+            "classification": "RESOURCE",
+        }
+    )
+    supplied = LogProcessor().process(observed)
+    result = validate_ai_evidence(response, supplied.lines, log_processor=LogProcessor())
+    assert result.status == "PASSED"
+    assert result.response.classification == "RESOURCE"
+    assert result.response.assessment.basis == "UNDETERMINED"
+    assert result.response.assessment.facts == [observed]
+    assert result.response.evidence == response.evidence
+    assert result.response.retry_decision == "UNKNOWN"

@@ -452,7 +452,7 @@ def create_diagnosis(
         operator_review_required=incident_index % 3 != 1,
         validation_errors=[],
         diagnosis_schema_version=2 if incident_index % 3 != 1 else 1,
-        prompt_version="ai-diagnosis-ko-v4" if source == DiagnosisSource.AI else None,
+        prompt_version="ai-diagnosis-ko-v5" if source == DiagnosisSource.AI else None,
         rule_version=1 if source == DiagnosisSource.RULE else None,
         reused_from_diagnosis_id=None,
         created_at=failure.observed_at + timedelta(minutes=2),

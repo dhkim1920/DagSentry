@@ -4,20 +4,13 @@ from __future__ import annotations
 
 import os
 import socket
-from datetime import timedelta
 
 from dagsentry.config import get_settings
 from dagsentry.db import create_session_factory
-from dagsentry.domain.diagnosis import (
-    DIAGNOSIS_SCHEMA_VERSION,
-    DiagnosisReusePolicy,
-    DiagnosisVersions,
-)
-from dagsentry.error_signature import FINGERPRINT_VERSION
 from dagsentry.log_processing import LogProcessingConfig, LogProcessor
 from dagsentry.observability import configure_logging
 from dagsentry.pipeline import DiagnosisPipeline
-from dagsentry.rule_diagnosis import RULESET_VERSION, RuleEngine
+from dagsentry.rule_diagnosis import RuleEngine
 from dagsentry.runtime_connections import (
     ConfiguredAirflowConnectionResolver,
     ConfiguredLLMConnectionResolver,
@@ -39,15 +32,6 @@ def main() -> None:
         ),
         log_processor=LogProcessor(LogProcessingConfig.from_settings(settings)),
         rule_engine=RuleEngine(),
-        reuse_policy=DiagnosisReusePolicy(
-            fingerprint_version=FINGERPRINT_VERSION,
-            versions=DiagnosisVersions(
-                schema_version=DIAGNOSIS_SCHEMA_VERSION,
-                prompt_version=settings.llm_prompt_version,
-                rule_version=RULESET_VERSION,
-            ),
-            max_age=timedelta(days=settings.diagnosis_reuse_max_age_days),
-        ),
         notification_connection_resolver=ConfiguredNotificationConnectionResolver(
             settings,
             session_factory,

@@ -385,6 +385,8 @@ export const KOREAN_TRANSLATIONS = Object.freeze({
   "Signature ID": "시그니처 ID",
   "Created from": "생성 시작일",
   "Created to": "생성 종료일",
+  "Error type": "오류 유형",
+  "Cause assessment": "원인 판단",
   "Evidence basis": "근거 수준",
   "Evidence assessment": "근거 평가",
   "Direct evidence": "직접 근거 있음",

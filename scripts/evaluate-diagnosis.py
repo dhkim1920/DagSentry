@@ -17,6 +17,7 @@ from dagsentry.llm import (
     ExcerptLineContext,
     FailureMetadata,
     LLMProviderError,
+    LogContext,
     RuleDiagnosisContext,
 )
 from dagsentry.log_processing import LogProcessor
@@ -87,6 +88,11 @@ def main() -> None:
                 confidence_reason=rule.confidence_reason,
                 extracted_values=tuple(asdict(value) for value in rule.extracted_values),
                 evidence_line_ids=rule.evidence_line_ids,
+            ),
+            log_context=LogContext(
+                scope="synthetic_task_try",
+                input_line_count=excerpt.input_line_count,
+                excerpt_line_count=len(excerpt.lines),
             ),
             error_signature=None,
             excerpt=tuple(ExcerptLineContext(line.line_id, line.text) for line in excerpt.lines),

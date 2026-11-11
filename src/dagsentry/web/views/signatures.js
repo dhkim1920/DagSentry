@@ -112,7 +112,7 @@ function renderLatestSignatureDiagnosis(diagnosis) {
   const facts = document.createElement("dl");
   facts.className = "signature-diagnosis-facts";
   facts.append(
-    definitionItem("Evidence basis", evidenceBasisLabel(diagnosis.assessment)),
+    definitionItem("Cause assessment", evidenceBasisLabel(diagnosis.assessment)),
     definitionItem("Retry", diagnosis.retry_decision),
     definitionItem("Created", formatTimestamp(diagnosis.created_at).primary),
   );
@@ -172,7 +172,7 @@ function renderSignatureIdentity(signature) {
     fields.className = "diagnosis-card-fields";
     fields.append(
       definitionItem("Root cause", diagnosis.root_cause),
-      definitionItem("Classification", humanClassificationLabel(diagnosis.classification)),
+      definitionItem("Error type", humanClassificationLabel(diagnosis.classification)),
       definitionItem("Retry decision", humanRetryLabel(diagnosis.retry_decision)),
     );
     body.append(fields);

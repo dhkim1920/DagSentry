@@ -9,7 +9,7 @@ from typing import Annotated, Self
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
-DIAGNOSIS_SCHEMA_VERSION = 3
+DIAGNOSIS_SCHEMA_VERSION = 4
 
 
 class EvidenceBasis(StrEnum):

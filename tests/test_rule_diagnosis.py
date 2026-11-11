@@ -92,7 +92,7 @@ ValueError: invalid order
         ExtractedValue("exception_class", "ValueError"),
         ExtractedValue(
             "application_stack_frame",
-            'File "/opt/airflow/dags/orders.py", line <LINE>, in load_orders',
+            'File "/opt/airflow/dags/orders.py", line 42, in load_orders',
         ),
     )
     assert result.evidence_line_ids == (4,)

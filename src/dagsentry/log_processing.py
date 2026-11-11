@@ -127,7 +127,7 @@ class _SourceLine:
 
 
 class LogProcessor:
-    """Mask secrets before selecting and normalizing relevant log evidence."""
+    """Mask secrets before selecting relevant log evidence."""
 
     def __init__(self, config: LogProcessingConfig | None = None) -> None:
         self.config = config or LogProcessingConfig()
@@ -164,12 +164,12 @@ class LogProcessor:
         )
         application_frames = _application_frames(cleaned)
         selected = _select_relevant(cleaned, self.config.context_lines)
-        normalized = [
-            ExcerptLine(line_id=line.line_id, text=_normalize_dynamic_values(line.text))
+        excerpt_lines = [
+            ExcerptLine(line_id=line.line_id, text=_redact_private_paths(line.text))
             for line in selected
         ]
         bounded = _bound_excerpt(
-            normalized,
+            excerpt_lines,
             max_lines=self.config.max_excerpt_lines,
             max_chars=self.config.max_excerpt_chars,
         )
@@ -233,7 +233,7 @@ def _application_frames(lines: list[_SourceLine]) -> tuple[str, ...]:
         path = match.group(1).replace("\\", "/")
         if "/site-packages/" in path or re.search(r"/lib/python\d", path):
             continue
-        frames.append(_normalize_dynamic_values(line.text.strip()))
+        frames.append(_redact_private_paths(line.text.strip()))
     return tuple(dict.fromkeys(frames))[:_MAX_EXTRACTED_VALUES]
 
 
@@ -256,7 +256,12 @@ def _select_relevant(lines: list[_SourceLine], context_lines: int) -> list[_Sour
     return [line for index, line in enumerate(lines) if index in selected_indexes]
 
 
-def _normalize_dynamic_values(value: str) -> str:
+def _redact_private_paths(value: str) -> str:
+    return _TEMP_PATH.sub("<TEMP_PATH>", _HOME_PATH.sub("<HOME_PATH>", value))
+
+
+def normalize_signature_text(value: str) -> str:
+    """Remove run-specific values only from fingerprint fields, never evidence."""
     normalized = _TIMESTAMP.sub("<TIMESTAMP>", value)
     normalized = _UUID.sub("<UUID>", normalized)
     normalized = _HOME_PATH.sub("<HOME_PATH>", normalized)

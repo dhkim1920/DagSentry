@@ -32,7 +32,8 @@ SQLSTATE errors, explicit failure levels, OOM failures, and HTTP errors. Two sur
 included by default. When no signal exists, the final ten non-noise lines are retained so sparse
 logs remain diagnosable without raising an exception.
 
-Timestamps, UUIDs, labeled numeric IDs, long numeric values, temporary paths, Python stack-frame
-line numbers, and hexadecimal addresses are normalized. Masked and normalized excerpt data is the
-only log representation exposed to later Rule and AI diagnosis stages; raw logs are not persisted
-by the current implementation.
+Timestamps, UUIDs, trace/run IDs, resource byte values, stack line numbers and hexadecimal
+addresses are retained in evidence. Home and temporary paths are redacted for privacy. Only
+fingerprint message/frame fields normalize dynamic values, so grouping remains stable without
+discarding diagnostic context. Later Rule and AI stages receive the sanitized excerpt; raw logs
+are not persisted by the current implementation.

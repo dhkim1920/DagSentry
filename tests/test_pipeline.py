@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from uuid import UUID
 
 import pytest
@@ -9,12 +9,9 @@ from sqlalchemy import func, select
 
 from dagsentry.db import SessionFactory
 from dagsentry.domain.diagnosis import (
-    DIAGNOSIS_SCHEMA_VERSION,
     DiagnosisAssessment,
-    DiagnosisReusePolicy,
     DiagnosisSource,
     DiagnosisValidationStatus,
-    DiagnosisVersions,
     ErrorClassification,
     RetryDecision,
 )
@@ -28,7 +25,6 @@ from dagsentry.domain.notification import (
 )
 from dagsentry.domain.recovery import RecoveryNotificationPayload
 from dagsentry.domain.reporting import DailyReportNotificationPayload
-from dagsentry.error_signature import FINGERPRINT_VERSION
 from dagsentry.incident import transition_incident
 from dagsentry.ingestion import ingest_failure_event
 from dagsentry.llm import (
@@ -50,7 +46,7 @@ from dagsentry.models import (
     OutboxStatus,
 )
 from dagsentry.pipeline import DiagnosisPipeline
-from dagsentry.rule_diagnosis import RULESET_VERSION, RuleEngine
+from dagsentry.rule_diagnosis import RuleEngine
 from dagsentry.runtime_connections import (
     AirflowRuntimeConnection,
     AirflowRuntimeConnectionResolver,
@@ -267,11 +263,6 @@ def pipeline(
         log_fetcher=log_fetcher,
         log_processor=LogProcessor(),
         rule_engine=RuleEngine(),
-        reuse_policy=DiagnosisReusePolicy(
-            fingerprint_version=FINGERPRINT_VERSION,
-            versions=DiagnosisVersions(DIAGNOSIS_SCHEMA_VERSION, "ai-v1", RULESET_VERSION),
-            max_age=timedelta(days=30),
-        ),
         notification_provider=notification,
         llm_provider=llm,
         airflow_ui_base_url="https://airflow.example",
@@ -600,12 +591,25 @@ def test_notification_retry_resumes_persisted_diagnosis_without_repeating_ai(
         assert delivery.attempt_count == 2
 
 
-def test_second_equivalent_failure_reuses_first_ai_diagnosis(
+def test_second_equivalent_failure_gets_current_ai_diagnosis(
     session_factory: SessionFactory,
 ) -> None:
     first_id = ingest(session_factory, try_number=1)
     second_id = ingest(session_factory, try_number=2)
-    logs = StubLogFetcher(available_log())
+    first_log = (
+        "2026-11-11T01:02:03Z trace_id=123e4567-e89b-42d3-a456-426614174000\n"
+        "memory_limit_bytes=134217728\n"
+        '  File "/opt/airflow/dags/orders.py", line 42, in load\n'
+        "MemoryError: requested_bytes=268435456 password=private-value"
+    )
+    second_log = (
+        first_log.replace("01:02:03", "02:03:04")
+        .replace("123e4567-e89b-42d3-a456-426614174000", "987e6543-e21b-42d3-a456-426614174999")
+        .replace("134217728", "268435456")
+        .replace("268435456 password", "536870912 password")
+        .replace("line 42", "line 52")
+    )
+    logs = StubLogFetcher(available_log(first_log))
     llm = StubLLMProvider()
     notifications = StubNotificationProvider()
     diagnosis_pipeline = pipeline(
@@ -616,20 +620,36 @@ def test_second_equivalent_failure_reuses_first_ai_diagnosis(
     )
 
     first = diagnosis_pipeline.process(first_id)
+    logs.result = available_log(second_log)
     second = diagnosis_pipeline.process(second_id)
 
     assert first.diagnosis_source == DiagnosisSource.AI
-    assert second.diagnosis_source == DiagnosisSource.REUSED
+    assert second.diagnosis_source == DiagnosisSource.AI
     assert second.incident_id == first.incident_id
-    assert len(llm.calls) == 1
+    assert len(llm.calls) == 2
+    assert llm.calls[0].error_signature == llm.calls[1].error_signature
+    assert llm.calls[0].excerpt != llm.calls[1].excerpt
+    current_text = "\n".join(line.text for line in llm.calls[1].excerpt)
+    assert "2026-11-11T02:03:04Z" in current_text
+    assert "987e6543-e21b-42d3-a456-426614174999" in current_text
+    assert "memory_limit_bytes=268435456" in current_text
+    assert "requested_bytes=536870912" in current_text
+    assert "line 52" in current_text
+    assert "private-value" not in current_text
+    assert "[REDACTED]" in current_text
+    assert llm.calls[1].log_context is not None
+    assert llm.calls[1].log_context.input_line_count == 4
     assert len(notifications.payloads) == 1
     assert second.notification.suppressed is True
     with session_factory() as session:
+        stored = session.get(DiagnosisRecord, second.diagnosis_id)
+        assert stored is not None and stored.evidence
+        assert stored.evidence[0]["text"] == llm.calls[1].excerpt[-1].text
         reuse_metric = session.get(
             OperationalMetricCounterRecord,
             ("dagsentry_diagnosis_outcomes_total", "reused"),
         )
-        assert reuse_metric is not None and reuse_metric.value == 1
+        assert reuse_metric is None
         deliveries = session.scalars(
             select(NotificationDeliveryRecord).order_by(NotificationDeliveryRecord.created_at)
         ).all()
@@ -645,7 +665,7 @@ def test_second_equivalent_failure_reuses_first_ai_diagnosis(
         assert suppressed.suppression_reason == "REPEATED_ACTIVE_INCIDENT"
         assert suppressed.attempt_count == 0
         assert suppressed.payload["incident_failure_count"] == 2
-        assert suppressed.payload["diagnosis_source"] == DiagnosisSource.REUSED
+        assert suppressed.payload["diagnosis_source"] == DiagnosisSource.AI
 
 
 @pytest.mark.parametrize("tries", [(1, 2, 3, 4), (3, 4)])

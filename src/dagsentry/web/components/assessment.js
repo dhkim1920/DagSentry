@@ -12,7 +12,7 @@ export function evidenceBasisLabel(assessment) {
 export function renderAssessment(assessment) {
   const section = document.createElement("section");
   section.className = "diagnosis-section diagnosis-assessment";
-  section.append(textElement("h3", "Evidence assessment"));
+  section.append(textElement("h3", "Cause assessment"));
   section.append(textElement("p", evidenceBasisLabel(assessment)));
   if (!assessment) return section;
   section.append(textElement("p", assessment.reason));

@@ -367,7 +367,15 @@ def _parse_page(
         event = item.get("event")
         if not isinstance(event, str):
             return None
-        parts.append(f"{event}\n")
+        timestamp = item.get("timestamp")
+        prefix = (
+            f"timestamp={timestamp}\n"
+            if isinstance(timestamp, str)
+            and timestamp
+            and event not in {_SOURCE_GROUP_START, _SOURCE_GROUP_END}
+            else ""
+        )
+        parts.append(f"{prefix}{event}\n")
         error_detail_parts = _error_detail_parts(item)
         parts.extend(error_detail_parts)
         if event == _SOURCE_GROUP_START:
@@ -417,7 +425,13 @@ def _frame_part(frame: object) -> str | None:
         or not isinstance(name, str)
     ):
         return None
-    return f'  File "{filename}", line {lineno}, in {name}\n'
+    source_line = frame.get("line")
+    snippet = (
+        f"    {source_line.strip()}\n"
+        if isinstance(source_line, str) and source_line.strip()
+        else ""
+    )
+    return f'  File "{filename}", line {lineno}, in {name}\n{snippet}'
 
 
 def _unavailable(

@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     llm_config_source: Literal["environment", "database"] = "environment"
     llm_provider: Literal["openai", "azure_openai", "anthropic", "bedrock", "ollama"] | None = None
     llm_model: str | None = None
-    llm_prompt_version: str = "ai-diagnosis-ko-v4"
+    llm_prompt_version: str = "ai-diagnosis-ko-v5"
     daily_report_prompt_version: str = "daily-report-ko-v1"
     report_timezone: str = "Asia/Seoul"
     llm_timeout_seconds: float = Field(default=15.0, gt=0)
@@ -104,7 +104,6 @@ class Settings(BaseSettings):
             raise ValueError("display_timezone must be an IANA timezone") from error
         return value
 
-    diagnosis_reuse_max_age_days: int = Field(default=30, ge=1)
     worker_max_attempts: int = Field(default=5, ge=1)
     worker_backoff_base_seconds: float = Field(default=5.0, ge=0)
     worker_backoff_max_seconds: float = Field(default=300.0, ge=0)

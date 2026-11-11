@@ -24,9 +24,10 @@ An `UNSIGNABLE` failure has no Error Signature ID and is never reused. `REJECTED
 version-incompatible rows are also ignored. When more than one compatible original exists, the
 newest one is selected.
 
-Call `reuse_diagnosis` before invoking an LLM Provider. A non-null result means the current failure
-was resolved by reference and no provider call is needed; a null result allows the pipeline to
-continue to AI Diagnosis.
+The worker analyzes each new Task Try from current evidence instead of calling `reuse_diagnosis`
+by signature alone. Dynamic values are deliberately absent from fingerprints and may change the
+cause assessment. The reuse persistence API and historical `REUSED` rows remain supported;
+processing the same Failure Event again still returns its existing validated diagnosis.
 
 ## Operator query API
 

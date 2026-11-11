@@ -16,8 +16,9 @@ ID와 요청 `fingerprint_version`이 일치하고, `PASSED`이며, 다른 `REUS
 명시한 `max_age` 안에 있어야 합니다. `UNSIGNABLE`, `REJECTED`, 오래되었거나 버전 비호환 행은 무시하며
 호환 원본이 여러 개면 가장 최신을 선택합니다.
 
-LLM Provider를 호출하기 전 `reuse_diagnosis`를 호출합니다. 결과가 있으면 현재 실패는 참조로 해결되어
-Provider 호출이 필요 없고, 없으면 AI Diagnosis로 진행합니다.
+Worker는 시그니처만으로 `reuse_diagnosis`를 호출하지 않고 새 Task Try마다 현재 근거로 진단합니다.
+시그니처에서 생략하는 동적 값이 원인 판단에 영향을 줄 수 있기 때문입니다. 기존 재사용 저장 API와
+과거 `REUSED` 행은 유지하며 동일 Failure Event의 재처리는 기존 검증된 진단을 반환합니다.
 
 ## 운영자 조회 API
 

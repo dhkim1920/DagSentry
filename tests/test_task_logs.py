@@ -111,6 +111,7 @@ def test_fetch_includes_airflow_error_detail_in_log_content() -> None:
             [
                 {
                     "event": "Task failed with exception",
+                    "timestamp": "2026-11-11T01:02:03Z",
                     "error_detail": [
                         {
                             "exc_type": "ConnectionError",
@@ -120,6 +121,8 @@ def test_fetch_includes_airflow_error_detail_in_log_content() -> None:
                                     "filename": "/opt/airflow/dags/orders.py",
                                     "lineno": 42,
                                     "name": "load_orders",
+                                    "line": "connection.connect()",
+                                    "locals": {"secret": "never-collect"},
                                 }
                             ],
                         }
@@ -131,8 +134,9 @@ def test_fetch_includes_airflow_error_detail_in_log_content() -> None:
 
     assert result.status == LogCollectionStatus.AVAILABLE
     assert result.content == (
-        "Task failed with exception\n"
+        "timestamp=2026-11-11T01:02:03Z\nTask failed with exception\n"
         '  File "/opt/airflow/dags/orders.py", line 42, in load_orders\n'
+        "    connection.connect()\n"
         "ConnectionError: warehouse gateway refused connection\n"
     )
 
@@ -336,3 +340,68 @@ def test_failure_loader_rejects_unknown_event(session_factory: SessionFactory) -
 
     with pytest.raises(FailureEventNotFoundError):
         loader.load(UUID(str(uuid4())))
+
+
+def test_structured_context_keeps_source_group_filtering_and_masks_source_secrets() -> None:
+    from dagsentry.log_processing import LogProcessor
+
+    result = client(
+        lambda _: response(
+            [
+                {
+                    "timestamp": "2026-11-11T01:02:02Z",
+                    "event": "::group::Log message source details",
+                },
+                {"timestamp": "2026-11-11T01:02:02Z", "event": "private source location"},
+                {"timestamp": "2026-11-11T01:02:02Z", "event": "::endgroup::"},
+                {
+                    "timestamp": "2026-11-11T01:02:03Z",
+                    "event": "Task failed",
+                    "error_detail": [
+                        {
+                            "exc_type": "MemoryError",
+                            "exc_value": "requested_bytes=268435456",
+                            "frames": [
+                                {
+                                    "filename": "/opt/airflow/dags/orders.py",
+                                    "lineno": 42,
+                                    "name": "load",
+                                    "line": 'connect(password="source-secret")',
+                                    "locals": {"secret": "local-secret"},
+                                }
+                            ],
+                        }
+                    ],
+                },
+            ]
+        )
+    ).fetch(reference())
+    assert result.content is not None
+    assert "local-secret" not in result.content
+    excerpt = LogProcessor().process_result(result)
+    assert excerpt is not None
+    text = "\n".join(line.text for line in excerpt.lines)
+    assert "private source location" not in text
+    assert "source-secret" not in text
+    assert "connect(password=[REDACTED])" in text
+    assert "2026-11-11T01:02:03Z" in text
+    assert "requested_bytes=268435456" in text
+
+
+def test_structured_timestamp_preserves_existing_oom_signature() -> None:
+    from dagsentry.error_signature import build_error_signature, signature_input_from_excerpt
+    from dagsentry.log_processing import LogProcessor
+
+    processor = LogProcessor()
+    previous = processor.process("Container terminated: OOMKilled\n")
+    fetched = client(
+        lambda _: response(
+            [{"event": "Container terminated: OOMKilled", "timestamp": "2026-11-11T01:02:03Z"}]
+        )
+    ).fetch(reference())
+    current = processor.process_result(fetched)
+    assert current is not None
+    assert current.lines[0].text == "timestamp=2026-11-11T01:02:03Z"
+    assert build_error_signature(signature_input_from_excerpt(None, previous)) == (
+        build_error_signature(signature_input_from_excerpt(None, current))
+    )

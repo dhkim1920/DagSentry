@@ -1,6 +1,6 @@
 # LLM Provider and AI Diagnosis
 
-All five providers use the shared `ai-diagnosis-ko-v4` instructions: root cause and actions are
+All five providers use the shared `ai-diagnosis-ko-v5` instructions: root cause and actions are
 in Korean, while evidence text preserves the exact original excerpt including whitespace.
 Evidence validation checks citation equality, not the correctness of the causal conclusion.
 
@@ -20,6 +20,7 @@ The Provider receives a typed allowlist containing only:
 - Rule Diagnosis
 - Error Signature
 - sanitized Relevant Log Excerpt lines
+- log collection scope and input/excerpt line counts
 - an optional previously validated Diagnosis
 
 There is no request field for a full raw Task log or Incident history. The OpenAI adapter also
@@ -39,7 +40,7 @@ Enable the OpenAI Provider explicitly:
 ```dotenv
 DAGSENTRY_LLM_PROVIDER=openai
 DAGSENTRY_LLM_MODEL=gpt-5.6-luna
-DAGSENTRY_LLM_PROMPT_VERSION=ai-diagnosis-ko-v4
+DAGSENTRY_LLM_PROMPT_VERSION=ai-diagnosis-ko-v5
 DAGSENTRY_OPENAI_API_KEY=replace-with-an-openai-api-key
 ```
 
@@ -66,7 +67,7 @@ pipeline skips AI when no excerpt is available and records an undetermined rule 
 Citation validation does not verify the semantic correctness of a cause.
 
 Migration `0023` adds nullable assessment data without backfilling historical rows. Historical
-results display as unassessed; reused results display their original assessment. Schema v3 and
+results display as unassessed; reused results display their original assessment. Schema v4 and
 ruleset v3 prevent reuse of older compatible-looking results. The legacy `confidence` field
 remains in storage and API contracts but does not determine evidence basis.
 
@@ -74,11 +75,11 @@ remains in storage and API contracts but does not determine evidence basis.
 [diagnosis evaluation skill](../.agents/skills/evaluate-diagnosis/SKILL.md) to collect and review
 real-provider results separately from offline contract tests.
 
-The v4 prompt examines all excerpt lines before rule hints and explicitly requires abstention
+The v5 prompt examines all excerpt lines before rule hints and explicitly requires abstention
 when conflicting reports cannot be attributed to the failure. It prohibits requesting raw
 credentials and requires concrete missing information and next checks for uncertain assessments.
 These instructions guide model behavior; citation validation does not guarantee compliance.
-For `UNDETERMINED`, the validator sets classification and retry advice to `UNKNOWN` and replaces
+For `UNDETERMINED`, the validator sets retry advice to `UNKNOWN` and replaces
 the root cause with a Korean statement that the available evidence cannot determine the cause.
 Secret checks still inspect the original model text before this normalization.
 Other retry advice still requires semantic review of transient failure and safe replay evidence.
@@ -93,4 +94,18 @@ Generated narratives that request credential originals are rejected with
 patterns, including raw credential values and Authorization header contents. Exact evidence
 quotations are excluded, so hostile log text is rejected only when the generated narrative adopts
 it. Ambiguous matching narratives are conservatively rejected. This guard is not a comprehensive
-prompt-injection detector. Schema v3 prevents reuse of diagnoses accepted before this policy.
+prompt-injection detector. Schema v4 prevents reuse of diagnoses accepted before this policy.
+
+Classification describes the observed error family independently of cause assessment. For example,
+`RESOURCE` can accompany an `UNDETERMINED` underlying cause after an observed OOM kill. Schema v4
+preserves that distinction; historical diagnoses are not reinterpreted. Each new Task Try is
+analyzed from its current logs even when the signature matches an earlier failure. This increases
+model calls for repeated failures; duplicate processing of the same event remains idempotent.
+
+The excerpt retains supplied timestamps, trace/run identifiers, resource byte values, and stack
+line numbers. Structured Airflow logs also retain timestamps and available frame source lines;
+frame locals are excluded. Home and temporary paths remain redacted for privacy. Log context
+reports the requested Task Try scope and input/excerpt line counts; omitted lines may include
+noise and context outside the configured bounds. Counts do not prove remote log completeness.
+External resource metrics, repository code, and recent deployments are not automatically collected.
+Use `evals/diagnosis/context.json` to review contextual evidence separately from the other suites.

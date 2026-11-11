@@ -90,8 +90,8 @@ export function renderDiagnosis(diagnosis, includeDetailLink = true) {
   facts.className = "diagnosis-facts";
   const confidence = evidenceBasisLabel(diagnosis.assessment);
   facts.append(
-    definitionItem("Classification", diagnosis.classification || "UNKNOWN"),
-    definitionItem("Evidence basis", confidence),
+    definitionItem("Error type", diagnosis.classification || "UNKNOWN"),
+    definitionItem("Cause assessment", confidence),
     definitionItem("Retry", diagnosis.retry_decision || "UNKNOWN"),
     definitionItem(
       "Review",

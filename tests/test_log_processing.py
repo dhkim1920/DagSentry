@@ -83,7 +83,7 @@ oracledb.DatabaseError: ORA-12541: TNS:no listener
     assert result.exception_classes == ("oracledb.DatabaseError",)
     assert result.vendor_error_codes == ("ORA-12541",)
     assert result.application_stack_frames == (
-        'File "/opt/airflow/dags/orders.py", line <LINE>, in load_orders',
+        'File "/opt/airflow/dags/orders.py", line 42, in load_orders',
     )
     assert [line.line_id for line in result.lines] == [1, 2, 3, 4, 5, 6]
 
@@ -94,7 +94,7 @@ def test_extracts_bracketed_sqlstate_vendor_code() -> None:
     assert result.vendor_error_codes == ("SQLSTATE[08001]",)
 
 
-def test_dynamic_values_normalize_to_stable_excerpt_and_line_ids() -> None:
+def test_dynamic_values_remain_in_evidence_with_stable_signatures() -> None:
     first = (
         "2026-08-09T01:02:03Z ERROR RuntimeError request_id=123456789 "
         "uuid=123e4567-e89b-42d3-a456-426614174000 /tmp/run-a/output 0xabcdef12"
@@ -107,10 +107,16 @@ def test_dynamic_values_normalize_to_stable_excerpt_and_line_ids() -> None:
     first_result = LogProcessor().process(first)
     second_result = LogProcessor().process(second)
 
-    assert first_result.lines == second_result.lines
+    from dagsentry.error_signature import build_error_signature, signature_input_from_excerpt
+
+    assert first_result.lines != second_result.lines
+    assert build_error_signature(signature_input_from_excerpt(None, first_result)) == (
+        build_error_signature(signature_input_from_excerpt(None, second_result))
+    )
     assert first_result.lines[0].line_id == 1
     assert first_result.lines[0].text == (
-        "<TIMESTAMP> ERROR RuntimeError request_id=<ID> uuid=<UUID> <TEMP_PATH> <HEX>"
+        "2026-08-09T01:02:03Z ERROR RuntimeError request_id=123456789 "
+        "uuid=123e4567-e89b-42d3-a456-426614174000 <TEMP_PATH> 0xabcdef12"
     )
 
 
@@ -139,10 +145,10 @@ def test_same_input_produces_identical_excerpt() -> None:
     assert processor.process(raw_log) == processor.process(raw_log)
 
 
-def test_legacy_airflow_timestamp_is_normalized() -> None:
+def test_legacy_airflow_timestamp_is_preserved() -> None:
     output = excerpt_text("[2026-08-09, 01:02:03 UTC] ERROR failure")
 
-    assert output == "[<TIMESTAMP>] ERROR failure"
+    assert output == "[2026-08-09, 01:02:03 UTC] ERROR failure"
 
 
 def test_excerpt_limits_keep_last_relevant_lines_in_original_order() -> None:
@@ -196,3 +202,21 @@ def test_log_unavailable_is_a_normal_empty_processing_path() -> None:
 def test_invalid_custom_pattern_fails_at_startup() -> None:
     with pytest.raises(ValueError, match="Invalid custom Secret pattern"):
         LogProcessor(LogProcessingConfig(custom_secret_patterns=("[",)))
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/tmp/venv/lib/python3.11/site-packages/library/client.py",
+        "/private/tmp/venv/lib/python3.11/threading.py",
+    ],
+)
+def test_private_dependency_path_does_not_become_application_frame(path: str) -> None:
+    from dagsentry.rule_diagnosis import RuleDiagnosisInput, RuleEngine
+
+    excerpt = LogProcessor().process(
+        f'  File "{path}", line 42, in connect\nValueError: invalid input'
+    )
+    assert not excerpt.application_stack_frames
+    assert path not in repr(excerpt)
+    assert RuleEngine().diagnose(RuleDiagnosisInput(None, excerpt)).classification != "DAG_CODE"

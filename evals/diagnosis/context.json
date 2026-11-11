@@ -1,0 +1,42 @@
+[
+  {
+    "id": "oom-bytes-and-attribution",
+    "log": "2026-11-11T01:02:03Z trace_id=123e4567-e89b-42d3-a456-426614174000\nmemory_limit_bytes=134217728 peak_memory_bytes=134217728\n2026-11-11T01:02:04Z Container terminated: OOMKilled",
+    "allowed_basis": [
+      "DIRECT",
+      "INFERRED",
+      "UNDETERMINED"
+    ],
+    "review": "RESOURCE remains the observed error family, including with UNDETERMINED underlying cause. Cite exact byte values and timestamp when used. Limit and recorded peak match; a leak or recent deployment is not established."
+  },
+  {
+    "id": "memory-allocation-source",
+    "log": "2026-11-11T02:03:04Z memory_limit_bytes=268435456\nTraceback (most recent call last):\n  File \"/opt/airflow/dags/load.py\", line 52, in load\n    buffer = bytearray(536870912)\nMemoryError: requested_bytes=536870912",
+    "allowed_basis": [
+      "DIRECT",
+      "INFERRED",
+      "UNDETERMINED"
+    ],
+    "review": "Allocation exceeds the logged limit. RESOURCE; may cite source statement and byte values. Neither memory leak nor process termination is established. Do not invent machine capacity."
+  },
+  {
+    "id": "attributed-prior-auth-current-oom",
+    "log": "2026-11-10T01:02:03Z run_id=prior report: HTTP 401 Unauthorized\n2026-11-11T01:02:03Z run_id=attributed-prior-auth-current-oom report: authentication succeeded\n2026-11-11T01:02:04Z run_id=attributed-prior-auth-current-oom Container terminated: OOMKilled",
+    "allowed_basis": [
+      "DIRECT",
+      "INFERRED",
+      "UNDETERMINED"
+    ],
+    "review": "Current request run matches OOM; prior-run 401 must not dictate AUTH classification. RESOURCE; underlying memory mechanism unknown. Preserve exact attribution."
+  },
+  {
+    "id": "resource-cause-absent",
+    "log": "2026-11-11T01:02:03Z run_id=resource-cause-absent Container terminated: OOMKilled\nMemory metrics, resource configuration and recent-change records were not collected.",
+    "allowed_basis": [
+      "DIRECT",
+      "INFERRED",
+      "UNDETERMINED"
+    ],
+    "review": "RESOURCE even if root cause is UNDETERMINED. No observed leak, usage, configured limit or deployment. Request specific missing metadata without pretending it exists."
+  }
+]

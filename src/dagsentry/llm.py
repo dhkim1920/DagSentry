@@ -37,7 +37,9 @@ class AIDiagnosisResponse(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    classification: ErrorClassification
+    classification: ErrorClassification = Field(
+        description="Observed error family, independent of underlying cause certainty. UNDETERMINED cause does not imply UNKNOWN classification."
+    )
     root_cause: str = Field(min_length=1)
     confidence: float = Field(ge=0, le=1)
     evidence: list[AIEvidence]
@@ -106,6 +108,15 @@ class ValidatedPriorDiagnosis:
 
 
 @dataclass(frozen=True)
+class LogContext:
+    """Counts describe the supplied excerpt, not full remote log availability."""
+
+    scope: str
+    input_line_count: int
+    excerpt_line_count: int
+
+
+@dataclass(frozen=True)
 class AIDiagnosisRequest:
     """Complete allowlist of data that can cross an LLM Provider boundary."""
 
@@ -114,6 +125,7 @@ class AIDiagnosisRequest:
     error_signature: ErrorSignatureContext | None
     excerpt: tuple[ExcerptLineContext, ...]
     prior_diagnosis: ValidatedPriorDiagnosis | None = None
+    log_context: LogContext | None = None
 
     def to_json_value(self) -> dict[str, object]:
         """Serialize only the explicitly allowed request fields."""

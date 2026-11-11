@@ -15,10 +15,9 @@ from dagsentry.ai_diagnosis import (
     diagnose_with_fallback,
 )
 from dagsentry.db import SessionFactory
-from dagsentry.diagnosis import persist_ai_validation, persist_rule_diagnosis, reuse_diagnosis
+from dagsentry.diagnosis import persist_ai_validation, persist_rule_diagnosis
 from dagsentry.domain.diagnosis import (
     DiagnosisAssessment,
-    DiagnosisReusePolicy,
     DiagnosisSource,
     DiagnosisValidationStatus,
 )
@@ -43,6 +42,7 @@ from dagsentry.llm import (
     ExcerptLineContext,
     FailureMetadata,
     LLMProvider,
+    LogContext,
     RuleDiagnosisContext,
 )
 from dagsentry.log_processing import LogProcessor, RelevantLogExcerpt
@@ -98,7 +98,6 @@ class DiagnosisPipeline:
         log_fetcher: TaskLogFetcher | None = None,
         log_processor: LogProcessor,
         rule_engine: RuleEngine,
-        reuse_policy: DiagnosisReusePolicy,
         notification_provider: NotificationProvider | None = None,
         llm_provider: LLMProvider | None = None,
         airflow_ui_base_url: str | None = None,
@@ -116,7 +115,6 @@ class DiagnosisPipeline:
         self.log_fetcher = log_fetcher
         self.log_processor = log_processor
         self.rule_engine = rule_engine
-        self.reuse_policy = reuse_policy
         self.notification_provider = notification_provider
         self.llm_provider = llm_provider
         self.airflow_ui_base_url = airflow_ui_base_url
@@ -266,21 +264,6 @@ class DiagnosisPipeline:
         )
         with self.session_factory() as session:
             signature = persist_error_signature(session, candidate)
-
-        with self.session_factory() as session:
-            reused = reuse_diagnosis(
-                session,
-                failure_event_id=event.id,
-                error_signature_id=signature.signature_id,
-                policy=self.reuse_policy,
-            )
-        if reused is not None:
-            record_counter(
-                self.session_factory,
-                "dagsentry_diagnosis_outcomes_total",
-                "reused",
-            )
-            return self._required_diagnosis(reused.diagnosis_id)
 
         request = _ai_request(event, rule, candidate, excerpt)
         outcome = diagnose_with_fallback(
@@ -465,6 +448,13 @@ def _ai_request(
             ),
             evidence_line_ids=rule.evidence_line_ids,
         ),
+        log_context=LogContext(
+            scope="requested_task_try",
+            input_line_count=excerpt.input_line_count,
+            excerpt_line_count=len(excerpt.lines),
+        )
+        if excerpt is not None
+        else None,
         error_signature=signature_context,
         excerpt=tuple(
             ExcerptLineContext(line_id=line.line_id, text=line.text) for line in excerpt.lines

@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
-from dagsentry.log_processing import RelevantLogExcerpt
+from dagsentry.log_processing import RelevantLogExcerpt, normalize_signature_text
 from dagsentry.models import ErrorSignatureRecord
 
 FINGERPRINT_VERSION = 1
@@ -105,8 +105,12 @@ def signature_input_from_excerpt(
         operator_type=operator_type,
         exception_class=exception_class,
         vendor_error_code=vendor_error_code,
-        normalized_message=normalized_message,
-        application_stack_frame=application_frame,
+        normalized_message=normalize_signature_text(normalized_message)
+        if normalized_message
+        else None,
+        application_stack_frame=normalize_signature_text(application_frame)
+        if application_frame
+        else None,
     )
 
 

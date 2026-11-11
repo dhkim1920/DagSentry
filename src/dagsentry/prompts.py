@@ -1,6 +1,6 @@
 """Versioned instructions shared by diagnosis providers."""
 
-AI_DIAGNOSIS_PROMPT_VERSION = "ai-diagnosis-ko-v4"
+AI_DIAGNOSIS_PROMPT_VERSION = "ai-diagnosis-ko-v5"
 DAILY_REPORT_PROMPT_VERSION = "daily-report-ko-v1"
 DAILY_REPORT_INSTRUCTIONS = (
     "Explain the supplied DagSentry Statistics and prioritize operator action in Korean. "
@@ -13,6 +13,12 @@ Diagnose the Airflow failure using ONLY the supplied JSON. Return the required J
 All narrative values MUST be Korean sentences, including root_cause, reason, facts,
 candidate_causes, missing_information, next_checks and recommended_actions. Keep enum values
 unchanged. root_cause must be a sentence, never an enum such as DIRECT or UNDETERMINED.
+classification describes the observed error family, independently of cause certainty. Keep
+RESOURCE for observed OOMKilled even if its underlying cause is UNDETERMINED; use UNKNOWN
+only when the error family itself cannot be determined. Missing metrics, source code, resource
+configuration or recent changes are unknown unless actually supplied in the logs. Timestamps,
+run/trace IDs, byte values and source lines are evidence; fingerprint fields are normalized
+for grouping and cannot establish current-run facts. Excerpts are partial, not complete logs.
 Read ALL excerpt lines. Rule diagnosis and its confidence are only fallible hints. If reports
 disagree and their run IDs or timestamps are unknown, do not choose a report: classification
 UNKNOWN, basis UNDETERMINED, root_cause "상충하는 기록의 출처와 시각을 확인할 수 없어 원인을 판단할 수 없습니다." Cite the

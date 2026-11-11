@@ -62,7 +62,7 @@ def test_live_evaluation_keeps_failed_case_and_continues(
     assert model_response["root_cause"] == (
         "password=[REDACTED]" if "password=" in root_cause else root_cause
     )
-    assert effective_response["classification"] == "UNKNOWN"
+    assert effective_response["classification"] == "DAG_CODE"
     assert effective_response["root_cause"] == "제공된 근거만으로 실패 원인을 판단할 수 없습니다."
     assert model_response["retry_decision"] == "RETRYABLE"
     assert report["results"][1]["response"]["retry_decision"] == "UNKNOWN"
