@@ -69,3 +69,74 @@ def test_live_evaluation_keeps_failed_case_and_continues(
     assert report["results"][1]["semantic_verdict"] == "PENDING_HUMAN_REVIEW"
     assert provider.diagnose.call_count == 2
     assert "eval-secret" not in output.read_text()
+
+
+@pytest.mark.parametrize("live", [False, True])
+def test_codex_evaluation_requires_live_and_bypasses_runtime_connections(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    live: bool,
+) -> None:
+    from dagsentry.evaluation_codex import CodexEvaluationProvider
+    from dagsentry.llm import AIDiagnosisRequest
+
+    spec = importlib.util.spec_from_file_location(
+        "diagnosis_evaluation_codex", Path(__file__).parents[1] / "scripts/evaluate-diagnosis.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    calls: list[AIDiagnosisRequest] = []
+
+    class StubCodexProvider(CodexEvaluationProvider):
+        def diagnose(self, request: AIDiagnosisRequest) -> LLMResult:
+            calls.append(request)
+            assert self.model == "explicit-model"
+            assert self.reasoning_effort == "medium"
+            self.cli_version = "codex-cli test"
+            return LLMResult(
+                ai_response(evidence=[], root_cause="판단 불가").model_copy(
+                    update={"assessment": uncertain()}
+                ),
+                LLMCallMetadata(None, self.model, "test-prompt", 1, 10, 10),
+            )
+
+    monkeypatch.setattr(module, "CodexEvaluationProvider", StubCodexProvider)
+    forbidden = Mock(
+        side_effect=AssertionError("Codex evaluation must not resolve runtime providers")
+    )
+    monkeypatch.setattr(module, "ConfiguredLLMConnectionResolver", forbidden)
+    monkeypatch.setattr(module, "create_session_factory", forbidden)
+    cases = tmp_path / "cases.json"
+    cases.write_text(
+        json.dumps(
+            [
+                {"id": "first", "log": "", "allowed_basis": ["UNDETERMINED"], "review": "abstain"},
+            ]
+        )
+    )
+    output = tmp_path / "output.json"
+    argv = [
+        "evaluate",
+        "--cases",
+        str(cases),
+        "--output",
+        str(output),
+        "--codex-model",
+        "explicit-model",
+    ]
+    if live:
+        argv.append("--live")
+    monkeypatch.setattr("sys.argv", argv)
+    module.main()
+    report = json.loads(output.read_text())
+    if live:
+        assert len(calls) == 1
+        assert report["run"]["configured_model"] == "explicit-model"
+        assert report["run"]["cli_version"] == "codex-cli test"
+        assert report["run"]["reasoning_effort"] == "medium"
+        assert report["run"]["max_attempts"] == 1
+        assert report["results"][0]["request"] == json.loads(json.dumps(calls[0].to_json_value()))
+    else:
+        assert not calls
+        assert report["status"] == "NOT_RUN"

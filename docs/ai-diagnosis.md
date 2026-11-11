@@ -109,3 +109,15 @@ reports the requested Task Try scope and input/excerpt line counts; omitted line
 noise and context outside the configured bounds. Counts do not prove remote log completeness.
 External resource metrics, repository code, and recent deployments are not automatically collected.
 Use `evals/diagnosis/context.json` to review contextual evidence separately from the other suites.
+
+For an evaluation-only comparison using an authenticated Codex CLI, run the same case files with
+`--live --codex-model MODEL --codex-reasoning-effort medium`. For example:
+
+```shell
+uv run python scripts/evaluate-diagnosis.py --cases evals/diagnosis/context.json --output /tmp/codex-context.json --live --codex-model gpt-6-astra
+```
+
+This reuses CLI authentication without reading credentials, runs in an empty read-only workspace,
+and rejects tool-use output. It does not add a runtime provider. Reports retain request snapshots,
+requested model/reasoning effort, CLI version, and provider errors. Codex base instructions remain,
+so this compares the CLI harness with the configured provider rather than identical API calls.

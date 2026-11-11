@@ -11,16 +11,19 @@ from pathlib import Path
 
 from dagsentry.config import Settings
 from dagsentry.db import create_session_factory
+from dagsentry.evaluation_codex import CodexEvaluationProvider
 from dagsentry.evidence_validation import validate_ai_evidence
 from dagsentry.llm import (
     AIDiagnosisRequest,
     ExcerptLineContext,
     FailureMetadata,
+    LLMProvider,
     LLMProviderError,
     LogContext,
     RuleDiagnosisContext,
 )
 from dagsentry.log_processing import LogProcessor
+from dagsentry.prompts import AI_DIAGNOSIS_PROMPT_VERSION
 from dagsentry.rule_diagnosis import RuleDiagnosisInput, RuleEngine
 from dagsentry.runtime_connections import ConfiguredLLMConnectionResolver
 
@@ -31,6 +34,12 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
         "--live", action="store_true", help="Call the configured provider; may incur charges"
+    )
+    parser.add_argument("--codex-model", help="Use the evaluation-only Codex CLI with this model")
+    parser.add_argument(
+        "--codex-reasoning-effort",
+        default="medium",
+        choices=["minimal", "low", "medium", "high", "xhigh"],
     )
     args = parser.parse_args()
     cases = json.loads(args.cases.read_text())
@@ -47,24 +56,43 @@ def main() -> None:
         )
         return
     settings = Settings()
-    provider = (
-        ConfiguredLLMConnectionResolver(settings, create_session_factory(settings.database_url))
-        .resolve(settings.environment)
-        .provider
-    )
+    provider: LLMProvider | None
+    run: dict[str, object]
+    if args.codex_model:
+        provider = CodexEvaluationProvider(
+            model=args.codex_model,
+            reasoning_effort=args.codex_reasoning_effort,
+            timeout_seconds=settings.llm_timeout_seconds,
+        )
+        run = {
+            "provider": "codex_cli_evaluation",
+            "harness": "Codex CLI base instructions plus shared diagnosis prompt; not raw API parity",
+            "config_source": "explicit_cli_arguments",
+            "configured_model": args.codex_model,
+            "reasoning_effort": args.codex_reasoning_effort,
+            "prompt_version": AI_DIAGNOSIS_PROMPT_VERSION,
+            "timeout_seconds": settings.llm_timeout_seconds,
+            "max_attempts": 1,
+        }
+    else:
+        provider = (
+            ConfiguredLLMConnectionResolver(settings, create_session_factory(settings.database_url))
+            .resolve(settings.environment)
+            .provider
+        )
+        run = {
+            "provider": settings.llm_provider,
+            "config_source": settings.llm_config_source,
+            "configured_model": settings.llm_model,
+            "prompt_version": settings.llm_prompt_version,
+            "timeout_seconds": settings.llm_timeout_seconds,
+            "max_attempts": settings.llm_max_attempts,
+            "ollama_max_output_tokens": settings.ollama_max_output_tokens,
+        }
     if provider is None:
         raise SystemExit("No LLM provider configured; live evaluation not run.")
     processor = LogProcessor()
     results: list[dict[str, object]] = []
-    run = {
-        "provider": settings.llm_provider,
-        "config_source": settings.llm_config_source,
-        "configured_model": settings.llm_model,
-        "prompt_version": settings.llm_prompt_version,
-        "timeout_seconds": settings.llm_timeout_seconds,
-        "max_attempts": settings.llm_max_attempts,
-        "ollama_max_output_tokens": settings.ollama_max_output_tokens,
-    }
     for case in cases:
         excerpt = processor.process(case["log"])
         rule = RuleEngine().diagnose(RuleDiagnosisInput("PythonOperator", excerpt))
@@ -132,6 +160,9 @@ def main() -> None:
                     "semantic_verdict": "PENDING_HUMAN_REVIEW",
                 }
             )
+        results[-1]["request"] = request.to_json_value()
+        if isinstance(provider, CodexEvaluationProvider):
+            run["cli_version"] = provider.cli_version
         args.output.write_text(
             json.dumps(
                 {
