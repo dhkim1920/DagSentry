@@ -1,6 +1,6 @@
 # LLM Provider and AI Diagnosis
 
-All five providers use the shared `ai-diagnosis-ko-v2` instructions: root cause and actions are
+All five providers use the shared `ai-diagnosis-ko-v3` instructions: root cause and actions are
 in Korean, while evidence text preserves the exact original excerpt including whitespace.
 Evidence validation checks citation equality, not the correctness of the causal conclusion.
 
@@ -39,7 +39,7 @@ Enable the OpenAI Provider explicitly:
 ```dotenv
 DAGSENTRY_LLM_PROVIDER=openai
 DAGSENTRY_LLM_MODEL=gpt-5.6-luna
-DAGSENTRY_LLM_PROMPT_VERSION=ai-diagnosis-ko-v2
+DAGSENTRY_LLM_PROMPT_VERSION=ai-diagnosis-ko-v3
 DAGSENTRY_OPENAI_API_KEY=replace-with-an-openai-api-key
 ```
 
@@ -73,3 +73,15 @@ remains in storage and API contracts but does not determine evidence basis.
 `evals/diagnosis/cases.json` contains synthetic regression cases. Use the
 [diagnosis evaluation skill](../.agents/skills/evaluate-diagnosis/SKILL.md) to collect and review
 real-provider results separately from offline contract tests.
+
+The v3 prompt examines all excerpt lines before rule hints and explicitly requires abstention
+when conflicting reports cannot be attributed to the failure. It prohibits requesting raw
+credentials and requires concrete missing information and next checks for uncertain assessments.
+These instructions guide model behavior; citation validation does not guarantee compliance.
+The validator always changes retry advice to `UNKNOWN` for `UNDETERMINED` assessments.
+Other retry advice still requires semantic review of transient failure and safe replay evidence.
+
+The evaluation runner records provider failures per case and continues. It stores secret-masked model output
+separately from the effective response so runtime normalization is visible. Evaluate
+`evals/diagnosis/variants.json` separately from the original regression cases. Both sets are
+synthetic development cases and do not establish production accuracy.

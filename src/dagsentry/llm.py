@@ -42,7 +42,9 @@ class AIDiagnosisResponse(BaseModel):
     confidence: float = Field(ge=0, le=1)
     evidence: list[AIEvidence]
     recommended_actions: list[str] = Field(min_length=1)
-    retry_decision: RetryDecision
+    retry_decision: RetryDecision = Field(
+        description="UNKNOWN unless supplied evidence establishes retry advice. RETRYABLE requires both transient failure and safe replay. UNDETERMINED requires UNKNOWN."
+    )
     operator_review_required: bool
     assessment: DiagnosisAssessment
 

@@ -16,6 +16,7 @@ from dagsentry.llm import (
     AIDiagnosisRequest,
     ExcerptLineContext,
     FailureMetadata,
+    LLMProviderError,
     RuleDiagnosisContext,
 )
 from dagsentry.log_processing import LogProcessor
@@ -53,7 +54,16 @@ def main() -> None:
     if provider is None:
         raise SystemExit("No LLM provider configured; live evaluation not run.")
     processor = LogProcessor()
-    results = []
+    results: list[dict[str, object]] = []
+    run = {
+        "provider": settings.llm_provider,
+        "config_source": settings.llm_config_source,
+        "configured_model": settings.llm_model,
+        "prompt_version": settings.llm_prompt_version,
+        "timeout_seconds": settings.llm_timeout_seconds,
+        "max_attempts": settings.llm_max_attempts,
+        "ollama_max_output_tokens": settings.ollama_max_output_tokens,
+    }
     for case in cases:
         excerpt = processor.process(case["log"])
         rule = RuleEngine().diagnose(RuleDiagnosisInput("PythonOperator", excerpt))
@@ -81,22 +91,52 @@ def main() -> None:
             error_signature=None,
             excerpt=tuple(ExcerptLineContext(line.line_id, line.text) for line in excerpt.lines),
         )
-        result = provider.diagnose(request)
-        validated = validate_ai_evidence(result.diagnosis, request.excerpt, log_processor=processor)
-        results.append(
-            {
-                "id": case["id"],
-                "metadata": asdict(result.metadata),
-                "response": validated.response.model_dump(mode="json"),
-                "validation_status": validated.status.value,
-                "basis_allowed": validated.response.assessment.basis in case["allowed_basis"],
-                "review_criteria": case["review"],
-                "semantic_verdict": "PENDING_HUMAN_REVIEW",
-            }
-        )
+        try:
+            result = provider.diagnose(request)
+        except LLMProviderError as error:
+            results.append(
+                {
+                    "id": case["id"],
+                    "error": str(error),
+                    "review_criteria": case["review"],
+                    "semantic_verdict": "NOT_GRADED_PROVIDER_ERROR",
+                }
+            )
+        else:
+            validated = validate_ai_evidence(
+                result.diagnosis, request.excerpt, log_processor=processor
+            )
+            results.append(
+                {
+                    "id": case["id"],
+                    "metadata": asdict(result.metadata),
+                    "model_response": validated.response.model_copy(
+                        update={
+                            "retry_decision": result.diagnosis.retry_decision,
+                            "operator_review_required": result.diagnosis.operator_review_required,
+                        }
+                    ).model_dump(mode="json"),
+                    "response": validated.response.model_dump(mode="json"),
+                    "validation_status": validated.status.value,
+                    "validation_errors": [item.as_storage_value() for item in validated.rejections],
+                    "basis_allowed": validated.response.assessment.basis in case["allowed_basis"],
+                    "review_criteria": case["review"],
+                    "semantic_verdict": "PENDING_HUMAN_REVIEW",
+                }
+            )
         args.output.write_text(
             json.dumps(
-                {"status": "COLLECTED_NOT_GRADED", "results": results}, ensure_ascii=False, indent=2
+                {
+                    "status": "COLLECTED_NOT_GRADED",
+                    "run": run,
+                    "response_storage": "Narratives are secret-masked in both response forms.",
+                    "case_count": len(cases),
+                    "attempted_cases": len(results),
+                    "provider_error_cases": sum("error" in item for item in results),
+                    "results": results,
+                },
+                ensure_ascii=False,
+                indent=2,
             )
         )
 

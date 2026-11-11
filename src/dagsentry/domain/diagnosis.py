@@ -7,7 +7,7 @@ from datetime import timedelta
 from enum import StrEnum
 from typing import Annotated, Self
 
-from pydantic import BaseModel, ConfigDict, StringConstraints, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 DIAGNOSIS_SCHEMA_VERSION = 2
 
@@ -26,12 +26,20 @@ class DiagnosisAssessment(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    basis: EvidenceBasis
+    basis: EvidenceBasis = Field(
+        description="Support for the exact stated conclusion; conflicting or insufficient evidence requires UNDETERMINED."
+    )
     reason: AssessmentText
-    facts: list[AssessmentText]
+    facts: list[AssessmentText] = Field(
+        description="Observed facts in Korean. DIRECT requires at least one fact supported by cited logs."
+    )
     candidate_causes: list[AssessmentText]
-    missing_information: list[AssessmentText]
-    next_checks: list[AssessmentText]
+    missing_information: list[AssessmentText] = Field(
+        description="Missing non-secret information in Korean. INFERRED and UNDETERMINED require at least one item. Never request credential values."
+    )
+    next_checks: list[AssessmentText] = Field(
+        description="Concrete local checks in Korean. INFERRED and UNDETERMINED require at least one item."
+    )
 
     @model_validator(mode="after")
     def validate_support(self) -> Self:

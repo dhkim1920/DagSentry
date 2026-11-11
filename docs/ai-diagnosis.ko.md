@@ -1,6 +1,6 @@
 # LLM Provider와 AI 진단
 
-다섯 Provider는 공통 `ai-diagnosis-ko-v2` 프롬프트를 사용합니다. 원인 설명과 조치는 한국어로,
+다섯 Provider는 공통 `ai-diagnosis-ko-v3` 프롬프트를 사용합니다. 원인 설명과 조치는 한국어로,
 근거는 공백을 포함한 발췌 원문 그대로 요청합니다. 근거 검증은 인용 일치 검사이며 원인 판단 전체의
 정확성을 보증하지 않습니다.
 
@@ -37,7 +37,7 @@ OpenAI Provider를 명시적으로 활성화합니다.
 ```dotenv
 DAGSENTRY_LLM_PROVIDER=openai
 DAGSENTRY_LLM_MODEL=gpt-5.6-luna
-DAGSENTRY_LLM_PROMPT_VERSION=ai-diagnosis-ko-v2
+DAGSENTRY_LLM_PROMPT_VERSION=ai-diagnosis-ko-v3
 DAGSENTRY_OPENAI_API_KEY=replace-with-an-openai-api-key
 ```
 
@@ -73,3 +73,14 @@ AI를 호출하지 않고 판단 불가 규칙 결과를 사용합니다. 인용
 대표 합성 장애 사례는 `evals/diagnosis/cases.json`에 있습니다. 모델을 호출하지 않는 테스트와
 실제 모델 평가는 구분합니다. 반복 평가 절차는
 [진단 평가 스킬](../.agents/skills/evaluate-diagnosis/SKILL.md)에 있습니다.
+
+v3 프롬프트는 규칙 결과보다 모든 로그 줄을 먼저 확인하고, 서로 충돌하는 보고의 출처를
+확인할 수 없으면 판단을 보류하도록 지시합니다. 인증 비밀값 원문 요청을 금지하고,
+추정·판단 불가에는 부족한 정보와 다음 확인 항목을 필수로 요구합니다. 프롬프트만으로
+의미상 준수가 보장되지는 않습니다. 검증기는 `UNDETERMINED`의 재시도 판단을 항상
+`UNKNOWN`으로 바꿉니다. 다른 재시도 판단은 일시적 실패와 안전한 재실행 근거를 검토해야 합니다.
+
+평가 도구는 사례별 Provider 실패를 기록하고 계속 실행합니다. 비밀값을 마스킹한 모델 응답과 검증 후 응답을
+따로 저장하므로 코드가 보정한 결과를 모델의 성공으로 오인하지 않게 합니다.
+`evals/diagnosis/variants.json`은 별도 출력 파일로 평가하세요. 원래 사례와 추가 사례 모두
+개발용 합성 데이터이며 운영 정확도를 입증하지 않습니다.

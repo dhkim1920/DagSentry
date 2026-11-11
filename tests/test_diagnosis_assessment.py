@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from dagsentry.api import create_app
 from dagsentry.config import Settings
 from dagsentry.db import SessionFactory
-from dagsentry.domain.diagnosis import DiagnosisAssessment, EvidenceBasis
+from dagsentry.domain.diagnosis import DiagnosisAssessment, EvidenceBasis, RetryDecision
 from dagsentry.evidence_validation import validate_ai_evidence
 from dagsentry.llm import AIDiagnosisResponse, AIEvidence
 from dagsentry.log_processing import LogProcessor
@@ -140,5 +140,29 @@ def test_assessment_survives_storage_api_and_reuse_without_backfilling_legacy(
 def test_assessment_rejects_blank_narratives(field: str) -> None:
     value = uncertain().model_dump()
     value[field] = "  " if field == "reason" else ["  "]
+    with pytest.raises(ValidationError):
+        DiagnosisAssessment.model_validate(value)
+
+
+@pytest.mark.parametrize("retry", ["RETRYABLE", "NOT_RETRYABLE", "UNKNOWN"])
+def test_abstention_cannot_recommend_retry_without_a_diagnosis(retry: str) -> None:
+    response = ai_response(evidence=[]).model_copy(
+        update={"assessment": uncertain(), "retry_decision": RetryDecision(retry)}
+    )
+    result = validate_ai_evidence(response, [], log_processor=LogProcessor())
+    assert result.status == "PASSED"
+    assert result.response.retry_decision == "UNKNOWN"
+    assert result.response.operator_review_required
+    assert not result.rejections
+
+
+@pytest.mark.parametrize("basis", ["INFERRED", "UNDETERMINED"])
+@pytest.mark.parametrize("missing_field", ["missing_information", "next_checks"])
+def test_uncertain_assessment_requires_actionable_missing_information(
+    basis: str, missing_field: str
+) -> None:
+    value = uncertain().model_dump()
+    value["basis"] = basis
+    value[missing_field] = []
     with pytest.raises(ValidationError):
         DiagnosisAssessment.model_validate(value)

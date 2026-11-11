@@ -168,9 +168,7 @@ class LLMProviderContract(ABC):
             if isinstance(captured, httpx.Request)
             else json.dumps(captured)
         )
-        assert AI_DIAGNOSIS_INSTRUCTIONS in body
-        assert "Korean" in AI_DIAGNOSIS_INSTRUCTIONS
-        assert "Do not translate, trim, or change whitespace" in AI_DIAGNOSIS_INSTRUCTIONS
+        assert json.dumps(AI_DIAGNOSIS_INSTRUCTIONS) in json.dumps(json.loads(body))
 
     def test_contract_returns_non_secret_call_metadata(self) -> None:
         scenario = LLMContractScenario([LLMContractOutcome.SUCCESS])

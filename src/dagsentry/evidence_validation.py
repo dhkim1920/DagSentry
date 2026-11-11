@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
-from dagsentry.domain.diagnosis import DiagnosisValidationStatus, EvidenceBasis
+from dagsentry.domain.diagnosis import DiagnosisValidationStatus, EvidenceBasis, RetryDecision
 from dagsentry.llm import AIDiagnosisResponse, AIEvidence
 from dagsentry.log_processing import LogProcessor
 
@@ -130,6 +130,11 @@ def _sanitize_response(
     sanitized = response.model_copy(
         update={
             "assessment": assessment,
+            "retry_decision": (
+                RetryDecision.UNKNOWN
+                if assessment.basis == EvidenceBasis.UNDETERMINED
+                else response.retry_decision
+            ),
             "operator_review_required": response.operator_review_required
             or assessment.basis != EvidenceBasis.DIRECT,
             "root_cause": root_cause,
