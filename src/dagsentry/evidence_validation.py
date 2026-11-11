@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
@@ -15,6 +16,42 @@ from dagsentry.domain.diagnosis import (
 )
 from dagsentry.llm import AIDiagnosisResponse, AIEvidence
 from dagsentry.log_processing import LogProcessor
+
+_CREDENTIAL_REQUEST_PATTERNS = tuple(
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"(?:비밀번호|패스워드|토큰|API\s*키|자격\s*증명|Authorization\s*헤더)"
+        r"\s*(?:의\s*)?(?:원문|값|내용)?(?:을|를)?\s*(?:보내|전송|공유|업로드|제공|알려|제출)",
+        r"(?:비밀번호|패스워드|토큰|API\s*키|자격\s*증명)(?:의)?\s*(?:원문|값)\s*$",
+        r"Authorization\s*(?:헤더|header)(?:의)?\s*(?:내용|원문|값|contents?|values?)",
+        r"\b(?:request|share|send|upload|provide|submit|paste)\b[^.\n]{0,80}"
+        r"\b(?:passwords?|tokens?|api[ _-]*keys?|authorization[ ]*headers?|credentials?)\b"
+        r"(?![ ]+(?:expiry|expiration|presence|permissions?|status|validity|redacted)\b)",
+        r"\b(?:raw[ ]+)?(?:password|token|api[ _-]*key|credential)[ ]+values?\s*$",
+    )
+)
+
+
+_CREDENTIAL_WARNINGS = tuple(
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"do not (?:share|send|upload|provide|submit|paste) (?:your |the )?"
+        r"(?:password|token|api key|authorization header|credentials)(?: with (?:anyone|others))?",
+        r"(?:비밀번호|패스워드|토큰|API\s*키|자격\s*증명|Authorization\s*헤더)"
+        r"\s*(?:원문|값|내용)?(?:은|는|을|를)?\s*"
+        r"(?:공유|전송|업로드|제공|제출)하지\s*(?:마세요|마십시오)",
+    )
+)
+
+
+def _requests_credential_originals(text: str) -> bool:
+    for sentence in re.split(r"[.!?;\n]", text):
+        sentence = sentence.strip()
+        if any(warning.fullmatch(sentence) for warning in _CREDENTIAL_WARNINGS):
+            continue
+        if any(pattern.search(sentence) for pattern in _CREDENTIAL_REQUEST_PATTERNS):
+            return True
+    return False
 
 
 class EvidenceLine(Protocol):
@@ -37,6 +74,7 @@ class EvidenceRejectionCode(StrEnum):
     EVIDENCE_TEXT_MISMATCH = "EVIDENCE_TEXT_MISMATCH"
     ROOT_CAUSE_WITHOUT_VALID_EVIDENCE = "ROOT_CAUSE_WITHOUT_VALID_EVIDENCE"
     SECRET_REEXPOSURE = "SECRET_REEXPOSURE"
+    UNSAFE_CREDENTIAL_REQUEST = "UNSAFE_CREDENTIAL_REQUEST"
 
 
 @dataclass(frozen=True)
@@ -73,6 +111,18 @@ def validate_ai_evidence(
     rejections: list[EvidenceRejection] = []
     if secret_changed:
         rejections.append(EvidenceRejection(EvidenceRejectionCode.SECRET_REEXPOSURE))
+
+    narratives = (
+        response.root_cause,
+        *response.recommended_actions,
+        response.assessment.reason,
+        *response.assessment.facts,
+        *response.assessment.candidate_causes,
+        *response.assessment.missing_information,
+        *response.assessment.next_checks,
+    )
+    if any(_requests_credential_originals(text) for text in narratives):
+        rejections.append(EvidenceRejection(EvidenceRejectionCode.UNSAFE_CREDENTIAL_REQUEST))
 
     excerpt_by_line_id = {line.line_id: line.text for line in excerpt_lines}
     valid_evidence_count = 0

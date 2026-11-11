@@ -66,7 +66,7 @@ pipeline skips AI when no excerpt is available and records an undetermined rule 
 Citation validation does not verify the semantic correctness of a cause.
 
 Migration `0023` adds nullable assessment data without backfilling historical rows. Historical
-results display as unassessed; reused results display their original assessment. Schema v2 and
+results display as unassessed; reused results display their original assessment. Schema v3 and
 ruleset v3 prevent reuse of older compatible-looking results. The legacy `confidence` field
 remains in storage and API contracts but does not determine evidence basis.
 
@@ -87,3 +87,10 @@ The evaluation runner records provider failures per case and continues. It store
 separately from the effective response so runtime normalization is visible. Evaluate
 `evals/diagnosis/variants.json` separately from the original regression cases. Both sets are
 synthetic development cases and do not establish production accuracy.
+
+Generated narratives that request credential originals are rejected with
+`UNSAFE_CREDENTIAL_REQUEST`. The guard recognizes a bounded set of Korean and English request
+patterns, including raw credential values and Authorization header contents. Exact evidence
+quotations are excluded, so hostile log text is rejected only when the generated narrative adopts
+it. Ambiguous matching narratives are conservatively rejected. This guard is not a comprehensive
+prompt-injection detector. Schema v3 prevents reuse of diagnoses accepted before this policy.

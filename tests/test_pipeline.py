@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 
 from dagsentry.db import SessionFactory
 from dagsentry.domain.diagnosis import (
+    DIAGNOSIS_SCHEMA_VERSION,
     DiagnosisAssessment,
     DiagnosisReusePolicy,
     DiagnosisSource,
@@ -268,7 +269,7 @@ def pipeline(
         rule_engine=RuleEngine(),
         reuse_policy=DiagnosisReusePolicy(
             fingerprint_version=FINGERPRINT_VERSION,
-            versions=DiagnosisVersions(2, "ai-v1", RULESET_VERSION),
+            versions=DiagnosisVersions(DIAGNOSIS_SCHEMA_VERSION, "ai-v1", RULESET_VERSION),
             max_age=timedelta(days=30),
         ),
         notification_provider=notification,
