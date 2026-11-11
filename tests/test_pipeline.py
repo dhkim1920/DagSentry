@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 
 from dagsentry.db import SessionFactory
 from dagsentry.domain.diagnosis import (
+    DiagnosisAssessment,
     DiagnosisReusePolicy,
     DiagnosisSource,
     DiagnosisValidationStatus,
@@ -143,6 +144,16 @@ class StubLLMProvider:
         line = request.excerpt[-1]
         return LLMResult(
             diagnosis=AIDiagnosisResponse(
+                assessment=DiagnosisAssessment.model_validate(
+                    {
+                        "basis": "INFERRED",
+                        "reason": "The exception supports a candidate cause, but the input needs checking.",
+                        "facts": ["The task logged an exception."],
+                        "candidate_causes": ["Invalid input"],
+                        "missing_information": ["Input values"],
+                        "next_checks": ["Inspect the task input."],
+                    }
+                ),
                 classification=ErrorClassification.DAG_CODE,
                 root_cause="The task rejected an invalid order.",
                 confidence=0.9,
@@ -257,7 +268,7 @@ def pipeline(
         rule_engine=RuleEngine(),
         reuse_policy=DiagnosisReusePolicy(
             fingerprint_version=FINGERPRINT_VERSION,
-            versions=DiagnosisVersions(1, "ai-v1", RULESET_VERSION),
+            versions=DiagnosisVersions(2, "ai-v1", RULESET_VERSION),
             max_age=timedelta(days=30),
         ),
         notification_provider=notification,

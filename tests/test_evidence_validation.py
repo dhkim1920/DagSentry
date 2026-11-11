@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dagsentry.domain.diagnosis import (
+    DiagnosisAssessment,
     DiagnosisValidationStatus,
     ErrorClassification,
     RetryDecision,
@@ -21,6 +22,16 @@ def ai_response(
     recommended_actions: list[str] | None = None,
 ) -> AIDiagnosisResponse:
     return AIDiagnosisResponse(
+        assessment=DiagnosisAssessment.model_validate(
+            {
+                "basis": "INFERRED",
+                "reason": "The exception supports a candidate cause, but the input needs checking.",
+                "facts": ["The task logged an exception."],
+                "candidate_causes": ["Invalid input"],
+                "missing_information": ["Input values"],
+                "next_checks": ["Inspect the task input."],
+            }
+        ),
         classification=ErrorClassification.DAG_CODE,
         root_cause=root_cause,
         confidence=0.91,

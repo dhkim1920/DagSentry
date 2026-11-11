@@ -12,7 +12,7 @@ from enum import StrEnum
 import httpx
 import pytest
 
-from dagsentry.domain.diagnosis import ErrorClassification, RetryDecision
+from dagsentry.domain.diagnosis import DiagnosisAssessment, ErrorClassification, RetryDecision
 from dagsentry.llm import (
     AIDiagnosisRequest,
     AIDiagnosisResponse,
@@ -99,6 +99,16 @@ def diagnosis_request() -> AIDiagnosisRequest:
 def expected_diagnosis() -> AIDiagnosisResponse:
     """Return the valid structured response emitted by a successful fake."""
     return AIDiagnosisResponse(
+        assessment=DiagnosisAssessment.model_validate(
+            {
+                "basis": "INFERRED",
+                "reason": "The exception supports a candidate cause, but the input needs checking.",
+                "facts": ["The task logged an exception."],
+                "candidate_causes": ["Invalid input"],
+                "missing_information": ["Input values"],
+                "next_checks": ["Inspect the task input."],
+            }
+        ),
         classification=ErrorClassification.DAG_CODE,
         root_cause="The task rejected an invalid order.",
         confidence=0.91,

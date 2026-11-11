@@ -9,7 +9,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from dagsentry.domain.diagnosis import DiagnosisSource, ErrorClassification, RetryDecision
+from dagsentry.domain.diagnosis import (
+    DiagnosisAssessment,
+    DiagnosisSource,
+    ErrorClassification,
+    RetryDecision,
+)
 from dagsentry.domain.failure_event import FailureState
 from dagsentry.domain.incident import IncidentStatus
 
@@ -78,6 +83,15 @@ class NotificationPayload(BaseModel):
     diagnosis_source: DiagnosisSource
     is_rule_fallback: bool
     failure_state: FailureState = FailureState.FAILED
+    assessment: DiagnosisAssessment | None = None
+
+    @property
+    def evidence_basis_label(self) -> str:
+        if self.assessment is None:
+            return "기존 진단 · 근거 수준 미평가"
+        return {"DIRECT": "직접 근거 있음", "INFERRED": "원인 추정", "UNDETERMINED": "판단 불가"}[
+            self.assessment.basis
+        ]
 
 
 class NotificationProviderError(RuntimeError):

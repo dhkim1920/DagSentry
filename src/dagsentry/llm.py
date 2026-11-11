@@ -8,7 +8,7 @@ from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from dagsentry.domain.diagnosis import ErrorClassification, RetryDecision
+from dagsentry.domain.diagnosis import DiagnosisAssessment, ErrorClassification, RetryDecision
 
 
 class AIEvidence(BaseModel):
@@ -44,6 +44,7 @@ class AIDiagnosisResponse(BaseModel):
     recommended_actions: list[str] = Field(min_length=1)
     retry_decision: RetryDecision
     operator_review_required: bool
+    assessment: DiagnosisAssessment
 
 
 @dataclass(frozen=True)

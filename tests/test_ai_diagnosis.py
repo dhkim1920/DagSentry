@@ -8,7 +8,7 @@ from dagsentry.ai_diagnosis import (
     RuleFallbackReason,
     diagnose_with_fallback,
 )
-from dagsentry.domain.diagnosis import ErrorClassification, RetryDecision
+from dagsentry.domain.diagnosis import DiagnosisAssessment, ErrorClassification, RetryDecision
 from dagsentry.llm import (
     AIDiagnosisRequest,
     AIDiagnosisResponse,
@@ -75,6 +75,16 @@ def ai_request(*, has_log: bool = True) -> AIDiagnosisRequest:
 def llm_result() -> LLMResult:
     return LLMResult(
         diagnosis=AIDiagnosisResponse(
+            assessment=DiagnosisAssessment.model_validate(
+                {
+                    "basis": "INFERRED",
+                    "reason": "The exception supports a candidate cause, but the input needs checking.",
+                    "facts": ["The task logged an exception."],
+                    "candidate_causes": ["Invalid input"],
+                    "missing_information": ["Input values"],
+                    "next_checks": ["Inspect the task input."],
+                }
+            ),
             classification=ErrorClassification.DAG_CODE,
             root_cause="Invalid input",
             confidence=0.9,

@@ -16,7 +16,7 @@ from dagsentry.diagnosis import (
     reuse_diagnosis,
 )
 from dagsentry.domain.diagnosis import (
-    DIAGNOSIS_SCHEMA_VERSION,
+    DiagnosisAssessment,
     DiagnosisContent,
     DiagnosisEvidence,
     DiagnosisReusePolicy,
@@ -143,7 +143,7 @@ def test_persists_ai_diagnosis_content_and_versions(session: Session) -> None:
     assert record.evidence == [{"line_id": 7, "text": "ValueError: invalid order"}]
     assert record.recommended_actions == ["Validate the order before loading it."]
     assert record.retry_decision == RetryDecision.NOT_RETRYABLE
-    assert record.diagnosis_schema_version == DIAGNOSIS_SCHEMA_VERSION
+    assert record.diagnosis_schema_version == 1  # Historical draft remains unchanged.
     assert record.prompt_version == "ai-v1"
     assert record.rule_version == 1
 
@@ -173,7 +173,7 @@ def test_persists_rule_result_with_evidence_and_extracted_values(session: Sessio
     assert record.extracted_values == [{"name": "http_status", "value": "401"}]
     assert record.evidence == [{"line_id": 1, "text": "HTTP 401 Unauthorized"}]
     assert record.prompt_version is None
-    assert record.rule_version == 2
+    assert record.rule_version == 3
     assert record.recommended_actions == list(result.recommended_actions)
     assert record.recommended_actions
     assert record.retry_decision == RetryDecision.NOT_RETRYABLE
@@ -367,6 +367,16 @@ def test_reuse_query_selects_newest_compatible_original(session: Session) -> Non
 def llm_result(*, evidence_line_id: int = 1, root_cause: str = "Invalid order") -> LLMResult:
     return LLMResult(
         diagnosis=AIDiagnosisResponse(
+            assessment=DiagnosisAssessment.model_validate(
+                {
+                    "basis": "INFERRED",
+                    "reason": "The exception supports a candidate cause, but the input needs checking.",
+                    "facts": ["The task logged an exception."],
+                    "candidate_causes": ["Invalid input"],
+                    "missing_information": ["Input values"],
+                    "next_checks": ["Inspect the task input."],
+                }
+            ),
             classification=ErrorClassification.DAG_CODE,
             root_cause=root_cause,
             confidence=0.9,
@@ -420,6 +430,7 @@ def test_passed_ai_validation_persists_without_rule_fallback(session: Session) -
     assert record is not None
     assert record.validation_status == DiagnosisValidationStatus.PASSED
     assert record.operator_review_required is True
+    assert record.assessment == ai.diagnosis.assessment.model_dump(mode="json")
     assert record.validation_errors == []
 
 

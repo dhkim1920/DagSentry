@@ -237,7 +237,7 @@ def _diagnosis_message(
             f"*Status:* *{payload.incident_status.value}*  •  "
             f"*Failures:* `{payload.incident_failure_count}`",
             f"*Diagnosis:* *{payload.diagnosis_source.value}*  •  "
-            f"*Confidence:* `{payload.confidence:.0%}`  •  "
+            f"*Evidence basis:* `{payload.evidence_basis_label}`  •  "
             f"*Rule fallback:* `{'Yes' if payload.is_rule_fallback else 'No'}`",
             f"*Retry:* *{payload.retry_decision.value}*",
         )

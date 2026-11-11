@@ -7,11 +7,11 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Protocol
 
+from dagsentry.domain.diagnosis import DiagnosisAssessment, EvidenceBasis, RetryDecision
 from dagsentry.domain.diagnosis import ErrorClassification as ErrorClassification
-from dagsentry.domain.diagnosis import RetryDecision
 from dagsentry.log_processing import RelevantLogExcerpt
 
-RULESET_VERSION = 2
+RULESET_VERSION = 3
 
 
 @dataclass(frozen=True)
@@ -273,3 +273,35 @@ def default_rules() -> tuple[DiagnosisRule, ...]:
         PythonDagExceptionRule(),
     )
     return rules
+
+
+_RULE_FACTS = {
+    "http.authentication_401.v1": "HTTP 401 인증 오류 응답이 기록됐습니다.",
+    "http.authorization_403.v1": "HTTP 403 접근 거부 응답이 기록됐습니다.",
+    "resource.out_of_memory.v1": "메모리 부족 신호가 기록됐습니다.",
+    "oracle.no_listener.v1": "Oracle ORA-12541 연결 오류가 기록됐습니다.",
+    "python.application_exception.v1": "애플리케이션 스택과 Python 예외가 기록됐습니다.",
+}
+
+
+def assess_rule_diagnosis(
+    result: RuleDiagnosisResult, *, has_evidence: bool
+) -> DiagnosisAssessment:
+    fact = _RULE_FACTS.get(result.matched_rule)
+    if not has_evidence or fact is None:
+        return DiagnosisAssessment(
+            basis=EvidenceBasis.UNDETERMINED,
+            reason="지원되는 규칙으로 실패 원인을 판단할 근거가 부족합니다.",
+            facts=[],
+            candidate_causes=[],
+            missing_information=["실패 시점의 상세 로그와 실행 환경 정보"],
+            next_checks=["실패한 Task의 상세 로그와 직전 실행 정보를 확인하세요."],
+        )
+    return DiagnosisAssessment(
+        basis=EvidenceBasis.DIRECT,
+        reason="이 평가는 로그에 명시된 오류 유형에만 해당하며 구체적인 발생 원인은 추가 확인이 필요합니다.",
+        facts=[fact],
+        candidate_causes=[],
+        missing_information=["오류를 발생시킨 구체적인 원인"],
+        next_checks=list(result.recommended_actions) or ["오류 발생 전후 로그를 확인하세요."],
+    )

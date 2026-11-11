@@ -5,8 +5,43 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import timedelta
 from enum import StrEnum
+from typing import Annotated, Self
 
-DIAGNOSIS_SCHEMA_VERSION = 1
+from pydantic import BaseModel, ConfigDict, StringConstraints, model_validator
+
+DIAGNOSIS_SCHEMA_VERSION = 2
+
+
+class EvidenceBasis(StrEnum):
+    DIRECT = "DIRECT"
+    INFERRED = "INFERRED"
+    UNDETERMINED = "UNDETERMINED"
+
+
+AssessmentText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
+class DiagnosisAssessment(BaseModel):
+    """Support for the stated conclusion, not a probability of correctness."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    basis: EvidenceBasis
+    reason: AssessmentText
+    facts: list[AssessmentText]
+    candidate_causes: list[AssessmentText]
+    missing_information: list[AssessmentText]
+    next_checks: list[AssessmentText]
+
+    @model_validator(mode="after")
+    def validate_support(self) -> Self:
+        if self.basis == EvidenceBasis.DIRECT and not self.facts:
+            raise ValueError("Direct conclusions require observed facts")
+        if self.basis != EvidenceBasis.DIRECT and (
+            not self.missing_information or not self.next_checks
+        ):
+            raise ValueError("Uncertain conclusions require missing information and next checks")
+        return self
 
 
 class ErrorClassification(StrEnum):
@@ -87,6 +122,7 @@ class DiagnosisContent:
     matched_rule: str | None = None
     confidence_reason: str | None = None
     extracted_values: tuple[DiagnosisExtractedValue, ...] = ()
+    assessment: DiagnosisAssessment | None = None
 
     def __post_init__(self) -> None:
         if not 0 <= self.confidence <= 1:

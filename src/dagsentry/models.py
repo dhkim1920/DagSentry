@@ -313,6 +313,9 @@ class DiagnosisRecord(Base):
     __table_args__ = (
         CheckConstraint("diagnosis_schema_version >= 1", name="ck_diagnoses_schema_version"),
         CheckConstraint(
+            "source <> 'REUSED' OR assessment IS NULL", name="ck_diagnoses_reused_assessment"
+        ),
+        CheckConstraint(
             "rule_version IS NULL OR rule_version >= 1", name="ck_diagnoses_rule_version"
         ),
         CheckConstraint(
@@ -367,6 +370,7 @@ class DiagnosisRecord(Base):
     root_cause: Mapped[str | None] = mapped_column(Text)
     confidence: Mapped[float | None] = mapped_column(Float)
     confidence_reason: Mapped[str | None] = mapped_column(Text)
+    assessment: Mapped[dict[str, object] | None] = mapped_column(JSON(none_as_null=True))
     matched_rule: Mapped[str | None] = mapped_column(String(250))
     extracted_values: Mapped[list[dict[str, str]] | None] = mapped_column(JSON(none_as_null=True))
     evidence: Mapped[list[dict[str, object]] | None] = mapped_column(JSON(none_as_null=True))

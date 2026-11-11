@@ -162,7 +162,7 @@ Incidents는 운영자가 장애 대응을 시작하는 기본 화면이다.
 4. 상태 변경 이력
 5. Incident ID와 상관관계 정보
 
-Failure의 Diagnosis 카드에서는 Source, Classification, Confidence, Root Cause, Evidence와
+Failure의 Diagnosis 카드에서는 Source, Classification, 근거 수준, Root Cause, Evidence와
 권장 조치를 확인할 수 있다. Error Signature가 있는 경우 해당 상세 화면으로 이동할 수 있다.
 
 Evidence 왼쪽의 숫자는 원본 AI 입력 로그의 `lineId`다. 로그 근거를 정확히 대조하기 위한
@@ -248,16 +248,16 @@ Diagnosis History는 생성된 진단의 출처와 검증 결과를 확인하는
 - Error Signature ID
 - Failure Event ID
 - 생성 시작일과 종료일
-- 생성 시각 또는 Confidence 정렬
+- 생성 시각 정렬
 
-목록에서 Source, Classification, Root Cause 요약, Confidence, Validation, 생성 시각과 연결된
+목록에서 Source, Classification, Root Cause 요약, 근거 수준, Validation, 생성 시각과 연결된
 Signature를 확인한다. **상세**를 누르면 Diagnosis 상세로 이동한다.
 
 ### 7.3 Diagnosis 상세
 
 다음 순서로 내용을 확인한다.
 
-1. Source, Validation, Confidence, Retry, Review 상태
+1. Source, Validation, 근거 수준, Retry, Review 상태
 2. Root Cause
 3. Evidence
 4. Recommended Actions

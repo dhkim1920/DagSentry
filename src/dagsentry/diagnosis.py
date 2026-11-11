@@ -23,7 +23,7 @@ from dagsentry.evidence_validation import AIEvidenceValidationResult
 from dagsentry.llm import LLMResult
 from dagsentry.log_processing import RelevantLogExcerpt
 from dagsentry.models import DiagnosisRecord, ErrorSignatureRecord
-from dagsentry.rule_diagnosis import RuleDiagnosisResult
+from dagsentry.rule_diagnosis import RuleDiagnosisResult, assess_rule_diagnosis
 
 
 @dataclass(frozen=True)
@@ -125,6 +125,7 @@ def persist_ai_validation(
             classification=response.classification,
             root_cause=response.root_cause,
             confidence=response.confidence,
+            assessment=response.assessment,
             evidence=tuple(
                 DiagnosisEvidence(line_id=item.line_id, text=item.text)
                 for item in response.evidence
@@ -175,10 +176,12 @@ def _rule_diagnosis_draft(
         for line_id in result.evidence_line_ids
         if line_id in excerpt_by_line_id
     )
+    assessment = assess_rule_diagnosis(result, has_evidence=bool(evidence))
     return DiagnosisDraft(
         failure_event_id=failure_event_id,
         error_signature_id=error_signature_id,
         source=DiagnosisSource.RULE,
+        operator_review_required=assessment.basis != "DIRECT",
         validation_status=DiagnosisValidationStatus.PASSED,
         versions=DiagnosisVersions(
             schema_version=DIAGNOSIS_SCHEMA_VERSION,
@@ -189,6 +192,7 @@ def _rule_diagnosis_draft(
             classification=result.classification,
             confidence=result.confidence,
             confidence_reason=result.confidence_reason,
+            assessment=assessment,
             matched_rule=result.matched_rule,
             extracted_values=tuple(
                 DiagnosisExtractedValue(name=value.name, value=value.value)
@@ -325,6 +329,7 @@ def _record_from_draft(draft: DiagnosisDraft) -> DiagnosisRecord:
         root_cause=content.root_cause,
         confidence=content.confidence,
         confidence_reason=content.confidence_reason,
+        assessment=content.assessment.model_dump(mode="json") if content.assessment else None,
         matched_rule=content.matched_rule,
         extracted_values=[asdict(value) for value in content.extracted_values],
         evidence=[asdict(item) for item in content.evidence],

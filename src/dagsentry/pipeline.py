@@ -17,6 +17,7 @@ from dagsentry.ai_diagnosis import (
 from dagsentry.db import SessionFactory
 from dagsentry.diagnosis import persist_ai_validation, persist_rule_diagnosis, reuse_diagnosis
 from dagsentry.domain.diagnosis import (
+    DiagnosisAssessment,
     DiagnosisReusePolicy,
     DiagnosisSource,
     DiagnosisValidationStatus,
@@ -394,6 +395,9 @@ class DiagnosisPipeline:
                 classification=classification,
                 root_cause=content.root_cause,
                 confidence=confidence,
+                assessment=DiagnosisAssessment.model_validate(content.assessment)
+                if content.assessment
+                else None,
                 evidence=evidence,
                 error_signature=signature.fingerprint if signature is not None else None,
                 recommended_actions=list(content.recommended_actions or []),

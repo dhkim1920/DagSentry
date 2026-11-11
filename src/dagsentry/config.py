@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     llm_config_source: Literal["environment", "database"] = "environment"
     llm_provider: Literal["openai", "azure_openai", "anthropic", "bedrock", "ollama"] | None = None
     llm_model: str | None = None
-    llm_prompt_version: str = "ai-diagnosis-ko-v1"
+    llm_prompt_version: str = "ai-diagnosis-ko-v2"
     daily_report_prompt_version: str = "daily-report-ko-v1"
     report_timezone: str = "Asia/Seoul"
     llm_timeout_seconds: float = Field(default=15.0, gt=0)

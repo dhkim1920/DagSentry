@@ -16,6 +16,7 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from dagsentry.db import get_session
 from dagsentry.domain.diagnosis import (
+    DiagnosisAssessment,
     DiagnosisSource,
     DiagnosisValidationStatus,
     ErrorClassification,
@@ -57,6 +58,7 @@ class DiagnosisSummaryResponse(BaseModel):
     reused_from_diagnosis_id: UUID | None
     classification: ErrorClassification | None
     root_cause: str | None
+    assessment: DiagnosisAssessment | None
     confidence: float | None
     operator_review_required: bool | None
     diagnosis_schema_version: int
@@ -543,6 +545,9 @@ def _summary_response(
         classification=content.classification,
         root_cause=content.root_cause,
         confidence=content.confidence,
+        assessment=DiagnosisAssessment.model_validate(content.assessment)
+        if content.assessment
+        else None,
         operator_review_required=content.operator_review_required,
         diagnosis_schema_version=diagnosis.diagnosis_schema_version,
         prompt_version=diagnosis.prompt_version,

@@ -1,3 +1,4 @@
+import { evidenceBasisLabel } from "../components/assessment.js";
 import { beginViewRequest, beginTrendRequest } from "../core/requests.js";
 import { humanRetryLabel, humanClassificationLabel, applyStatusColor, sourceBadge } from "../components/badges.js";
 import { contextLink, appendCell, shortId, formatTimestamp, timestampBlock, textElement, definitionItem, copyDefinitionItem } from "../core/dom.js";
@@ -111,7 +112,7 @@ function renderLatestSignatureDiagnosis(diagnosis) {
   const facts = document.createElement("dl");
   facts.className = "signature-diagnosis-facts";
   facts.append(
-    definitionItem("Confidence", `${Math.round(diagnosis.confidence * 100)}%`),
+    definitionItem("Evidence basis", evidenceBasisLabel(diagnosis.assessment)),
     definitionItem("Retry", diagnosis.retry_decision),
     definitionItem("Created", formatTimestamp(diagnosis.created_at).primary),
   );

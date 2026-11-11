@@ -208,7 +208,7 @@ def _diagnosis_message(payload: NotificationPayload) -> tuple[str, dict[str, obj
             ),
             _field(
                 "Diagnosis",
-                f"{payload.diagnosis_source.value} · confidence {payload.confidence:.2f} · "
+                f"{payload.diagnosis_source.value} · evidence basis {payload.evidence_basis_label} · "
                 f"retry {payload.retry_decision.value}",
             ),
             _field("Evidence", evidence or "No evidence"),

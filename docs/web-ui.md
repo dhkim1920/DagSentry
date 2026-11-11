@@ -32,7 +32,7 @@ preserving the current list filters in the URL. The detail screen provides:
 - current Incident state, correlation identity, Failure count, and first/latest activity;
 - chronological Failure Try metadata and validated `http`/`https` Airflow log links;
 - every Diagnosis attempt with explicit `effective`, `REJECTED`, and `REUSED` provenance;
-- classification, Root Cause, confidence, retry advice, review flag, sanitized Evidence, and
+- classification, Root Cause, evidence assessment, retry advice, review flag, sanitized Evidence, and
   recommended actions;
 - expandable canonical Error Signature fields or an explicit unsignable state;
 - immutable Incident state-transition history with initiator, actor, reason, selected-zone time, and
@@ -68,7 +68,7 @@ Signature directly to this screen.
 ## Diagnosis History
 
 The **Diagnosis History** destination provides bounded provenance records with source, validation,
-classification, Error Signature, Failure Event, inclusive UTC date, confidence sorting, and stable
+classification, Error Signature, Failure Event, inclusive UTC date, and stable
 pagination filters represented in the URL. List rows distinguish the effective Diagnosis from
 attempts that were superseded or have no effective result.
 

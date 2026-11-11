@@ -15,6 +15,7 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from dagsentry.db import get_session
 from dagsentry.domain.diagnosis import (
+    DiagnosisAssessment,
     DiagnosisSource,
     DiagnosisValidationStatus,
     ErrorClassification,
@@ -80,6 +81,7 @@ class LatestValidatedDiagnosisResponse(BaseModel):
     source: DiagnosisSource
     classification: ErrorClassification
     root_cause: str | None
+    assessment: DiagnosisAssessment | None
     confidence: float
     retry_decision: RetryDecision
     diagnosis_schema_version: int
@@ -568,6 +570,9 @@ def _latest_diagnosis_response(record: DiagnosisRecord) -> LatestValidatedDiagno
         classification=record.classification,
         root_cause=record.root_cause,
         confidence=record.confidence,
+        assessment=DiagnosisAssessment.model_validate(record.assessment)
+        if record.assessment
+        else None,
         retry_decision=record.retry_decision,
         diagnosis_schema_version=record.diagnosis_schema_version,
         prompt_version=record.prompt_version,

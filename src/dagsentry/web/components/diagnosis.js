@@ -1,3 +1,4 @@
+import { evidenceBasisLabel, renderAssessment } from "./assessment.js";
 import { diagnosisHref } from "../core/router.js";
 import { textElement, definitionItem } from "../core/dom.js";
 import { sourceBadge, validationBadge } from "./badges.js";
@@ -87,12 +88,10 @@ export function renderDiagnosis(diagnosis, includeDetailLink = true) {
 
   const facts = document.createElement("dl");
   facts.className = "diagnosis-facts";
-  const confidence = diagnosis.confidence === null
-    ? "Unavailable"
-    : `${Math.round(diagnosis.confidence * 100)}%`;
+  const confidence = evidenceBasisLabel(diagnosis.assessment);
   facts.append(
     definitionItem("Classification", diagnosis.classification || "UNKNOWN"),
-    definitionItem("Confidence", confidence),
+    definitionItem("Evidence basis", confidence),
     definitionItem("Retry", diagnosis.retry_decision || "UNKNOWN"),
     definitionItem(
       "Review",
@@ -102,7 +101,7 @@ export function renderDiagnosis(diagnosis, includeDetailLink = true) {
     ),
   );
   card.append(facts);
-  card.append(textElement("p", "Confidence is the diagnosis score, not a measured accuracy rate.", "heading-copy text-secondary"));
+  card.append(renderAssessment(diagnosis.assessment));
   card.append(textElement("p", "Validation describes automated checks, not operator confirmation of the cause. AI checks include matching cited evidence to the log.", "heading-copy text-secondary"));
   card.append(renderEvidence(diagnosis.evidence));
 

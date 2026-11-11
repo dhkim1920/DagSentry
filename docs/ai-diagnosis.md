@@ -1,6 +1,6 @@
 # LLM Provider and AI Diagnosis
 
-All five providers use the shared `ai-diagnosis-ko-v1` instructions: root cause and actions are
+All five providers use the shared `ai-diagnosis-ko-v2` instructions: root cause and actions are
 in Korean, while evidence text preserves the exact original excerpt including whitespace.
 Evidence validation checks citation equality, not the correctness of the causal conclusion.
 
@@ -39,7 +39,7 @@ Enable the OpenAI Provider explicitly:
 ```dotenv
 DAGSENTRY_LLM_PROVIDER=openai
 DAGSENTRY_LLM_MODEL=gpt-5.6-luna
-DAGSENTRY_LLM_PROMPT_VERSION=ai-diagnosis-ko-v1
+DAGSENTRY_LLM_PROMPT_VERSION=ai-diagnosis-ko-v2
 DAGSENTRY_OPENAI_API_KEY=replace-with-an-openai-api-key
 ```
 
@@ -50,3 +50,26 @@ attempt count. Other 4xx responses are not retried.
 Successful call logs contain only request ID, model, prompt version, latency, and input/output
 token counts. Failure logs contain a sanitized category and never include the API key, request
 payload, or response body.
+
+## Evidence assessment
+
+New diagnoses carry a typed `assessment` with evidence basis, reason, observed facts, candidate
+causes, missing information, and next checks. UI and notifications show `DIRECT`, `INFERRED`, or
+`UNDETERMINED` instead of percentages. These describe support for the stated conclusion, not
+measured accuracy or operator confirmation. A 401 proves an authentication rejection, not token
+expiration. Memory shortage does not prove a memory leak. Rule assessments limit direct support
+to the observed error type.
+
+An `UNDETERMINED` response may have no citations and requires operator review. Invalid supplied
+citations and secrets in any assessment narrative still reject the response. The production
+pipeline skips AI when no excerpt is available and records an undetermined rule assessment.
+Citation validation does not verify the semantic correctness of a cause.
+
+Migration `0023` adds nullable assessment data without backfilling historical rows. Historical
+results display as unassessed; reused results display their original assessment. Schema v2 and
+ruleset v3 prevent reuse of older compatible-looking results. The legacy `confidence` field
+remains in storage and API contracts but does not determine evidence basis.
+
+`evals/diagnosis/cases.json` contains synthetic regression cases. Use the
+[diagnosis evaluation skill](../.agents/skills/evaluate-diagnosis/SKILL.md) to collect and review
+real-provider results separately from offline contract tests.

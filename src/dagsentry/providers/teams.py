@@ -211,7 +211,7 @@ def _diagnosis_card(
         ),
         _fact(
             "진단",
-            f"{payload.diagnosis_source.value} · 신뢰도 {payload.confidence:.2f} · "
+            f"{payload.diagnosis_source.value} · 근거 수준 {payload.evidence_basis_label} · "
             f"재시도 판단 {payload.retry_decision.value}",
         ),
         _fact("실패 이벤트", str(payload.failure_event_id)),

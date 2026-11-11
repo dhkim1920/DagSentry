@@ -230,7 +230,7 @@ Task: {payload.task_id} (map {payload.map_index}, try {payload.try_number})
 실패 상태: {failure_state_label(payload.failure_state)}
 분류: {payload.classification.value}
 장애: {payload.incident_id} ({payload.incident_status.value}, 실패 {payload.incident_failure_count}회)
-진단: {payload.diagnosis_source.value}, 신뢰도 {payload.confidence:.0%}, 재시도 판단 {payload.retry_decision.value}
+진단: {payload.diagnosis_source.value}, 근거 수준 {payload.evidence_basis_label}, 재시도 판단 {payload.retry_decision.value}
 원인 설명: {payload.root_cause or "원인 설명 없음"}
 오류 서명: {payload.error_signature or "없음"}
 Airflow 로그: {payload.airflow_log_url or "없음"}

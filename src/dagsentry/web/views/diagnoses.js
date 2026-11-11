@@ -1,3 +1,4 @@
+import { evidenceBasisLabel, renderAssessment } from "../components/assessment.js";
 import { beginViewRequest } from "../core/requests.js";
 import { contextLink, appendCell, shortId, formatTimestamp, timestampBlock, safeHttpUrl, textElement, definitionItem, copyDefinitionItem } from "../core/dom.js";
 import { elements } from "../core/elements.js";
@@ -109,9 +110,7 @@ function renderDiagnosisDetail(diagnosis) {
   elements.diagnosisDetailRootCause.textContent = diagnosis.root_cause
     || "No Root Cause was produced.";
   elements.diagnosisDetailSource.textContent = diagnosis.source;
-  elements.diagnosisDetailConfidence.textContent = diagnosis.confidence === null
-    ? "Unavailable"
-    : `${Math.round(diagnosis.confidence * 100)}%`;
+  elements.diagnosisDetailConfidence.textContent = evidenceBasisLabel(diagnosis.assessment);
   elements.diagnosisDetailRetry.textContent = diagnosis.retry_decision || "Unavailable";
   elements.diagnosisDetailReview.textContent = diagnosis.operator_review_required === null
     ? "Unavailable"
@@ -156,11 +155,11 @@ function renderDiagnosisDetail(diagnosis) {
   const reasoningFields = document.createElement("dl");
   reasoningFields.className = "context-fields";
   reasoningFields.append(
-    definitionItem("Confidence reason", diagnosis.confidence_reason || "Unavailable"),
+    definitionItem("Assessment reason", diagnosis.assessment?.reason || "Historical diagnosis · assessment unavailable"),
     definitionItem("Matched rule", diagnosis.matched_rule || "Unavailable"),
   );
   reasoning.append(reasoningFields);
-  reasoning.append(textElement("p", "Confidence is the diagnosis score, not a measured accuracy rate.", "heading-copy text-secondary"));
+  reasoning.append(renderAssessment(diagnosis.assessment));
   reasoning.append(textElement("p", "Validation describes automated checks, not operator confirmation of the cause. AI checks include matching cited evidence to the log.", "heading-copy text-secondary"));
   if (diagnosis.extracted_values.length) {
     const extracted = document.createElement("ul");
@@ -295,9 +294,7 @@ function renderSimilarDiagnoses(selectedDiagnosisId, items) {
       textElement("strong", formatTimestamp(diagnosis.created_at).primary),
       textElement("span", `DIAG-${shortId(diagnosis.id)}`),
     );
-    const confidence = diagnosis.confidence === null
-      ? "Unavailable"
-      : `${Math.round(diagnosis.confidence * 100)}%`;
+    const confidence = evidenceBasisLabel(diagnosis.assessment);
     row.append(
       identity,
       sourceBadge(diagnosis.source),

@@ -408,6 +408,16 @@ def create_diagnosis(
         classification=classification,
         root_cause=f"{signature.exception_class}: {signature.normalized_message.lower()}",
         confidence=0.85 if source == DiagnosisSource.AI else 0.92,
+        assessment={
+            "basis": "INFERRED",
+            "reason": "연결 거부는 확인됐지만 대상 서비스와 네트워크 설정을 구분할 정보가 부족합니다.",
+            "facts": ["대상 포트 6543에 대한 연결 거부가 기록됐습니다."],
+            "candidate_causes": ["대상 서비스 미실행", "접속 포트 또는 네트워크 설정 오류"],
+            "missing_information": ["대상 서비스 상태와 네트워크 정책"],
+            "next_checks": ["대상 포트의 리스닝 상태와 Worker의 연결 가능 여부를 확인하세요."],
+        }
+        if incident_index % 3 != 1
+        else None,
         confidence_reason=(
             "Exception chain and network refusal evidence agree."
             if source == DiagnosisSource.AI
@@ -439,10 +449,10 @@ def create_diagnosis(
             "Review NetworkPolicy and firewall rules.",
         ],
         retry_decision=RetryDecision.RETRYABLE,
-        operator_review_required=False,
+        operator_review_required=incident_index % 3 != 1,
         validation_errors=[],
-        diagnosis_schema_version=1,
-        prompt_version="ai-diagnosis-v1" if source == DiagnosisSource.AI else None,
+        diagnosis_schema_version=2 if incident_index % 3 != 1 else 1,
+        prompt_version="ai-diagnosis-ko-v2" if source == DiagnosisSource.AI else None,
         rule_version=1 if source == DiagnosisSource.RULE else None,
         reused_from_diagnosis_id=None,
         created_at=failure.observed_at + timedelta(minutes=2),

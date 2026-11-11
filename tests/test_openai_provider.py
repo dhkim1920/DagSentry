@@ -80,6 +80,14 @@ def response_body() -> dict[str, object]:
                                 "classification": "DAG_CODE",
                                 "root_cause": "The task rejected an invalid order.",
                                 "confidence": 0.91,
+                                "assessment": {
+                                    "basis": "INFERRED",
+                                    "reason": "The exception supports a candidate cause, but the input needs checking.",
+                                    "facts": ["The task logged an exception."],
+                                    "candidate_causes": ["Invalid input"],
+                                    "missing_information": ["Input values"],
+                                    "next_checks": ["Inspect the task input."],
+                                },
                                 "evidence": [{"line_id": 7, "text": "ValueError: invalid order"}],
                                 "recommended_actions": ["Validate the order input."],
                                 "retry_decision": "NOT_RETRYABLE",
@@ -345,6 +353,14 @@ def test_invalid_structured_response_raises_sanitized_error() -> None:
                 "classification": "NOT_A_CLASSIFICATION",
                 "root_cause": "Invalid input",
                 "confidence": 0.9,
+                "assessment": {
+                    "basis": "INFERRED",
+                    "reason": "The exception supports a candidate cause, but the input needs checking.",
+                    "facts": ["The task logged an exception."],
+                    "candidate_causes": ["Invalid input"],
+                    "missing_information": ["Input values"],
+                    "next_checks": ["Inspect the task input."],
+                },
                 "evidence": [{"line_id": 7, "text": "ValueError: invalid order"}],
                 "recommended_actions": ["Validate input"],
                 "retry_decision": "NOT_RETRYABLE",
@@ -382,7 +398,7 @@ def test_provider_can_be_enabled_from_settings() -> None:
     openai = OpenAIProvider.from_settings(settings)
 
     assert openai.config.model == "test-model"
-    assert openai.config.prompt_version == "ai-diagnosis-ko-v1"
+    assert openai.config.prompt_version == "ai-diagnosis-ko-v2"
     assert "secret" not in repr(openai.config)
 
 
