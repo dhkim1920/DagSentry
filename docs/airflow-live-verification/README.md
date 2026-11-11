@@ -2,7 +2,9 @@
 
 Airflow 3.3.1에서 저장소의 `dagsentry_failure_scenarios`를 실행했다. API 응답 fixture나 사전 생성 Incident를 사용하지 않았다. 실제 Airflow Task Try 로그를 Public REST API로 읽어 규칙 진단을 저장했다.
 
-| 서비스 | 검증 당시 접속 주소 |
+접속 주소와 호스트명은 개인정보 보호를 위해 문서용 예시(`192.0.2.10`, `worker.example.invalid`)로 익명화했다. 실행 결과와 관찰 사실은 그대로 유지했다.
+
+| 서비스 | 익명화한 접속 주소 |
 | --- | --- |
 | Airflow | http://192.0.2.10:8082 |
 | 실제 연동 DagSentry | http://192.0.2.10:8091/ui/ |
@@ -34,4 +36,4 @@ LLM은 연결하지 않았다. AI 원인 설명과 외부 알림 서비스는 �
 
 ![실제 진단과 근거](incident-detail-1440.png)
 
-![연결된 Airflow Task 로그](airflow-task.png)
+Airflow Task의 실제 로그 이동은 확인했다. 해당 화면 캡처는 로컬 사용자 경로가 노출되어 공개 자료에서 제외했다.

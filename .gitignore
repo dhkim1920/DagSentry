@@ -71,3 +71,4 @@ docs/current-architecture.md
 docs/daily-report-scheduler-design.ko.md
 docs/v0.2-release-notes.*
 docs/web-ui-verification.*
+/.audit/
