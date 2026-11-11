@@ -112,6 +112,8 @@ def main() -> None:
                     "metadata": asdict(result.metadata),
                     "model_response": validated.response.model_copy(
                         update={
+                            "root_cause": processor.mask_secrets(result.diagnosis.root_cause),
+                            "classification": result.diagnosis.classification,
                             "retry_decision": result.diagnosis.retry_decision,
                             "operator_review_required": result.diagnosis.operator_review_required,
                         }

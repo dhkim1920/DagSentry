@@ -56,7 +56,15 @@ def test_live_evaluation_keeps_failed_case_and_continues(
     assert report["provider_error_cases"] == 1
     assert [row["id"] for row in report["results"]] == ["first", "second"]
     assert report["results"][0]["semantic_verdict"] == "NOT_GRADED_PROVIDER_ERROR"
-    assert report["results"][1]["model_response"]["retry_decision"] == "RETRYABLE"
+    model_response = report["results"][1]["model_response"]
+    effective_response = report["results"][1]["response"]
+    assert model_response["classification"] == "DAG_CODE"
+    assert model_response["root_cause"] == (
+        "password=[REDACTED]" if "password=" in root_cause else root_cause
+    )
+    assert effective_response["classification"] == "UNKNOWN"
+    assert effective_response["root_cause"] == "제공된 근거만으로 실패 원인을 판단할 수 없습니다."
+    assert model_response["retry_decision"] == "RETRYABLE"
     assert report["results"][1]["response"]["retry_decision"] == "UNKNOWN"
     assert report["results"][1]["semantic_verdict"] == "PENDING_HUMAN_REVIEW"
     assert provider.diagnose.call_count == 2

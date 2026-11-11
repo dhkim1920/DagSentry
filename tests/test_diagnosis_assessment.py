@@ -166,3 +166,18 @@ def test_uncertain_assessment_requires_actionable_missing_information(
     value[missing_field] = []
     with pytest.raises(ValidationError):
         DiagnosisAssessment.model_validate(value)
+
+
+@pytest.mark.parametrize(
+    "root_cause", ["HTTP 401 caused the failure.", "password=original-secret caused it."]
+)
+def test_abstention_never_exposes_a_known_cause(root_cause: str) -> None:
+    response = ai_response(root_cause=root_cause, evidence=[]).model_copy(
+        update={"assessment": uncertain(), "retry_decision": RetryDecision.RETRYABLE}
+    )
+    result = validate_ai_evidence(response, [], log_processor=LogProcessor())
+    assert result.response.root_cause == "제공된 근거만으로 실패 원인을 판단할 수 없습니다."
+    assert result.response.classification == "UNKNOWN"
+    assert result.response.retry_decision == "UNKNOWN"
+    assert "original-secret" not in result.response.model_dump_json()
+    assert result.status == ("REJECTED" if "password=" in root_cause else "PASSED")

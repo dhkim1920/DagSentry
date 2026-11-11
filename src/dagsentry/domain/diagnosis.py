@@ -35,10 +35,10 @@ class DiagnosisAssessment(BaseModel):
     )
     candidate_causes: list[AssessmentText]
     missing_information: list[AssessmentText] = Field(
-        description="Missing non-secret information in Korean. INFERRED and UNDETERMINED require at least one item. Never request credential values."
+        description="Missing non-secret information in Korean. INFERRED and UNDETERMINED require at least one item. Never request credential values. Ask only for local check results such as 자격 증명 설정 여부, 만료 시각, 권한 확인 결과."
     )
     next_checks: list[AssessmentText] = Field(
-        description="Concrete local checks in Korean. INFERRED and UNDETERMINED require at least one item."
+        description="Concrete local checks in Korean. INFERRED and UNDETERMINED require at least one item. Check credential configuration, expiry and permissions locally; never request passwords, token values or raw Authorization headers."
     )
 
     @model_validator(mode="after")

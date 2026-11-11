@@ -7,7 +7,12 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
-from dagsentry.domain.diagnosis import DiagnosisValidationStatus, EvidenceBasis, RetryDecision
+from dagsentry.domain.diagnosis import (
+    DiagnosisValidationStatus,
+    ErrorClassification,
+    EvidenceBasis,
+    RetryDecision,
+)
 from dagsentry.llm import AIDiagnosisResponse, AIEvidence
 from dagsentry.log_processing import LogProcessor
 
@@ -137,7 +142,16 @@ def _sanitize_response(
             ),
             "operator_review_required": response.operator_review_required
             or assessment.basis != EvidenceBasis.DIRECT,
-            "root_cause": root_cause,
+            "root_cause": (
+                "제공된 근거만으로 실패 원인을 판단할 수 없습니다."
+                if assessment.basis == EvidenceBasis.UNDETERMINED
+                else root_cause
+            ),
+            "classification": (
+                ErrorClassification.UNKNOWN
+                if assessment.basis == EvidenceBasis.UNDETERMINED
+                else response.classification
+            ),
             "evidence": evidence,
             "recommended_actions": recommended_actions,
         }
