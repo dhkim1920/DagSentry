@@ -11,6 +11,8 @@ Every implementation must:
 - accept the same `AIDiagnosisRequest` allowlist and send exactly its serialized fields;
 - request or enforce the strict `AIDiagnosisResponse` shape;
 - reject malformed JSON, unknown fields, invalid enums, and confidence outside `0..1`;
+- require `assessment` with basis, reason, facts, candidate causes, missing information, and next checks;
+- require observed facts for `DIRECT` and missing information plus next checks for uncertain conclusions;
 - return provider-neutral `LLMResult` and non-secret `LLMCallMetadata`;
 - retry rate limits, server errors, timeouts, and network failures with bounded attempts;
 - avoid copying credentials, response bodies, or transport exception details into raised errors.
@@ -20,7 +22,7 @@ structured-output feature, token usage field names, or request ID header. Concre
 those vendor differences into the neutral result.
 
 Evidence correctness remains an application responsibility after the Provider boundary. A Provider
-must return structured Evidence, but `validate_ai_diagnosis` still proves every line ID and text is
+must return structured Evidence, but `validate_ai_evidence` still proves every line ID and text is
 an exact member of the sanitized excerpt before the Diagnosis can pass or be reused.
 
 ## Adding an implementation

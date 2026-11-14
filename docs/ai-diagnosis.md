@@ -28,7 +28,7 @@ sets `store` to `false` and requests a strict `json_schema` Structured Output th
 `text.format`.
 
 The returned schema contains classification, Root Cause, confidence, Evidence, recommended
-actions, retry decision, and whether operator review is required. JSON shape and Enum values are
+actions, retry decision, whether operator review is required, and the required `assessment`. JSON shape and Enum values are
 validated at the Provider boundary. Evidence line identity, exact text, and Secret re-exposure are
 then validated before an AI Diagnosis can become `PASSED`; see
 [`evidence-validation.md`](evidence-validation.md).
@@ -114,7 +114,7 @@ For an evaluation-only comparison using an authenticated Codex CLI, run the same
 `--live --codex-model MODEL --codex-reasoning-effort medium`. For example:
 
 ```shell
-uv run python scripts/evaluate-diagnosis.py --cases evals/diagnosis/context.json --output /tmp/codex-context.json --live --codex-model gpt-6-astra
+DAGSENTRY_LLM_TIMEOUT_SECONDS=180 uv run python scripts/evaluate-diagnosis.py --cases evals/diagnosis/context.json --output /tmp/codex-context.json --live --codex-model gpt-6-astra
 ```
 
 This reuses CLI authentication without reading credentials, runs in an empty read-only workspace,

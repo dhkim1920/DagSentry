@@ -15,7 +15,10 @@ normalized_message
 application_stack_frame
 ```
 
-Values are selected only from the already sanitized Relevant Log Excerpt. Leading, trailing, and
+Values are selected only from the sanitized Relevant Log Excerpt. Message and application-frame
+fields normalize timestamps, UUIDs, stack line numbers, labeled numeric IDs, long numbers,
+hexadecimal addresses, and private paths at the fingerprint boundary. Evidence retains diagnostic
+values such as exact memory bytes and execution times. Leading, trailing, and
 repeated whitespace is collapsed; vendor codes are uppercased; missing values remain explicit JSON
 `null`. All five keys are serialized as compact UTF-8 JSON with lexicographically sorted keys.
 

@@ -29,7 +29,7 @@ Admin은 **설정 → 운영 현황** (`/ui/?view=admin&section=operations`)에�
 진단 큐를 확인합니다. 세션 전용 `GET /api/v1/admin/operations`도 같은 전체 환경 집계를 반환합니다.
 자동 갱신은 없으며 **새로고침**으로 관측 시점을 갱신합니다.
 
-업데이트한 API·Worker를 시작하기 전에 `alembic upgrade head`로 revision `0022`를 적용합니다.
+업데이트한 API·Worker를 시작하기 전에 `alembic upgrade head`로 revision `0023`까지 적용합니다.
 Worker도 새 버전으로 재시작해야 `worker_heartbeats`에 프로세스별 heartbeat를 기록합니다.
 기본 기록 간격은 10초이며 작업 처리 중에도 기록합니다. API는 종료 기록이 없고 마지막 기록 이후
 30초 이내인 인스턴스를 실행 중으로 판단합니다. 설정은 `DAGSENTRY_WORKER_HEARTBEAT_INTERVAL_SECONDS`와
@@ -53,7 +53,8 @@ job 지연/실패 시 `daily_report_schedules`, `scheduler_heartbeats`, `daily_r
 `failure_events`, `diagnosis_outbox`, `error_signatures`, `diagnoses`, `incidents`,
 `incident_state_transitions`, `notification_deliveries`, `incident_recovery_notifications`,
 `operational_metric_counters`, `daily_reports` 순서로 검사합니다. Worker `last_error`는 stage, category,
-exception type, 잘린 message가 있는 제한 JSON입니다. raw Task log, credential, Provider response body, API key는
+exception type과 고정 일반 오류 또는 잠금 상태 message가 있는 제한 JSON입니다. 처리 실패에는
+`Diagnosis processing failed`를 사용합니다. raw Task log, credential, Provider response body, API key는
 로그나 저장 오류 값에 넣지 않습니다. `PENDING`은 `available_at`까지 대기하고 오래된 `PROCESSING` lock은
 retry가 남아 있으면 자동 회수합니다. `DEAD`는 영구 오류 또는 시도 소진이며 운영자 검사가 필요합니다.
 

@@ -9,12 +9,13 @@ Azure OpenAI v1, Anthropic Messages, AWS Bedrock Converse, Ollama Chat이 이를
 각 구현은 동일한 `AIDiagnosisRequest` 허용 목록을 정확히 직렬화해 보내고, 엄격한
 `AIDiagnosisResponse` 형태를 요청 또는 강제해야 합니다. 잘못된 JSON·알 수 없는 필드·잘못된 enum·
 `0..1` 밖의 confidence를 거부하고, Provider 중립 `LLMResult`와 비밀값 없는 `LLMCallMetadata`를
-반환합니다. rate limit, 서버 오류, 타임아웃, 네트워크 오류는 제한된 횟수만 재시도하며, credential,
+반환합니다. `assessment`에는 근거 수준, 이유, 사실, 원인 후보, 부족한 정보와 다음 확인이 필수입니다.
+`DIRECT`는 사실을 하나 이상, 불확실한 판단은 부족한 정보와 다음 확인을 하나 이상 요구합니다. rate limit, 서버 오류, 타임아웃, 네트워크 오류는 제한된 횟수만 재시도하며, credential,
 응답 본문, transport 예외 세부 정보를 오류에 복사하지 않습니다.
 
 공통 HTTP endpoint, 인증 방식, 네이티브 구조화 출력, 토큰 사용 필드 이름, 요청 ID 헤더는 계약에
 요구하지 않습니다. 구체 어댑터가 이런 차이를 중립 결과로 매핑합니다. Evidence 정확성은 Provider
-이후에도 애플리케이션 책임이며 `validate_ai_diagnosis`가 모든 줄 ID와 텍스트가 마스킹된 발췌문에
+이후에도 애플리케이션 책임이며 `validate_ai_evidence`가 모든 줄 ID와 텍스트가 마스킹된 발췌문에
 정확히 속하는지 증명합니다.
 
 ## 구현 추가

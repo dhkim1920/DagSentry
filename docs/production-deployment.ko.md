@@ -1,7 +1,9 @@
 # 운영 배포
 
-DagSentry가 지원하는 production topology는 PostgreSQL, API, Worker, one-shot Recovery Checker/일일 리포트 job을
-분리한 single-host Linux Docker Compose 배포입니다. image와 package, migration은 동일 immutable build를 사용하고
+DagSentry가 지원하는 production topology는 PostgreSQL, API, Worker, 일일 리포트 Scheduler와 one-shot Recovery Checker job을
+분리한 single-host Linux Docker Compose 배포입니다. image와 package, migration은 동일 immutable build를 사용합니다.
+내장 Scheduler가 활성화된 일일 리포트 일정을 실행합니다. Airflow DAG나 외부 스케줄러를 사용한다면
+같은 환경·날짜의 내장 일정과 중복 실행하지 않습니다.
 credential은 Docker Secret 또는 배포 Secret mechanism으로 runtime에 주입합니다. `.env`에는 placeholder만 두고
 real Secret을 commit하거나 image에 포함하지 않습니다.
 

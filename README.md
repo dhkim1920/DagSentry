@@ -163,7 +163,8 @@ DagSentry currently provides:
 - authenticated Airflow final-failure and retry collection;
 - exact Task Try log collection, masking, deterministic classification, and versioned Error
   Signatures;
-- bounded AI Diagnosis with mandatory Evidence Validation, Rule fallback, and reference-only reuse;
+- bounded AI Diagnosis with mandatory Evidence Validation, Rule fallback, and fresh analysis for each
+  new Task Try; historical reused results remain readable;
 - PostgreSQL Transactional Outbox processing with atomic claims, bounded retries, graceful
   shutdown, and safe restart;
 - Incident correlation, audited lifecycle transitions, notification suppression, and automatic

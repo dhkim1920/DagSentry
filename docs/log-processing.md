@@ -7,7 +7,6 @@ pass through one deterministic pipeline:
 Secret masking
 → Airflow noise removal
 → relevant evidence selection
-→ dynamic-value normalization
 → bounded excerpt and lineId assignment
 ```
 

@@ -36,3 +36,6 @@ Webhook 실패는 저장된 Failure Event나 Diagnosis를 rollback하지 않습�
 영구 실패입니다.
 
 영문 원문: [Notification delivery](notification.md)
+
+저장 payload에는 `assessment`도 포함됩니다. 사람이 읽는 알림은 신뢰도 퍼센트 대신 근거 수준을
+표시하며 숫자 confidence는 기존 계약을 위해 유지합니다. assessment가 없는 과거 결과는 미평가로 표시합니다.

@@ -1,8 +1,8 @@
 # Production Docker Compose deployment
 
 Docker Compose on one Linux host is the first supported DagSentry production deployment. This
-manifest runs PostgreSQL, one Migration job, the API, and one Diagnosis Worker. Recovery checks and
-daily reports remain explicit one-shot jobs for an external scheduler. Kubernetes and multi-host
+manifest runs PostgreSQL, one Migration job, the API, one Diagnosis Worker, and the Daily Report
+scheduler. Recovery checks remain explicit one-shot jobs for an external scheduler. Kubernetes and multi-host
 orchestration are not part of this deployment contract.
 
 ## Prerequisites and boundary
@@ -72,11 +72,11 @@ docker compose --env-file deployment/production.env \
 docker compose --env-file deployment/production.env \
   -f compose.production.yaml build
 docker compose --env-file deployment/production.env \
-  -f compose.production.yaml up -d --wait api worker
+  -f compose.production.yaml up -d --wait api worker scheduler
 ```
 
-The API and Worker wait for PostgreSQL readiness and a successful one-shot `alembic upgrade head`.
-If Migration fails, neither long-running DagSentry service starts. Check status and readiness:
+The API, Worker, and scheduler wait for PostgreSQL readiness and a successful one-shot `alembic upgrade head`.
+If Migration fails, no long-running DagSentry service starts. Check status and readiness:
 
 ```shell
 docker compose --env-file deployment/production.env \
@@ -120,18 +120,19 @@ docker compose --env-file deployment/production.env \
   -f compose.production.yaml up -d --scale worker=2 worker
 ```
 
-Use a host scheduler with overlapping-run prevention for the one-shot jobs. Each invocation is
-idempotent at the database boundary:
+The built-in scheduler runs enabled Daily Report schedules. Use a host scheduler with overlapping-run
+prevention for Recovery Checker invocations. For a manual Daily Report, override the scheduler
+service command as shown below. Each invocation is idempotent at the database boundary:
 
 ```shell
 docker compose --env-file deployment/production.env \
   -f compose.production.yaml --profile jobs run --rm recovery-checker
 docker compose --env-file deployment/production.env \
-  -f compose.production.yaml --profile jobs run --rm daily-report
+  -f compose.production.yaml run --rm scheduler dagsentry-daily-report
 ```
 
-The bundled Airflow DAG may schedule daily reporting instead; do not schedule both paths for the
-same date and environment unless testing idempotency intentionally.
+The bundled Airflow DAG or a host job may schedule daily reporting instead. Use one scheduling path
+per date and environment; avoid overlapping it with an enabled built-in schedule.
 
 ## Secret rotation and service recreation
 
@@ -140,7 +141,7 @@ does not update the environment of an already running container:
 
 ```shell
 docker compose --env-file deployment/production.env \
-  -f compose.production.yaml up -d --force-recreate api worker
+  -f compose.production.yaml up -d --force-recreate api worker scheduler
 ```
 
 Rotate the ingest token in DagSentry and Airflow collectors as one coordinated change. Managed
@@ -151,17 +152,17 @@ not merely replacing the Secret file.
 ## Upgrade and rollback
 
 Before an upgrade, take and verify the database backup and retain the current image and matching
-connection encryption key version. Pause external collectors and scheduled jobs, then stop the API
-and Worker so no writer remains active while the schema changes. Build the intended revision and
-let the one-shot Migration complete before API or Worker replacement:
+connection encryption key version. Pause external collectors and scheduled jobs, then stop the API,
+Worker, and scheduler so no writer remains active while the schema changes. Build the intended revision and
+let the one-shot Migration complete before API, Worker, or scheduler replacement:
 
 ```shell
 docker compose --env-file deployment/production.env \
-  -f compose.production.yaml stop api worker
+  -f compose.production.yaml stop api worker scheduler
 docker compose --env-file deployment/production.env \
   -f compose.production.yaml build
 docker compose --env-file deployment/production.env \
-  -f compose.production.yaml up -d --wait api worker
+  -f compose.production.yaml up -d --wait api worker scheduler
 ```
 
 Do not use Alembic downgrade as the primary production rollback. Restore the pre-upgrade database,
@@ -183,7 +184,7 @@ DAGSENTRY_TEST_DATABASE_URL="$DAGSENTRY_DATABASE_URL" \
 ## Verification and shutdown
 
 The repository smoke test creates an isolated Compose project and temporary volume, builds the
-production image, applies all Migrations, starts API and Worker, checks readiness, and removes the
+production image, applies all Migrations, starts API, Worker, and scheduler, checks readiness, and removes the
 test project afterward:
 
 ```shell

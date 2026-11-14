@@ -44,3 +44,7 @@ can atomically commit a remote HTTP response and a local database transaction.
 Webhook failures never roll back the stored Failure Event or Diagnosis. Timeout, HTTP 408/429,
 5xx, and transport errors are retried within configured bounds and then returned to the Outbox
 Worker. Authentication, authorization, and other 4xx errors are permanent failures.
+
+The stored payload also includes `assessment`. Human-readable notifications display its evidence basis
+instead of a confidence percentage; the legacy numeric field remains for compatibility. Historical
+results without an assessment display as unassessed.

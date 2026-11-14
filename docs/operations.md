@@ -10,7 +10,7 @@ processes. Schedule `dagsentry-recovery-checker` as a one-shot periodic process.
 reporting from DB-backed Daily Report settings. Install the same DagSentry distribution in Airflow for
 the Listener, retry callback, and Reconciler. The Worker and Recovery Checker require
 Airflow API and Webhook settings from `.env.example`; the Worker and report may also use the
-optional LLM settings. Select Webhook, Slack, Teams, or Discord with
+optional LLM settings. Select Webhook, Slack, Teams, Discord, or SMTP with
 `DAGSENTRY_NOTIFICATION_PROVIDER`; all notification-producing processes use the same selection.
 
 Apply migrations before starting either DagSentry process:
@@ -52,7 +52,7 @@ Admins can open **Settings → Operational overview** (`/ui/?view=admin&section=
 The session-only `GET /api/v1/admin/operations` returns the same snapshot across all environments.
 Use **Refresh** for a new observation; the page does not refresh automatically.
 
-Apply `alembic upgrade head` through revision `0022` before starting the updated API and Worker.
+Apply `alembic upgrade head` through revision `0023` before starting the updated API and Worker.
 Restart Workers with this version to populate `worker_heartbeats`. Each Worker process records its
 own heartbeat every 10 seconds, including while processing a job. The API considers an unstopped
 instance online for 30 seconds after its last heartbeat. Configure these with
@@ -93,8 +93,8 @@ Inspect these tables in order when a job is delayed or failed:
 10. `incident_recovery_notifications`: recovery payload, delivery attempts, and last failure.
 11. `operational_metric_counters`: durable, low-cardinality counters exposed through `/metrics`.
 
-Worker `last_error` is bounded JSON containing stage, category, exception type, and a truncated
-message. Webhook errors use stable categories such as `AUTHENTICATION`, `RATE_LIMITED`, and
+Worker `last_error` is bounded JSON containing stage, category, exception type, and a fixed generic or lock-status
+message. Processing failures use `Diagnosis processing failed`. Webhook errors use stable categories such as `AUTHENTICATION`, `RATE_LIMITED`, and
 `UNAVAILABLE`. Logs and stored error values intentionally exclude raw Task logs, credentials,
 Provider response bodies, and API keys.
 

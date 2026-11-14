@@ -5,7 +5,10 @@ DagSentry는 결정적인 Error Signature로 동등한 failure를 묶습니다. 
 ## Fingerprint v1
 
 v1 fingerprint는 `operator_type`, `exception_class`, `vendor_error_code`, `normalized_message`,
-`application_stack_frame` 다섯 필드만 사용합니다. 값은 이미 마스킹된 Relevant Log Excerpt에서만 고르고,
+`application_stack_frame` 다섯 필드만 사용합니다. 값은 마스킹된 Relevant Log Excerpt에서만 고릅니다.
+메시지와 스택 프레임은 시그니처 경계에서 timestamp, UUID, 줄 번호, 이름 붙은 숫자 ID, 긴 숫자,
+hexadecimal address와 개인 경로를 정규화합니다. 근거에는 정확한 메모리 바이트 수와 실행 시각을 유지합니다.
+
 whitespace를 collapse하며 vendor code는 uppercase, 누락값은 명시적 JSON `null`로 둡니다. 다섯 key를
 lexicographically sorted compact UTF-8 JSON으로 직렬화한 `SHA256`이 fingerprint입니다. 필드 선택·정규화·JSON
 직렬화·hashing 변경은 v1을 고치지 않고 새 version을 만들어야 합니다.

@@ -21,11 +21,12 @@ Provider에는 다음 허용 목록만 포함된 타입 요청을 전달합니�
 - Error Signature
 - 비밀값을 마스킹한 관련 로그 발췌문 줄
 - 선택적으로, 사전에 검증된 Diagnosis
+- 로그 범위와 입력·발췌 줄 수
 
 전체 원본 Task 로그나 Incident 이력은 요청 필드에 포함되지 않습니다. OpenAI 어댑터는 `store`를
 `false`로 설정하고 `text.format`으로 엄격한 `json_schema` Structured Output을 요청합니다.
 
-응답 스키마에는 분류, 근본 원인, 신뢰도, 근거, 권장 조치, 재시도 판단, 운영자 검토 필요 여부가
+응답 스키마에는 분류, 근본 원인, 기존 confidence, 근거, 권장 조치, 재시도 판단, 운영자 검토 필요 여부와 필수 `assessment`가
 들어갑니다. Provider 경계에서 JSON 형태와 Enum 값을 검증하고, AI Diagnosis를 `PASSED`로 만들기
 전 근거 줄의 식별자·정확한 텍스트·비밀값 재노출을 다시 검사합니다. 자세한 내용은
 [근거 검증](evidence-validation.ko.md)을 참조하세요.
@@ -66,8 +67,8 @@ AI를 호출하지 않고 판단 불가 규칙 결과를 사용합니다. 인용
 않으므로 별도의 실제 모델 평가가 필요합니다.
 
 마이그레이션 `0023`은 기존 행의 `assessment`를 채우지 않습니다. 기존 진단은 근거 수준 미평가로
-표시되며, 재사용 행은 원본의 평가를 표시합니다. 새 schema v2와 ruleset v3은 이전 결과의 자동
-재사용을 막습니다. `confidence`는 기존 API와 저장 계약을 위해 남겨두며 근거 수준 산정에 쓰지
+표시되며, 재사용 행은 원본의 평가를 표시합니다. 현재 schema v4와 ruleset v3은 저장 API의 호환성 검사에서 이전 결과를 제외합니다.
+Worker는 시그니처만으로 진단을 자동 재사용하지 않습니다. `confidence`는 기존 API와 저장 계약을 위해 남겨두며 근거 수준 산정에 쓰지
 않습니다.
 
 대표 합성 장애 사례는 `evals/diagnosis/cases.json`에 있습니다. 모델을 호출하지 않는 테스트와
@@ -89,8 +90,8 @@ v5 프롬프트는 규칙 결과보다 모든 로그 줄을 먼저 확인하고,
 생성된 설명이 비밀번호·토큰·API 키·Authorization 헤더 원문을 요청하면
 `UNSAFE_CREDENTIAL_REQUEST`로 거부합니다. 한국어·영어의 제한된 요청 패턴을 검사하며
 정확한 로그 인용은 제외합니다. 모호하게 일치하는 설명도 보수적으로 거부합니다.
-모든 프롬프트 주입을 탐지하는 기능은 아닙니다. 스키마 v3는 이전 정책으로 통과한
-진단의 재사용을 차단합니다.
+모든 프롬프트 주입을 탐지하는 기능은 아닙니다. 현재 스키마 v4는 이전 정책으로 통과한
+진단을 호환성 검사에서 제외합니다.
 
 오류 유형은 원인 판단과 독립적입니다. OOMKilled가 관찰되면 근본 원인이 `UNDETERMINED`여도
 `RESOURCE`를 유지합니다. Schema v4부터 적용하며 과거 진단을 다시 해석하지 않습니다.
@@ -102,3 +103,16 @@ v5 프롬프트는 규칙 결과보다 모든 로그 줄을 먼저 확인하고,
 계속 가립니다. 요청에는 Task Try 범위와 입력·발췌 줄 수가 포함됩니다. 생략에는 노이즈 제거와 범위 제한이
 모두 포함될 수 있으며 이 수치가 원격 로그의 완전성을 보장하지는 않습니다. 외부 리소스 지표, 저장소 코드,
 최근 배포 이력을 자동 수집하지는 않습니다. 문맥 평가 사례는 `evals/diagnosis/context.json`입니다.
+
+## Codex 비교 평가
+
+로그인된 Codex CLI로 같은 합성 사례를 평가할 수 있습니다.
+
+```shell
+DAGSENTRY_LLM_TIMEOUT_SECONDS=180 uv run python scripts/evaluate-diagnosis.py --cases evals/diagnosis/context.json --output /tmp/codex-context.json --live --codex-model gpt-6-astra --codex-reasoning-effort medium
+```
+
+CLI 인증을 재사용하며 빈 읽기 전용 작업 폴더에서 실행하고 도구 사용 결과는 거부합니다.
+운영 Provider 설정에는 추가하지 않습니다. 보고서에는 요청 스냅샷, 요청 모델과 추론 수준, CLI 버전과
+호출 실패를 기록합니다. Codex 기본 지침은 남으므로 동일한 API 요청의 순수 모델 교체 실험과는 다릅니다.
+기본 사례와 `variants.json`, `context.json`을 각각 평가하고 합성 사례 결과를 운영 정확도로 표시하지 마세요.
